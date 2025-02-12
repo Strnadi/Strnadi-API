@@ -1,0 +1,38 @@
+version: '3'
+  
+services:
+  strnadi-gateway:
+    build:
+      dockerfile: ./ApiGateway/Dockerfile
+    ports:
+      - ${PORT_GATEWAY}:${PORT_GATEWAY}
+    depends_on:
+      - strnadi-dag
+      - strnadi-db
+    networks:
+      - strnadi_network
+  
+  strnadi-dag:
+    build: 
+      dockerfile: ./DataAccessGate/Dockerfile
+    ports:
+      - ${PORT_DAG}:${PORT_DAG}
+    depends_on:
+      - strnadi-db
+    networks:
+      - strnadi_network
+  
+  strnadi-db:
+    image: postgres
+    container_name: ${MS_DB}
+    networks:
+      - strnadi_network
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_PORT: ${DB_PORT}
+      
+networks:
+  strnadi_network:
+    driver: bridge
