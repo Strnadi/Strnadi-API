@@ -2,6 +2,7 @@ version: '3'
   
 services:
   strnadi-gateway:
+    container_name: ${MS_GATEWAY}
     build:
       dockerfile: ./ApiGateway/Dockerfile
     ports:
@@ -13,6 +14,7 @@ services:
       - strnadi_network
   
   strnadi-dag:
+    container_name: ${MS_DAG}
     build: 
       dockerfile: ./DataAccessGate/Dockerfile
     ports:
