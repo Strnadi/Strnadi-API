@@ -32,7 +32,9 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_PORT: ${DB_PORT}
-      
+    volumes:
+      - /home/poproshaikin/${MS_DB}:/var/lib/postgresql/data
+
 networks:
   strnadi_network:
     driver: bridge
