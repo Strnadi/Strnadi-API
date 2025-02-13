@@ -23,6 +23,8 @@ builder.Services.AddCors(corsOptions =>
 
 var app = builder.Build();
 
+app.MapGet("/neco", () => "Hello World!");
+
 app.UseHttpsRedirection();
 app.UseRouting();
 app.MapControllers();
