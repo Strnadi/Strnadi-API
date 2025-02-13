@@ -9,7 +9,7 @@ namespace ApiGateway.Controllers;
 
 [ApiController]
 [Route("/auth")]
-internal class AuthController : ControllerBase
+public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
 
