@@ -17,6 +17,7 @@ using System.Net;
 using System.Net.Mail;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Logging;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace ApiGateway.Services;
 
@@ -68,9 +69,8 @@ public class EmailSender : IEmailSender
         }
         catch (Exception ex)
         {
-            Logger.Log($"Exception thrown while sending email to {emailAddress}: {ex.Message}'");
+            Logger.Log($"Exception thrown while sending email to {emailAddress}: {ex.Message}'", LogLevel.Error);
         }
-        
     }
     
     public void SendVerificationMessage(HttpContext httpContext, ControllerContext controllerContext, string emailAddress, string jwt)
