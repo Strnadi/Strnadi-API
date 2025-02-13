@@ -17,8 +17,8 @@ public class AuthController : ControllerBase
     
     private readonly IJwtService _jwtService;
     
-    private string _authCntName => _configuration["MS_AUTH"] ?? throw new NullReferenceException("Failed to load microservice name");
-    private string _authCntPort => _configuration["PORT_AUTH"] ?? throw new NullReferenceException("Failed to load microservice port");
+    private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
+    private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
     
     private const string dag_login_endpoint = "/users/authorize-user";
     private const string dag_signup_endpoint = "/users/sign-up";
@@ -33,7 +33,7 @@ public class AuthController : ControllerBase
     [HttpPost("/auth/login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request)
     {
-        string dagUrl = $"http://{_authCntName}:{_authCntPort}/{dag_login_endpoint}";
+        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_login_endpoint}";
 
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -61,7 +61,7 @@ public class AuthController : ControllerBase
     [HttpPost("/auth/sign-up")]
     public async Task<IActionResult> RegisterAsync([FromBody] SignUpRequest request)
     {
-        string dagUrl = $"http://{_authCntName}:{_authCntPort}/{dag_signup_endpoint}";
+        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_signup_endpoint}";
         
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
