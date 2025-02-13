@@ -86,7 +86,7 @@ public class AuthController : ControllerBase
             var emailSender = new EmailSender(_configuration);
             emailSender.SendVerificationMessage(HttpContext, ControllerContext, request.Email, jwt);
             
-            return Ok(jwt);
+            return Accepted(jwt);
         }
         catch (Exception ex)
         {
