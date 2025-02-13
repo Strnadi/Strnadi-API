@@ -18,7 +18,7 @@ public class UsersController : ControllerBase
 
     [HttpPost("/users/authorize-user")]
     public IActionResult AuthorizeUser(LoginRequest request)
-    {
+    { 
         var repository = new UsersRepository(_connectionString);
         bool authorized = repository.AuthorizeUser(request.Email, request.Password);
         

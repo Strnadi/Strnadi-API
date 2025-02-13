@@ -15,7 +15,10 @@ internal class UsersRepository : RepositoryBase
 
     public bool AuthorizeUser(string email, string password)
     {
-        using var command = new NpgsqlCommand($"SELECT * FROM {users_table_name} WHERE {email_column_name} = @Email AND {password_column_name} = @Password");
+        using var command = (NpgsqlCommand)_connection.CreateCommand();
+
+        command.CommandText =
+            $"SELECT * FROM {users_table_name} WHERE {email_column_name} = @Email AND {password_column_name} = @Password";
         
         command.Parameters.AddWithValue("@Email", email);
         command.Parameters.AddWithValue("@Password", password);
