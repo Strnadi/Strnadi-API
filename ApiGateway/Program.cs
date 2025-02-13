@@ -8,6 +8,8 @@ Env.Load("../.env");
 
 builder.Configuration.AddEnvironmentVariables();
 
+Console.WriteLine(configuration["JWT_SECRET_KEY"]);
+
 builder.Services.AddControllers();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddCors(corsOptions =>
