@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2024 Stanislav Motsnyi
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 using System.Security.Claims;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
@@ -10,7 +25,8 @@ namespace ApiGateway.Services;
 internal interface IJwtService
 {
     string GenerateToken(string subject);
-    bool TryValidateToken(string token, out int? userId);
+
+    bool TryValidateToken(string token, out string? email);
 } 
 
 internal class JwtService : IJwtService
@@ -57,9 +73,9 @@ internal class JwtService : IJwtService
         return tokenHandler.WriteToken(token);
     }
 
-    public bool TryValidateToken(string token, out int? userId)
+    public bool TryValidateToken(string subject, out string? email)
     {
-        return TryValidateToken(token, out userId, GetUserId);
+        return TryValidateToken(subject, out email, GetEmail);
     }
     
     private bool TryValidateToken<T>(string token, out T? value, Func<string, T?> extractor)
@@ -83,11 +99,11 @@ internal class JwtService : IJwtService
         value = default;
         return false;
     }
-    
-    private int? GetUserId(string token)
+
+    private string? GetEmail(string token)
     {
-        string? userIdStr = GetClaims(token).FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
-        return userIdStr is null ? null : int.Parse(userIdStr);
+        string? emailStr = GetClaims(token).FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email)?.Value;
+        return emailStr;
     }
 
     private bool Validate(string token)
