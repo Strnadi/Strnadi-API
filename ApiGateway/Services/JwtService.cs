@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text;
-using Models.Database;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Shared.Logging;
