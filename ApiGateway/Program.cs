@@ -1,5 +1,4 @@
 using ApiGateway.Services;
-using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
