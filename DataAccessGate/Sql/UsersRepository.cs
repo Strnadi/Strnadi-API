@@ -36,7 +36,7 @@ internal class UsersRepository : RepositoryBase
         using var command = (NpgsqlCommand)_connection.CreateCommand();
         
         command.CommandText = $"INSERT INTO {users_table_name} ({nickname_column_name}, " +
-                              $"{email_column_name}, {password_column_name}, {first_name_column_name}, {last_name_column_name}) VALUES" +
+                              $"{email_column_name}, {password_column_name}, {first_name_column_name}, {last_name_column_name}) " +
                               $"VALUES (@Nickname, @Email, @Password, @FirstName, @LastName)";
         
 #pragma warning disable CS8604 // Nickname column is nullable
