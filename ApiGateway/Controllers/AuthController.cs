@@ -4,6 +4,7 @@ using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
 using Shared.Logging;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace ApiGateway.Controllers;
 
@@ -54,6 +55,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
+            Logger.Log($"Exception catched while communicating with DAG module: {ex.Message}", LogLevel.Error);
             return StatusCode(500, ex.Message);
         }
     }
