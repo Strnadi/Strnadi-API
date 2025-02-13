@@ -6,12 +6,12 @@ services:
     build:
       dockerfile: ./ApiGateway/Dockerfile
     ports:
-      - ${PORT_GATEWAY}:8080
+      - "12001:8080"
     depends_on:
       - strnadi-dag
       - strnadi-db
     networks:
-      - strnadi_network
+      - strnadi-network
   
   strnadi-dag:
     container_name: ${MS_DAG}
@@ -20,13 +20,13 @@ services:
     depends_on:
       - strnadi-db
     networks:
-      - strnadi_network
+      - strnadi-network
   
   strnadi-db:
     image: postgres
     container_name: ${MS_DB}
     networks:
-      - strnadi_network
+      - strnadi-network
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -36,5 +36,5 @@ services:
       - /home/stasik/${MS_DB}:/var/lib/postgresql/data
 
 networks:
-  strnadi_network:
+  strnadi-network:
     driver: bridge
