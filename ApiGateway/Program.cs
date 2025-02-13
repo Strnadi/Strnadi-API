@@ -4,7 +4,7 @@ using DotNetEnv;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
-Env.Load("../.env");
+Env.Load();
 
 builder.Configuration.AddEnvironmentVariables();
 
