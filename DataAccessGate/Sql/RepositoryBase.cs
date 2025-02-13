@@ -5,7 +5,7 @@ using Shared.Logging;
 
 namespace DataAccessGate.Sql;
 
-internal abstract class RepositoryBase
+internal abstract class RepositoryBase : IDisposable
 {
     protected DbConnection _connection;
     protected string _connectionString;

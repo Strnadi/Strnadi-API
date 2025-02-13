@@ -82,6 +82,10 @@ public class AuthController : ControllerBase
 
             string jwt = _jwtService.GenerateToken(request.Email);
             Logger.Log($"User '{request.Email}' registered successfully");
+            
+            var emailSender = new EmailSender(_configuration);
+            emailSender.SendVerificationMessage(HttpContext, ControllerContext, request.Email, jwt);
+            
             return Ok(jwt);
         }
         catch (Exception ex)
