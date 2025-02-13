@@ -6,7 +6,7 @@ services:
     build:
       dockerfile: ./ApiGateway/Dockerfile
     ports:
-      - "12001:8080"
+      - "${PORT_GATEWAY}:8080"
     depends_on:
       - strnadi-dag
       - strnadi-db

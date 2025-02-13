@@ -18,13 +18,13 @@ internal class JwtService : IJwtService
 {
     private IConfiguration _configuration;
     
-    private string _secretKey => _configuration["JWT_SECRET_KEY"] ?? throw new NullReferenceException("Invalid configuration key passed");
+    private string _secretKey => _configuration["$JWT_SECRET_KEY"] ?? throw new NullReferenceException("Invalid configuration key passed");
     
-    private string _issuer => _configuration["JWT_ISSUER"] ?? throw new NullReferenceException("Invalid configuration key passed");
+    private string _issuer => _configuration["$JWT_ISSUER"] ?? throw new NullReferenceException("Invalid configuration key passed");
     
-    private string _audience => _configuration["JWT_AUDIENCE"] ?? throw new NullReferenceException("Invalid configuration key passed");
+    private string _audience => _configuration["$JWT_AUDIENCE"] ?? throw new NullReferenceException("Invalid configuration key passed");
     
-    private string _lifetime => _configuration["JWT_LIFETIME"] ?? throw new NullReferenceException("Invalid configuration key passed");
+    private string _lifetime => _configuration["$JWT_LIFETIME"] ?? throw new NullReferenceException("Invalid configuration key passed");
     
     private TimeSpan _lifetimeAsTimeSpan => TimeSpan.Parse(_lifetime);
     private DateTime _expiresAt => DateTime.UtcNow.Add(_lifetimeAsTimeSpan);
