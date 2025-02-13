@@ -15,8 +15,6 @@ builder.Services.AddCors(corsOptions =>
 
 var app = builder.Build();
 
-app.MapGet("/test", () => "Hello World!");
-
 app.UseRouting();
 app.MapControllers();
 app.Run();

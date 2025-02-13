@@ -1,6 +1,7 @@
 using DataAccessGate.Sql;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Models.Requests;
+using LoginRequest = Microsoft.AspNetCore.Identity.Data.LoginRequest;
 
 namespace DataAccessGate.Controllers;
 
@@ -19,11 +20,22 @@ public class UsersController : ControllerBase
     [HttpPost("/users/authorize-user")]
     public IActionResult AuthorizeUser(LoginRequest request)
     { 
-        var repository = new UsersRepository(_connectionString);
+        using var repository = new UsersRepository(_connectionString);
         bool authorized = repository.AuthorizeUser(request.Email, request.Password);
         
         return authorized ?
-            Ok() :
+            Accepted() :
             Unauthorized();
+    }
+
+    [HttpPost("/users/sign-up")]
+    public IActionResult SignUp([FromBody] SignUpRequest request)
+    {
+        using var repository = new UsersRepository(_connectionString);
+        bool authorized = repository.CreateUser(request);
+
+        return authorized ? 
+            Created() : 
+            Conflict();
     }
 }
