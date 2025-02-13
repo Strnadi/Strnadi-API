@@ -73,7 +73,7 @@ internal class UsersRepository : RepositoryBase
         using var command = (NpgsqlCommand)_connection.CreateCommand();
         
         command.CommandText = $"INSERT INTO \"Users\" (\"Nickname\", " +
-                              $"\"Email\", \"Password\", \"FirstName\", \"LastNameq\") " +
+                              $"\"Email\", \"Password\", \"FirstName\", \"LastName\") " +
                               $"VALUES (@Nickname, @Email, @Password, @FirstName, @LastName)";
         
         command.Parameters.AddWithValue("@Nickname", request.Nickname ?? (object) DBNull.Value);
