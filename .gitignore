@@ -5,3 +5,4 @@
 services
 *.DotSettings.user
 ./ApiGateway/appsettings.json
+./DataAccessGate/appsettings.json 
