@@ -6,7 +6,7 @@ namespace DataAccessGate.Controllers;
 
 [ApiController]
 [Route("/users")]
-internal class UsersController : ControllerBase
+public class UsersController : ControllerBase
 {
     private IConfiguration _configuration;
     private string _connectionString => _configuration["DB_CONNECTION_STRING"] ?? throw new NullReferenceException("Failed to upload connection string from .env file");
