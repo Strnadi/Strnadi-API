@@ -97,8 +97,7 @@ public class AuthController : ControllerBase
             string jwt = _jwtService.GenerateToken(request.Email);
             Logger.Log($"User '{request.Email}' registered successfully");
             
-            var emailSender = new EmailSender(_configuration);
-            emailSender.SendVerificationMessage(HttpContext, ControllerContext, request.Email, jwt);
+            SendVerificationMessageAsynchronously(HttpContext, ControllerContext, request.Email, jwt);
             
             return Accepted(jwt);
         }
@@ -107,5 +106,15 @@ public class AuthController : ControllerBase
             Logger.Log($"Exception caught while redirecting request to DAG: {ex.Message}", LogLevel.Error);
             return StatusCode(500, ex.Message);
         }
+    }
+    
+    private void SendVerificationMessageAsynchronously(HttpContext httpContext,
+        ControllerContext controllerContext,
+        string emailAddress,
+        string jwt)
+    {
+        var emailSender = new EmailSender(_configuration);
+        Task.Run(() =>
+            emailSender.SendVerificationMessage(HttpContext, ControllerContext, emailAddress, jwt));
     }
 } 
