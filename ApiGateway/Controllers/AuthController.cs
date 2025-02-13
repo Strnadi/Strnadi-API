@@ -36,6 +36,8 @@ public class AuthController : ControllerBase
     {
         string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_login_endpoint}";
 
+        Logger.Log(dagUrl);
+        
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
