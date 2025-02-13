@@ -32,6 +32,6 @@ public class UsersController : ControllerBase
     public IActionResult SignUp([FromBody] SignUpRequest request)
     {
         using var repository = new UsersRepository(_connectionString);
-        return repository.CreateUser(request);
+        return repository.AddUser(request);
     }
 }

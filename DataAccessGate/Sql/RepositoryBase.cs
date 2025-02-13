@@ -13,7 +13,6 @@ internal abstract class RepositoryBase : IDisposable
     protected RepositoryBase(string connectionString)
     {
         _connectionString = connectionString;
-        Logger.Log(connectionString);
         _connection = new NpgsqlConnection(connectionString);
         _connection.Open();
     }

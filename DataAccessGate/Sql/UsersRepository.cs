@@ -33,7 +33,7 @@ internal class UsersRepository : RepositoryBase
         return reader.HasRows;
     }
 
-    public IActionResult CreateUser(SignUpRequest request)
+    public IActionResult AddUser(SignUpRequest request)
     {
         using var command = (NpgsqlCommand)_connection.CreateCommand();
         
@@ -52,7 +52,7 @@ internal class UsersRepository : RepositoryBase
         try
         {
             command.ExecuteNonQuery();
-            Logger.Log($"Tried to register user with existing email '{request.Email}");
+            Logger.Log($"Tried to register user with existing email '{request.Email}'");
             return new CreatedResult();
         }
         catch (NpgsqlException ex)

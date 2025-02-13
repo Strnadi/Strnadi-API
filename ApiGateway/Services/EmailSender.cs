@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Mail;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Logging;
 
 namespace ApiGateway.Services;
 
@@ -30,23 +31,31 @@ public class EmailSender : IEmailSender
 
     public void SendMessage(string emailAddress, string subject, string body)
     {
-        SmtpClient smtpClient = new(_smtpServerDomain)
+        try
         {
-            Port = _smtpPort,
-            Credentials = new NetworkCredential(_smtpEmail, _smtpPassword),
-            EnableSsl = true
-        };
-        
-        MailMessage message = new()
+            SmtpClient smtpClient = new(_smtpServerDomain)
+            {
+                Port = _smtpPort,
+                Credentials = new NetworkCredential(_smtpEmail, _smtpPassword),
+                EnableSsl = true
+            };
+
+            MailMessage message = new()
+            {
+                From = new MailAddress(_smtpEmail),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = true
+            };
+
+            message.To.Add(emailAddress);
+            smtpClient.Send(message);
+        }
+        catch (Exception ex)
         {
-            From = new MailAddress(_smtpEmail),
-            Subject = subject,
-            Body = body,
-            IsBodyHtml = true
-        };
+            Logger.Log($"Exception thrown while sending email to {emailAddress}: {ex.Message}'");
+        }
         
-        message.To.Add(emailAddress);
-        smtpClient.Send(message);
     }
     
     public void SendVerificationMessage(HttpContext httpContext, ControllerContext controllerContext, string emailAddress, string jwt)
