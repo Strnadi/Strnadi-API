@@ -6,7 +6,7 @@ services:
     build:
       dockerfile: ./ApiGateway/Dockerfile
     ports:
-      - ${PORT_GATEWAY}:${PORT_GATEWAY}
+      - ${PORT_GATEWAY}:8080
     depends_on:
       - strnadi-dag
       - strnadi-db
@@ -18,7 +18,7 @@ services:
     build: 
       dockerfile: ./DataAccessGate/Dockerfile
     ports:
-      - ${PORT_DAG}:${PORT_DAG}
+      - ${PORT_DAG}:8080
     depends_on:
       - strnadi-db
     networks:
