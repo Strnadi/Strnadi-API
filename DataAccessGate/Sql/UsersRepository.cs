@@ -76,9 +76,7 @@ internal class UsersRepository : RepositoryBase
                               $"\"Email\", \"Password\", \"FirstName\", \"LastNameq\") " +
                               $"VALUES (@Nickname, @Email, @Password, @FirstName, @LastName)";
         
-#pragma warning disable CS8604 // Nickname column is nullable
-        command.Parameters.AddWithValue("@Nickname", request.Nickname);
-#pragma warning restore CS8604 //
+        command.Parameters.AddWithValue("@Nickname", request.Nickname ?? (object) DBNull.Value);
         command.Parameters.AddWithValue("@Email", request.Email);
         command.Parameters.AddWithValue("@Password", request.Password);
         command.Parameters.AddWithValue("@FirstName", request.FirstName);
