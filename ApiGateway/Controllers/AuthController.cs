@@ -21,8 +21,8 @@ public class AuthController : ControllerBase
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
     private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
     
-    private const string dag_login_endpoint = "/users/authorize-user";
-    private const string dag_signup_endpoint = "/users/sign-up";
+    private const string dag_login_endpoint = "users/authorize-user";
+    private const string dag_signup_endpoint = "users/sign-up";
     
     public AuthController(IConfiguration configuration)
     {
@@ -47,7 +47,7 @@ public class AuthController : ControllerBase
 
             if (!response.IsSuccessStatusCode)
             {
-                Logger.Log($"Authorization of user '{request.Email} failed with status code {response.StatusCode}'");
+                Logger.Log($"Authorization of user '{request.Email} failed with status code {(int)response.StatusCode}'");
                 return StatusCode((int)response.StatusCode);
             }
             
