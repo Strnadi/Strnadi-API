@@ -9,7 +9,7 @@ namespace DataAccessGate.Controllers;
 public class UsersController : ControllerBase
 {
     private IConfiguration _configuration;
-    private string _connectionString => _configuration["DB_CONNECTION_STRING"] ?? throw new NullReferenceException("Failed to upload connection string from .env file");
+    private string _connectionString => _configuration["ConnectionStrings:Default"] ?? throw new NullReferenceException("Failed to upload connection string from .env file");
     
     public UsersController(IConfiguration configuration)
     {
