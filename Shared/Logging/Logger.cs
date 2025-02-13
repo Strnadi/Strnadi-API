@@ -4,9 +4,9 @@ public static class Logger
 {
     public static void Log(string message, LogLevel level = LogLevel.Information)
     {
+        Console.Write($"[{level.ToString()}] ");
         Console.Write($"[{DateTime.Now}] ");
         Console.ForegroundColor = GetConsoleColor(level);
-        Console.Write($"[{level.ToString()}] ");
         Console.Write($"{message} \n");
         Console.ResetColor();
         

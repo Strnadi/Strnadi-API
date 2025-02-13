@@ -32,10 +32,6 @@ public class UsersController : ControllerBase
     public IActionResult SignUp([FromBody] SignUpRequest request)
     {
         using var repository = new UsersRepository(_connectionString);
-        bool authorized = repository.CreateUser(request);
-
-        return authorized ? 
-            Created() : 
-            Conflict();
+        return repository.CreateUser(request);
     }
 }

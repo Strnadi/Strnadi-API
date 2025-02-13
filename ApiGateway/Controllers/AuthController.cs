@@ -63,7 +63,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("/auth/sign-up")]
-    public async Task<IActionResult> RegisterAsync([FromBody] SignUpRequest request)
+    public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request)
     {
         string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_signup_endpoint}";
         
@@ -90,6 +90,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
+            Logger.Log(ex.ToString(), LogLevel.Error);
             return StatusCode(500, ex.Message);
         }
     }

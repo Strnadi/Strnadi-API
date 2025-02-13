@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
 using Npgsql;
+using Shared.Logging;
 
 namespace DataAccessGate.Sql;
 
@@ -31,7 +33,7 @@ internal class UsersRepository : RepositoryBase
         return reader.HasRows;
     }
 
-    public bool CreateUser(SignUpRequest request)
+    public IActionResult CreateUser(SignUpRequest request)
     {
         using var command = (NpgsqlCommand)_connection.CreateCommand();
         
@@ -46,7 +48,16 @@ internal class UsersRepository : RepositoryBase
         command.Parameters.AddWithValue("@Password", request.Password);
         command.Parameters.AddWithValue("@FirstName", request.FirstName);
         command.Parameters.AddWithValue("@LastName", request.LastName);
-        
-        return command.ExecuteNonQuery() is 1;
+
+        try
+        {
+            command.ExecuteNonQuery();
+            Logger.Log($"Tried to register user with existing email '{request.Email}");
+            return new CreatedResult();
+        }
+        catch (NpgsqlException ex)
+        {
+            return new ConflictResult();
+        }
     }
 }
