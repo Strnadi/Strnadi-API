@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2024 Stanislav Motsnyi
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
 using Npgsql;
@@ -7,14 +22,6 @@ namespace DataAccessGate.Sql;
 
 internal class UsersRepository : RepositoryBase
 {
-    private const string users_table_name = "\"Users\"";
-    
-    private const string email_column_name = "\"Email\"";
-    private const string nickname_column_name = "\"Nickname\"";
-    private const string password_column_name = "\"Password\"";
-    private const string first_name_column_name = "\"FirstName\"";
-    private const string last_name_column_name = "\"LastName\"";
-    
     public UsersRepository(string connectionString) : base(connectionString)
     {
     }
@@ -24,7 +31,7 @@ internal class UsersRepository : RepositoryBase
         using var command = (NpgsqlCommand)_connection.CreateCommand();
 
         command.CommandText =
-            $"SELECT * FROM {users_table_name} WHERE {email_column_name} = @Email AND {password_column_name} = @Password";
+            $"SELECT * FROM \"Users\" WHERE \"Email\" = @Email AND \"Password\" = @Password";
         
         command.Parameters.AddWithValue("@Email", email);
         command.Parameters.AddWithValue("@Password", password);
@@ -33,12 +40,40 @@ internal class UsersRepository : RepositoryBase
         return reader.HasRows;
     }
 
-    public IActionResult AddUser(SignUpRequest request)
+    public bool ExistsUser(string email)
     {
         using var command = (NpgsqlCommand)_connection.CreateCommand();
         
-        command.CommandText = $"INSERT INTO {users_table_name} ({nickname_column_name}, " +
-                              $"{email_column_name}, {password_column_name}, {first_name_column_name}, {last_name_column_name}) " +
+        command.CommandText =
+            $"SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
+        
+        command.Parameters.AddWithValue("@Email", email);
+
+        return command.ExecuteNonQuery() > 0;
+    }
+    
+    /// <returns>An id of user with provided email if exists, otherwise -1</returns>
+    public int GetUserId(string email)
+    {
+        if (!ExistsUser(email))
+            return -1;
+        
+        using var command = (NpgsqlCommand)_connection.CreateCommand();
+        
+        command.CommandText =
+            $"SELECT \"Id\" FROM \"Users\" WHERE \"Email\" = @Email";
+        
+        command.Parameters.AddWithValue("@Email", email);
+
+        return (int)command.ExecuteScalar()!;
+    }
+    
+    public bool AddUser(SignUpRequest request)
+    {
+        using var command = (NpgsqlCommand)_connection.CreateCommand();
+        
+        command.CommandText = $"INSERT INTO \"Users\" (\"Nickname\", " +
+                              $"\"Email\", \"Password\", \"FirstName\", \"LastNameq\") " +
                               $"VALUES (@Nickname, @Email, @Password, @FirstName, @LastName)";
         
 #pragma warning disable CS8604 // Nickname column is nullable
@@ -52,12 +87,17 @@ internal class UsersRepository : RepositoryBase
         try
         {
             command.ExecuteNonQuery();
-            Logger.Log($"Tried to register user with existing email '{request.Email}'");
-            return new CreatedResult();
+            return true;
         }
-        catch (NpgsqlException ex)
+        catch (NpgsqlException ex) when (ex.SqlState == "23505")
         {
-            return new ConflictResult();
+            Logger.Log($"Tried to register user with existing email '{request.Email}'");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception thrown while adding new user to a database: {ex.Message}");
+            return false;
         }
     }
 }

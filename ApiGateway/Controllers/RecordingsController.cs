@@ -1,8 +1,25 @@
+/*
+ * Copyright (C) 2024 Stanislav Motsnyi
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 using System.Text;
 using System.Text.Json;
+using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
 using Shared.Logging;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace ApiGateway.Controllers;
 
@@ -14,6 +31,8 @@ public class RecordingsController : ControllerBase
 
     private readonly HttpClient _httpClient;
     
+    private readonly IJwtService _jwtService;
+    
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
     private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
 
@@ -24,15 +43,21 @@ public class RecordingsController : ControllerBase
     {
         _configuration = config;
         _httpClient = new HttpClient();
+        _jwtService = new JwtService(config);
     }
     
     [HttpPost("recordings/upload")]
     public async Task<IActionResult> Upload([FromBody] RecordingUploadReq request)
     {
-        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRec_endpoint}";
+        if (!_jwtService.TryValidateToken(request.Jwt, out string? email))
+            return Unauthorized();
 
-        var json = JsonSerializer.Serialize(request);
+        var internalReq = request.ToInternal(email!);
+        
+        var json = JsonSerializer.Serialize(internalReq);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
+        
+        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRec_endpoint}";
 
         try
         {
@@ -40,18 +65,23 @@ public class RecordingsController : ControllerBase
 
             if (!response.IsSuccessStatusCode)
             {
-                Logger.Log($"Recording upload failed with status code {response.StatusCode}");
+                Logger.Log($"Recording upload failed with status {response.StatusCode.ToString()}", LogLevel.Warning);
                 return StatusCode((int)response.StatusCode);
             }
-            
-            
+
+            int userId = int.Parse(await response.Content.ReadAsStringAsync());
+            return Accepted(userId);
         }
-        // must return id of generated recording
+        catch (Exception ex)
+        {
+            Logger.Log($"Recording upload failed with error {ex.Message}", LogLevel.Error);
+            return StatusCode(500, ex.Message);
+        }
     }
 
     [HttpPost("recordings/upload-part")]
     public async Task<IActionResult> UploadPart([FromBody] RecordingUploadReq request)
     {
-        
+        throw new NotImplementedException();
     }
 }
