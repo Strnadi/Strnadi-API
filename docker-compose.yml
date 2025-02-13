@@ -17,8 +17,6 @@ services:
     container_name: ${MS_DAG}
     build: 
       dockerfile: ./DataAccessGate/Dockerfile
-    ports:
-      - ${PORT_DAG}:8080
     depends_on:
       - strnadi-db
     networks:
