@@ -22,7 +22,7 @@ using Shared.Logging;
 namespace DataAccessGate.Controllers;
 
 [ApiController]
-[Route("recordings")]
+[Route("recordings/")]
 public class RecordingsController : ControllerBase
 {
     private readonly IConfiguration _configuration;
@@ -36,7 +36,7 @@ public class RecordingsController : ControllerBase
         _configuration = configuration;
     }
     
-    [HttpPost("recordings/upload")]
+    [HttpPost("upload")]
     public IActionResult Upload([FromBody] RecordingUploadReqInternal request)
     {
         int userId;
@@ -52,7 +52,7 @@ public class RecordingsController : ControllerBase
 
         if (recId != -1)
         {
-            return Accepted(recId);
+            return Ok(recId);
         }
         else
         {
@@ -60,9 +60,12 @@ public class RecordingsController : ControllerBase
         }
     }
 
-    [HttpPost("recordings/upload-part")]
-    public async Task<IActionResult> UploadPart([FromBody] RecordingUploadReqInternal request)
+    [HttpPost("upload-part")]
+    public IActionResult UploadPart([FromBody] RecordingPartUploadReq request)
     {
+        using var repository = new RecordingsRepository(_connectionString);
+        // int recPartId = repository.AddRecordingPart(request)
+
         throw new NotImplementedException();
     }
 }

@@ -17,9 +17,19 @@ namespace Models.Requests;
 
 public class RecordingPartUploadReq
 {
+    public string Jwt { get; set; }
+    
     public int RecordingId { get; set; }
     
     public DateTime Start { get; set; }
     
     public DateTime End { get; set; }
+
+    public decimal LatitudeStart { get; set; }
+
+    public decimal LatitudeEnd { get; set; }
+    
+    public decimal LongitudeStart { get; set; }
+    
+    public decimal LongitudeEnd { get; set; }
 }
