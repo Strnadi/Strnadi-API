@@ -49,7 +49,7 @@ internal class UsersRepository : RepositoryBase
         
         command.Parameters.AddWithValue("@Email", email);
 
-        return command.ExecuteNonQuery() > 0;
+        return command.ExecuteReader().HasRows;
     }
     
     /// <returns>An id of user with provided email if exists, otherwise -1</returns>
@@ -61,7 +61,7 @@ internal class UsersRepository : RepositoryBase
         using var command = (NpgsqlCommand)_connection.CreateCommand();
         
         command.CommandText =
-            $"SELECT \"Id\" FROM \"Users\" WHERE \"Email\" = @Email";
+            "SELECT \"Id\" FROM \"Users\" WHERE \"Email\" = @Email";
         
         command.Parameters.AddWithValue("@Email", email);
 
