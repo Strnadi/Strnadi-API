@@ -70,7 +70,7 @@ public class RecordingsController : ControllerBase
             }
 
             int userId = int.Parse(await response.Content.ReadAsStringAsync());
-            return Accepted(userId);
+            return Ok(userId);
         }
         catch (Exception ex)
         {
