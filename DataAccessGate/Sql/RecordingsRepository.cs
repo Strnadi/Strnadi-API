@@ -90,14 +90,15 @@ internal class RecordingsRepository : RepositoryBase
         using var updatePathCmd = (NpgsqlCommand)_connection.CreateCommand();
 
         updatePathCmd.CommandText =
-            "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"RecordingPartId\" = @RecordingPartId";
+            "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"Id\" = @Id";
 
         updatePathCmd.Parameters.AddWithValue("@FilePath", filePath);
-        updatePathCmd.Parameters.AddWithValue("@RecordingPartId", recPartId);
+        updatePathCmd.Parameters.AddWithValue("@Id", recPartId);
 
         try
         {
             updatePathCmd.ExecuteNonQuery();
+            Logger.Log($"Recording part '{recPartId}' uploaded successfully");
             return recPartId;
         }
         catch (Exception ex)
