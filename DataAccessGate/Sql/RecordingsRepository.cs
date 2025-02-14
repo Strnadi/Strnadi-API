@@ -39,7 +39,7 @@ internal class RecordingsRepository : RepositoryBase
 
         command.Parameters.AddWithValue("@UserId", userId);
         command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
-        command.Parameters.AddWithValue("@EstimatedBirdsCount", request.EstimatedBirdsCount.ToString());
+        command.Parameters.AddWithValue("@EstimatedBirdsCount", request.EstimatedBirdsCount);
         command.Parameters.AddWithValue("@Device", request.Device);
         command.Parameters.AddWithValue("@ByApp", request.ByApp);
         command.Parameters.AddWithValue("@Note", request.Note ?? (object)DBNull.Value);
