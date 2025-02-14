@@ -98,7 +98,6 @@ internal class RecordingsRepository : RepositoryBase
         try
         {
             updatePathCmd.ExecuteNonQuery();
-            Logger.Log($"Recording part '{recPartId}' uploaded successfully");
             return recPartId;
         }
         catch (Exception ex)
