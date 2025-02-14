@@ -32,13 +32,18 @@ internal class RecordingsRepository : RepositoryBase
 
         command.CommandText =
             "INSERT INTO \"Recordings\"(\"UserId\", \"CreatedAt\", \"EstimatedBirdsCount\", \"State\", \"Device\", \"ByApp\", \"Note\")" +
-            "VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @State, @Device, @ByApp, @Note) RETURNING \"Id\"";
+            "VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note) RETURNING \"Id\"";
 
         command.Parameters.AddWithValue("@UserId", userId.ToString());
+        command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
+        command.Parameters.AddWithValue("@EstimatedBirdsCount", request.EstimatedBirdsCount.ToString());
+        command.Parameters.AddWithValue("@Device", request.Device);
+        command.Parameters.AddWithValue("@ByApp", request.ByApp);
+        command.Parameters.AddWithValue("@Note", request.Note ?? (object)DBNull.Value);
 
         try
         {
-            return (int)command.ExecuteScalar();
+            return (int)command.ExecuteScalar()!;
         }
         catch (Exception ex)
         {
