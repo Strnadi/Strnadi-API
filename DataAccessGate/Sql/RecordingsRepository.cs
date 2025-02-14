@@ -90,10 +90,10 @@ internal class RecordingsRepository : RepositoryBase
         using var updatePathCmd = (NpgsqlCommand)_connection.CreateCommand();
 
         updatePathCmd.CommandText =
-            "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"RecordingId\" = @RecordingId";
+            "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"RecordingPartId\" = @RecordingPartId";
 
         updatePathCmd.Parameters.AddWithValue("@FilePath", filePath);
-        updatePathCmd.Parameters.AddWithValue("@RecordingId", request.RecordingId);
+        updatePathCmd.Parameters.AddWithValue("@RecordingPartId", recPartId);
 
         try
         {
