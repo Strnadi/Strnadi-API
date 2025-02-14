@@ -64,7 +64,7 @@ public class RecordingsController : ControllerBase
     public IActionResult UploadPart([FromBody] RecordingPartUploadReq request)
     {
         using var repository = new RecordingsRepository(_connectionString);
-        // int recPartId = repository.AddRecordingPart(request);
+        int recPartId = repository.AddRecordingPart(request);
 
         throw new NotImplementedException();
     }

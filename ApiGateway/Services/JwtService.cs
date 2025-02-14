@@ -72,10 +72,10 @@ internal class JwtService : IJwtService
         SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
-
-    public bool TryValidateToken(string subject, out string? email)
+    
+    public bool TryValidateToken(string token, out string? email)
     {
-        return TryValidateToken(subject, out email, GetEmail);
+        return TryValidateToken(token, out email, GetEmail);
     }
     
     private bool TryValidateToken<T>(string token, out T? value, Func<string, T?> extractor)
@@ -102,7 +102,7 @@ internal class JwtService : IJwtService
 
     private string? GetEmail(string token)
     {
-        string? emailStr = GetClaims(token).FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email)?.Value;
+        string? emailStr = GetClaims(token).FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
         return emailStr;
     }
 
