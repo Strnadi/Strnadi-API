@@ -37,7 +37,7 @@ internal class RecordingsRepository : RepositoryBase
             "INSERT INTO \"Recordings\"(\"UserId\", \"CreatedAt\", \"EstimatedBirdsCount\", \"Device\", \"ByApp\", \"Note\")" +
             "VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note) RETURNING \"Id\"";
 
-        command.Parameters.AddWithValue("@UserId", userId.ToString());
+        command.Parameters.AddWithValue("@UserId", userId);
         command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
         command.Parameters.AddWithValue("@EstimatedBirdsCount", request.EstimatedBirdsCount.ToString());
         command.Parameters.AddWithValue("@Device", request.Device);
