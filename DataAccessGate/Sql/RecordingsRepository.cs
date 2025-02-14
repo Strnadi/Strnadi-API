@@ -62,7 +62,7 @@ internal class RecordingsRepository : RepositoryBase
         using var insertCmd = (NpgsqlCommand)_connection.CreateCommand();
 
         insertCmd.CommandText =
-            $"INSERT INTO \"RecordingParts\"(\"RecordingId\", \"Start\", \"End\", \"GpsLatitudeStart\", \"GpsLongitudeStart\", \"GpsLatitudeEnd\", \"GpsLontitudeEnd\")" +
+            $"INSERT INTO \"RecordingParts\"(\"RecordingId\", \"Start\", \"End\", \"GpsLatitudeStart\", \"GpsLongitudeStart\", \"GpsLatitudeEnd\", \"GpsLongitudeEnd\")" +
             $"VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd) RETURNING \"Id\"";
 
         insertCmd.Parameters.AddWithValue("@RecordingId", request.RecordingId);
