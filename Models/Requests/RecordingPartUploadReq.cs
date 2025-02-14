@@ -32,4 +32,6 @@ public class RecordingPartUploadReq
     public decimal LongitudeStart { get; set; }
     
     public decimal LongitudeEnd { get; set; }
+    
+    public string Data { get; set; }
 }

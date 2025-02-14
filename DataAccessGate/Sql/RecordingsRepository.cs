@@ -51,4 +51,15 @@ internal class RecordingsRepository : RepositoryBase
             return -1;
         }
     }
+
+    public int AddRecordingPart(RecordingPartUploadReq request)
+    {
+        using var command = (NpgsqlCommand)_connection.CreateCommand();
+        
+        command.CommandText = 
+            $"INSERT INTO \"RecordingParts\"(\"RecordingId\", \"Start\", \"End\", \"GpsLatitudeStart\", \"GpsLongitudeStart\", \"GpsLatitudeEnd\", \"GpsLontitudeEnd\")" +
+            $"VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd)";
+
+        throw new NotImplementedException();
+    }
 }
