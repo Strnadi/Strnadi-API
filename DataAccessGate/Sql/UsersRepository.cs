@@ -99,4 +99,25 @@ internal class UsersRepository : RepositoryBase
             return false;
         }
     }
+
+    public bool Verify(string email)
+    {
+        using var command = (NpgsqlCommand)_connection.CreateCommand();
+
+        command.CommandText =
+            "UPDATE \"Users\" SET \"IsEmailVerified\" = @IsEmailVerified";
+        
+        command.Parameters.AddWithValue("@IsEmailVerified", true);
+
+        try
+        {
+            command.ExecuteNonQuery();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception thrown while verifying user with email '{email}': {ex.Message}");
+            return false;
+        }
+    }
 }
