@@ -38,6 +38,7 @@ public class AuthController : ControllerBase
     
     private const string dag_login_endpoint = "users/authorize-user";
     private const string dag_signup_endpoint = "users/sign-up";
+    private const string dag_verify_endpoint = "users/verify";
     
     public AuthController(IConfiguration config)
     {
@@ -104,6 +105,34 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             Logger.Log($"Exception caught while redirecting recording uploading request to DAG: {ex.Message}", LogLevel.Error);
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpPost("/auth/verify")]
+    public async Task<IActionResult> VerifyUser([FromQuery] string jwt)
+    {
+        if (!_jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_verify_endpoint}";
+
+        try
+        {
+            var response = await _httpClient.PostAsync(dagUrl, new StringContent(email!, Encoding.UTF8, "text/plain"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.Log($"Verification of user '{email}' failed with status '{response.StatusCode}'",
+                    LogLevel.Warning);
+                return StatusCode((int)response.StatusCode);
+            }
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception caught while redirecting to verifying user: {ex.Message}", LogLevel.Error);
             return StatusCode(500, ex.Message);
         }
     }

@@ -15,6 +15,7 @@
  */
 using ApiGateway.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Logging;
 
 namespace ApiGateway.Services;
 
@@ -26,7 +27,8 @@ public class LinkGenerator
         string host = httpContext.Request.Host.ToUriComponent();
         string route = controllerContext.ActionDescriptor.AttributeRouteInfo!.Template!;
         
-        string link = $"{scheme}://{host}{route}?jwt={jwt}";
+        string link = $"{scheme}://{host}{route}/verify/?jwt={jwt}";
+        Logger.Log($"Generated link for email sending: {link}");
 
         return link;
     }

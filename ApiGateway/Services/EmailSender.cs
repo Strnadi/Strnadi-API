@@ -53,7 +53,7 @@ public class EmailSender : IEmailSender
             {
                 Port = _smtpPort,
                 Credentials = new NetworkCredential(_smtpEmail, _smtpPassword),
-                EnableSsl = true
+                EnableSsl = false
             };
 
             MailMessage message = new()

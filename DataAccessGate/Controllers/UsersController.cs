@@ -16,6 +16,7 @@
 using DataAccessGate.Sql;
 using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
+using Shared.Logging;
 using LoginRequest = Microsoft.AspNetCore.Identity.Data.LoginRequest;
 
 namespace DataAccessGate.Controllers;
@@ -54,6 +55,22 @@ public class UsersController : ControllerBase
         else
         {
             return Conflict();
+        }
+    }
+
+    [HttpPost("/users/verify")]
+    public IActionResult VerifyUser([FromQuery] string email)
+    {
+        using var repository = new UsersRepository(_connectionString);
+
+        if (repository.Verify(email))
+        {
+            Logger.Log($"User '{email}' verified successfully");
+            return Ok();
+        }
+        else
+        {
+            return StatusCode(500);
         }
     }
 }
