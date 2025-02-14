@@ -13,9 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using DataAccessGate.Services;
 using Models.Requests;
 using Npgsql;
 using Shared.Logging;
+using Shared.Services;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace DataAccessGate.Sql;
@@ -54,12 +57,53 @@ internal class RecordingsRepository : RepositoryBase
 
     public int AddRecordingPart(RecordingPartUploadReq request)
     {
-        using var command = (NpgsqlCommand)_connection.CreateCommand();
-        
-        command.CommandText = 
-            $"INSERT INTO \"RecordingParts\"(\"RecordingId\", \"Start\", \"End\", \"GpsLatitudeStart\", \"GpsLongitudeStart\", \"GpsLatitudeEnd\", \"GpsLontitudeEnd\")" +
-            $"VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd)";
+        var fs = new FileSystemHelper();
 
-        throw new NotImplementedException();
+        using var insertCmd = (NpgsqlCommand)_connection.CreateCommand();
+
+        insertCmd.CommandText =
+            $"INSERT INTO \"RecordingParts\"(\"RecordingId\", \"Start\", \"End\", \"GpsLatitudeStart\", \"GpsLongitudeStart\", \"GpsLatitudeEnd\", \"GpsLontitudeEnd\")" +
+            $"VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd) RETURNING \"Id\"";
+
+        insertCmd.Parameters.AddWithValue("@RecordingId", request.RecordingId);
+        insertCmd.Parameters.AddWithValue("@Start", request.Start);
+        insertCmd.Parameters.AddWithValue("@End", request.End);
+        insertCmd.Parameters.AddWithValue("@GpsLatitudeStart", request.LatitudeStart);
+        insertCmd.Parameters.AddWithValue("@GpsLongitudeStart", request.LongitudeStart);
+        insertCmd.Parameters.AddWithValue("@GpsLatitudeEnd", request.LatitudeEnd);
+        insertCmd.Parameters.AddWithValue("@GpsLongitudeEnd", request.LongitudeEnd);
+
+        int recPartId;
+        try
+        {
+            recPartId = (int)insertCmd.ExecuteScalar()!;
+        }
+        catch (NpgsqlException ex)
+        {
+            Logger.Log($"Exception caught while adding recording part: {ex.Message}", LogLevel.Error);
+            return -1;
+        }
+
+        byte[] binary = EncodingHelper.DecodeFromBase64(request.Data);
+        string filePath = fs.SaveRecordingSoundFile(request.RecordingId, recPartId, binary);
+
+        using var updatePathCmd = (NpgsqlCommand)_connection.CreateCommand();
+
+        updatePathCmd.CommandText =
+            "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"RecordingId\" = @RecordingId";
+
+        updatePathCmd.Parameters.AddWithValue("@FilePath", filePath);
+        updatePathCmd.Parameters.AddWithValue("@RecordingId", request.RecordingId);
+
+        try
+        {
+            updatePathCmd.ExecuteNonQuery();
+            return recPartId;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception caught while adding recording part: {ex.Message}", LogLevel.Error);
+            return -1;
+        }
     }
 }

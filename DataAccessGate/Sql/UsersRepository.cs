@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Microsoft.AspNetCore.Mvc;
+
 using Models.Requests;
 using Npgsql;
 using Shared.Logging;
@@ -48,8 +48,9 @@ internal class UsersRepository : RepositoryBase
             $"SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
         
         command.Parameters.AddWithValue("@Email", email);
-
-        return command.ExecuteReader().HasRows;
+        
+        using var reader = command.ExecuteReader();
+        return reader.HasRows;
     }
     
     /// <returns>An id of user with provided email if exists, otherwise -1</returns>

@@ -96,7 +96,7 @@ public class RecordingsController : ControllerBase
 
             if (!response.IsSuccessStatusCode)
             {
-                Logger.Log($"Recording part upload failed with status {response.StatusCode.ToString()}",
+                Logger.Log($"Recording part upload failed with status '{response.StatusCode.ToString()}'",
                     LogLevel.Warning);
                 return StatusCode((int)response.StatusCode);
             }
