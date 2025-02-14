@@ -31,7 +31,7 @@ public class UsersController : ControllerBase
     {
         _configuration = configuration;
     }
-
+    
     [HttpPost("/users/authorize-user")]
     public IActionResult AuthorizeUser(LoginRequest request)
     { 

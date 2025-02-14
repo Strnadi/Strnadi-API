@@ -60,7 +60,7 @@ public class AuthController : ControllerBase
 
             if (!response.IsSuccessStatusCode)
             {
-                Logger.Log($"Authorization of user '{request.Email} failed with status code {(int)response.StatusCode}'");
+                Logger.Log($"Authorization of user '{request.Email}' failed with status '{response.StatusCode}'");
                 return StatusCode((int)response.StatusCode);
             }
             
@@ -90,7 +90,7 @@ public class AuthController : ControllerBase
             
             if (!response.IsSuccessStatusCode)
             {
-                Logger.Log($"Registration of user '{request.Email}' failed with status code {response.StatusCode}", LogLevel.Warning);
+                Logger.Log($"Registration of user '{request.Email}' failed with status '{response.StatusCode}'", LogLevel.Warning);
                 return StatusCode((int)response.StatusCode);
             }
 

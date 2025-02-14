@@ -52,10 +52,12 @@ public class RecordingsController : ControllerBase
 
         if (recId != -1)
         {
+            Logger.Log($"Recording '{recId}' was uploaded successfully");
             return Ok(recId);
         }
         else
         {
+            Logger.Log($"Recording '{recId} uploading failed");
             return Conflict();
         }
     }
@@ -66,6 +68,15 @@ public class RecordingsController : ControllerBase
         using var repository = new RecordingsRepository(_connectionString);
         int recPartId = repository.AddRecordingPart(request);
 
-        throw new NotImplementedException();
+        if (recPartId != -1)
+        {
+            Logger.Log($"Recording part '{recPartId}' was uploaded successfully");
+            return Ok();
+        }
+        else
+        {
+            Logger.Log($"Recording part '{recPartId} uploading failed");
+            return Conflict();
+        }
     }
 }
