@@ -57,7 +57,7 @@ public class RecordingsController : ControllerBase
         }
         else
         {
-            Logger.Log($"Recording '{recId} uploading failed");
+            Logger.Log($"Recording upload failed");
             return Conflict();
         }
     }

@@ -34,7 +34,7 @@ internal class RecordingsRepository : RepositoryBase
         using var command = (NpgsqlCommand)_connection.CreateCommand();
 
         command.CommandText =
-            "INSERT INTO \"Recordings\"(\"UserId\", \"CreatedAt\", \"EstimatedBirdsCount\", \"State\", \"Device\", \"ByApp\", \"Note\")" +
+            "INSERT INTO \"Recordings\"(\"UserId\", \"CreatedAt\", \"EstimatedBirdsCount\", \"Device\", \"ByApp\", \"Note\")" +
             "VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note) RETURNING \"Id\"";
 
         command.Parameters.AddWithValue("@UserId", userId.ToString());
