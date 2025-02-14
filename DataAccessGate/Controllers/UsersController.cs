@@ -39,7 +39,7 @@ public class UsersController : ControllerBase
         bool authorized = repository.AuthorizeUser(request.Email, request.Password);
         
         return authorized ?
-            Accepted() :
+            Ok() :
             Unauthorized();
     }
 

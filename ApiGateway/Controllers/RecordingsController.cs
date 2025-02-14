@@ -46,7 +46,7 @@ public class RecordingsController : ControllerBase
         _jwtService = new JwtService(config);
     }
     
-    [HttpPost("recordings/upload")]
+    [HttpPost("upload")]
     public async Task<IActionResult> Upload([FromBody] RecordingUploadReq request)
     {
         if (!_jwtService.TryValidateToken(request.Jwt, out string? email))
@@ -79,9 +79,34 @@ public class RecordingsController : ControllerBase
         }
     }
 
-    [HttpPost("recordings/upload-part")]
-    public async Task<IActionResult> UploadPart([FromBody] RecordingUploadReq request)
+    [HttpPost("upload-part")]
+    public async Task<IActionResult> UploadPart([FromBody] RecordingPartUploadReq request)
     {
-        throw new NotImplementedException();
+        if (!_jwtService.TryValidateToken(request.Jwt, out string? email)) 
+            return Unauthorized();
+
+        var json = JsonSerializer.Serialize(request);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRecPart_endpoint}";
+
+        try
+        {
+            var response = await _httpClient.PostAsync(dagUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.Log($"Recording part upload failed with status {response.StatusCode.ToString()}",
+                    LogLevel.Warning);
+                return StatusCode((int)response.StatusCode);
+            }
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception caught while redirecting recording part uploading request to DAG: {ex.Message}", LogLevel.Error);
+            return StatusCode(500, ex.Message);
+        }
     }
 }

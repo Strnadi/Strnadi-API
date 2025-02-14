@@ -24,7 +24,7 @@ using LogLevel = Shared.Logging.LogLevel;
 namespace ApiGateway.Controllers;
 
 [ApiController]
-[Route("/auth")]
+[Route("auth/")]
 public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
@@ -67,11 +67,11 @@ public class AuthController : ControllerBase
             string jwt = _jwtService.GenerateToken(request.Email);
             
             Logger.Log($"User '{request.Email}' logged in successfully");
-            return Accepted(jwt);
+            return Ok(jwt);
         }
         catch (Exception ex)
         {
-            Logger.Log($"Exception catched while communicating with DAG module: {ex.Message}", LogLevel.Error);
+            Logger.Log($"Exception caught while communicating with DAG module: {ex.Message}", LogLevel.Error);
             return StatusCode(500, ex.Message);
         }
     }
@@ -90,28 +90,25 @@ public class AuthController : ControllerBase
             
             if (!response.IsSuccessStatusCode)
             {
-                Logger.Log($"Registration of user '{request.Email}' failed with status code {response.StatusCode}");
+                Logger.Log($"Registration of user '{request.Email}' failed with status code {response.StatusCode}", LogLevel.Warning);
                 return StatusCode((int)response.StatusCode);
             }
 
             string jwt = _jwtService.GenerateToken(request.Email);
             Logger.Log($"User '{request.Email}' registered successfully");
             
-            SendVerificationMessageAsynchronously(HttpContext, ControllerContext, request.Email, jwt);
-            
-            return Accepted(jwt);
+            SendVerificationMessageAsynchronously(request.Email, jwt);
+
+            return Ok(jwt);
         }
         catch (Exception ex)
         {
-            Logger.Log($"Exception caught while redirecting request to DAG: {ex.Message}", LogLevel.Error);
+            Logger.Log($"Exception caught while redirecting recording uploading request to DAG: {ex.Message}", LogLevel.Error);
             return StatusCode(500, ex.Message);
         }
     }
     
-    private void SendVerificationMessageAsynchronously(HttpContext httpContext,
-        ControllerContext controllerContext,
-        string emailAddress,
-        string jwt)
+    private void SendVerificationMessageAsynchronously(string emailAddress, string jwt)
     {
         var emailSender = new EmailSender(_configuration);
         Task.Run(() =>
