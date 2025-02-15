@@ -14,6 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Models.Database;
 using Models.Requests;
 using Npgsql;
 using Shared.Logging;
@@ -67,6 +68,35 @@ internal class UsersRepository : RepositoryBase
         command.Parameters.AddWithValue("@Email", email);
 
         return (int)command.ExecuteScalar()!;
+    }
+
+    public User? GetUser(string email)
+    {
+        using var command = (NpgsqlCommand)_connection.CreateCommand();
+        
+        command.CommandText =
+            $"SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
+        
+        command.Parameters.AddWithValue("@Email", email);
+        
+        using var reader = command.ExecuteReader();
+
+        if (!reader.HasRows)
+            return null;
+        
+        return new User
+        {
+            Id = reader.GetInt32(0),
+            Nickname = reader.GetString(1),
+            Email = email,
+            Password = reader.GetString(3),
+            FirstName = reader.GetString(4),
+            LastName = reader.GetString(5),
+            CreationDate = reader.GetDateTime(6),
+            IsEmailVerified = reader.GetBoolean(7),
+            Consent = reader.GetBoolean(8),
+            Role = reader.GetString(9),
+        };
     }
     
     public bool AddUser(SignUpRequest request)

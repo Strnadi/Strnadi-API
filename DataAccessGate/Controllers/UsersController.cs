@@ -15,6 +15,7 @@
  */
 using DataAccessGate.Sql;
 using Microsoft.AspNetCore.Mvc;
+using Models.Database;
 using Models.Requests;
 using Shared.Logging;
 using LoginRequest = Microsoft.AspNetCore.Identity.Data.LoginRequest;
@@ -72,5 +73,17 @@ public class UsersController : ControllerBase
         {
             return StatusCode(500);
         }
+    }
+
+    [HttpGet("users")]
+    public IActionResult Get([FromQuery] string email)
+    {
+        using var repository = new UsersRepository(_connectionString);
+        
+        User? user = repository.GetUser(email);
+        
+        return user is not null ? 
+            Ok(user) : 
+            NotFound();
     }
 }
