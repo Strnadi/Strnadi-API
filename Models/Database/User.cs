@@ -20,8 +20,6 @@ namespace Models.Database;
 public class User
 {
     public int Id { get; set; }
-    
-    public UserRole Role { get; set; }
 
     public string? Nickname { get; set; }
 
@@ -38,4 +36,6 @@ public class User
     public bool? IsEmailVerified { get; set; }
 
     public bool? Consent { get; set; }
+    
+    public string? Role { get; set; }
 }
