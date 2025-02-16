@@ -61,7 +61,12 @@ public class RecordingsController : ControllerBase
         var response = await _dagClient.DownloadAsync(id, sound);
 
         if (response.Model is null)
-            return StatusCode((int)response.Message.StatusCode, await response.Message.Content.ReadAsStringAsync());
+        {
+            int statusCode = (int)response.Message.StatusCode;
+            string? content = response.Message.Content?.ReadAsStringAsync().Result;
+
+            return StatusCode(statusCode, content);
+        }
 
         return Ok(response.Model);
     }
