@@ -17,7 +17,6 @@ using System.Text;
 using System.Text.Json;
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
-using Models.Database;
 using Models.Requests;
 using Shared.Logging;
 using Shared.Routing;
