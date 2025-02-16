@@ -36,12 +36,12 @@ public class RecordingsController : ControllerBase
 
     private readonly DagClient _dagClient;
     
-    public RecordingsController(IConfiguration config, JwtService jwtService, DagClient dagClient)
+    public RecordingsController(IConfiguration config, JwtService jwtService)
     {
         _httpClient = new HttpClient();
         _configuration = config;
         _jwtService = jwtService;
-        _dagClient = dagClient;
+        _dagClient = new DagClient(config);
     }
     
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");

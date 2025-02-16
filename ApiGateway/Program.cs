@@ -22,7 +22,6 @@ var configuration = builder.Configuration;
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<ServiceClient, DagClient>();
 builder.Services.AddCors(corsOptions =>
 {
     corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
