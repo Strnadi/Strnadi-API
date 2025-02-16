@@ -44,7 +44,7 @@ public class RecordingsController : ControllerBase
         RecordingModel? recording = repository.GetRecording(id, sound);
 
         if (recording == null)
-            return NotFound();
+            return NotFound(null);
 
         return Ok(recording);
     }
