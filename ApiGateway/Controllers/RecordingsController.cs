@@ -17,8 +17,10 @@ using System.Text;
 using System.Text.Json;
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
+using Models.Database;
 using Models.Requests;
 using Shared.Logging;
+using Shared.Routing;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace ApiGateway.Controllers;
@@ -31,25 +33,38 @@ public class RecordingsController : ControllerBase
 
     private readonly HttpClient _httpClient;
     
-    private readonly IJwtService _jwtService;
+    private readonly JwtService _jwtService;
+
+    private readonly DagClient _dagClient;
+    
+    public RecordingsController(IConfiguration config, JwtService jwtService, DagClient dagClient)
+    {
+        _httpClient = new HttpClient();
+        _configuration = config;
+        _jwtService = jwtService;
+        _dagClient = dagClient;
+    }
     
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
-    private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
-
-    private const string dag_uploadRec_endpoint = "recordings/upload";
-    private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
     
-    public RecordingsController(IConfiguration config)
-    {
-        _configuration = config;
-        _httpClient = new HttpClient();
-        _jwtService = new JwtService(config);
-    }
+    private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
+    
+    private const string dag_uploadRec_endpoint = "recordings/upload";
+    
+    private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
 
-    [HttpGet]
-    public IActionResult Get([FromQuery] string jwt)
+    [HttpGet("download")]
+    public async Task<IActionResult> Download([FromQuery] int id, [FromQuery] string jwt, [FromQuery] bool sound = false)
     {
-        throw new NotImplementedException();
+        if (_jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        var response = await _dagClient.DownloadAsync(id, sound);
+
+        if (response.Model is null)
+            return StatusCode((int)response.Message.StatusCode, await response.Message.Content.ReadAsStringAsync());
+
+        return Ok(response.Model);
     }
     
     [HttpPost("upload")]

@@ -13,18 +13,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+namespace Models.Database;
 
-namespace Shared.Services;
-
-public static class EncodingHelper
+public class RecordingModel
 {
-    public static byte[] DecodeFromBase64(string encoded)
-    {
-        return Convert.FromBase64String(encoded);
-    }
+    public int Id { get; set; }
+    
+    public int UserId { get; set; }
+    
+    public DateTime CreatedAt { get; set; }
+    
+    public short EstimatedBirdsCount { get; set; }
+    
+    public string Device { get; set; }
 
-    public static string EncodeToBase64(byte[] binary)
-    {
-        return Convert.ToBase64String(binary);
-    }
+    public bool ByApp { get; set; }
+
+    public string? Note { get; set; }
+
+    public string? NotePost { get; set; }
+    
+    public IEnumerable<RecordingPartModel>? Parts { get; set; }
 }

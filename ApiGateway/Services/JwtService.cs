@@ -22,14 +22,7 @@ using LogLevel = Shared.Logging.LogLevel;
 
 namespace ApiGateway.Services;
 
-internal interface IJwtService
-{
-    string GenerateToken(string subject);
-
-    bool TryValidateToken(string token, out string? email);
-} 
-
-internal class JwtService : IJwtService
+public class JwtService
 {
     private IConfiguration _configuration;
     

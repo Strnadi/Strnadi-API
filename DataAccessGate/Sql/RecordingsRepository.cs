@@ -16,6 +16,7 @@
 
 using Dapper;
 using DataAccessGate.Services;
+using Models.Database;
 using Models.Requests;
 using Npgsql;
 using Shared.Logging;
@@ -86,7 +87,7 @@ internal class RecordingsRepository : RepositoryBase
             int recPartId = _connection.ExecuteScalar<int>(insertSql, insertParameters);
 
             byte[] binary = EncodingHelper.DecodeFromBase64(request.Data);
-            string filePath = fs.SaveRecordingSoundFile(request.RecordingId, recPartId, binary);
+            string filePath = fs.SaveRecordingFile(request.RecordingId, recPartId, binary);
 
             const string updatePathSql = "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"Id\" = @Id";
             var updatePathParameters = new { FilePath = filePath, Id = recPartId };
@@ -99,5 +100,31 @@ internal class RecordingsRepository : RepositoryBase
             Logger.Log($"Exception caught while adding recording part: {ex.Message}", LogLevel.Error);
             return -1;
         }
+    }
+
+    public RecordingModel? GetRecording(int id, bool sound)
+    {
+        string getRecSql = "SELECT * FROM \"Recordings\" WHERE \"Id\" = @Id";
+        var recording = _connection.QueryFirstOrDefault<RecordingModel>(getRecSql, new { Id = id });
+        
+        if (recording is null)
+            return null;
+        
+        string getPartSql = "SELECT * FROM \"RecordingParts\" WHERE \"RecordingId\" = @RecordingId";
+        recording.Parts = _connection.Query<RecordingPartModel>(getPartSql, new { RecordingId = recording.Id });
+
+        if (sound)
+        {
+            var fsHelper = new FileSystemHelper();
+            
+            foreach (var recordingPart in recording.Parts)
+            {
+                byte[] binary = fsHelper.ReadRecordingFile(recording.Id, recordingPart.Id);
+                string encoded = EncodingHelper.EncodeToBase64(binary);
+                recordingPart.DataBase64 = encoded;
+            }
+        }
+        
+        return recording;
     }
 }

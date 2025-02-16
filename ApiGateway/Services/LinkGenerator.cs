@@ -21,13 +21,16 @@ namespace ApiGateway.Services;
 
 public class LinkGenerator
 {
-    public string GenerateLink(string jwt, HttpContext httpContext, ControllerContext controllerContext)
+    private readonly IConfiguration _configuration;
+
+    public LinkGenerator(IConfiguration configuration)
     {
-        string scheme = httpContext.Request.Scheme;
-        string host = httpContext.Request.Host.ToUriComponent();
-        string route = controllerContext.ActionDescriptor.AttributeRouteInfo!.Template!;
-        
-        string link = $"{scheme}://{host}{route}/verify/?jwt={jwt}";
+        _configuration = configuration;
+    }
+
+    public string GenerateLink(HttpContext context, string jwt)
+    {
+        string link = $"{context.Request.Scheme}://{context.Request.Host}/verify?jwt={jwt}";
         Logger.Log($"Generated link for email sending: {link}");
 
         return link;

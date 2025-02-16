@@ -14,12 +14,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using ApiGateway.Services;
+using Shared.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<ServiceClient, DagClient>();
 builder.Services.AddCors(corsOptions =>
 {
     corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>

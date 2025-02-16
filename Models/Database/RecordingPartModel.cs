@@ -13,29 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Models.Database.Enums;
-
 namespace Models.Database;
 
-public class User
+public class RecordingPartModel
 {
     public int Id { get; set; }
-
-    public string? Nickname { get; set; }
-
-    public string Email { get; set; }
     
-    public string? Password { get; set; }
+    public int RecordingId { get; set; }
+ 
+    public DateTime Start { get; set; }
     
-    public string FirstName { get; set; } 
-
-    public string LastName { get; set; }
-
-    public DateTime CreationDate { get; set; } 
-
-    public bool? IsEmailVerified { get; set; }
-
-    public bool? Consent { get; set; }
+    public DateTime End { get; set; }
     
-    public string? Role { get; set; }
+    public decimal GpsLatitudeStart { get; set; }
+    
+    public decimal GpsLatitudeEnd { get; set; }
+    
+    public decimal GpsLongitudeStart { get; set; }
+    
+    public decimal GpsLongitudeEnd { get; set; }
+
+    public string? Square { get; set; }
+
+    public string? FilePath { get; set; }
+
+    public string? DataBase64 { get; set; }
 }
