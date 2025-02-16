@@ -30,7 +30,7 @@ public class DagClient : ServiceClient
     
     private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
     
-    public DagClient(IConfiguration configuration, HttpClient httpClient) : base(httpClient)
+    public DagClient(IConfiguration configuration)
     {
         _configuration = configuration;
     }

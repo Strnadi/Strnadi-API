@@ -24,9 +24,9 @@ public abstract class ServiceClient
 {
     protected HttpClient HttpClient { get; private set; }
 
-    protected ServiceClient(HttpClient httpClient)
+    protected ServiceClient()
     {
-        HttpClient = httpClient;
+        HttpClient = new HttpClient();
     }
 
     protected async Task<HttpResponseMessage?> GetAsync(string route)
