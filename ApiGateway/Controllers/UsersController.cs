@@ -34,13 +34,11 @@ public class UsersController : ControllerBase
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
-        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_get_endpoint}";
-        
-        var content = new StringContent(email!, Encoding.UTF8, "text/plain");
+        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_get_endpoint}?email={email}";
 
         try
         {
-            var response = await _httpClient.PostAsync(dagUrl, content);
+            var response = await _httpClient.GetAsync(dagUrl);
             return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
         }
         catch (Exception ex)

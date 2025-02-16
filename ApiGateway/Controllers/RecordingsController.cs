@@ -45,6 +45,12 @@ public class RecordingsController : ControllerBase
         _httpClient = new HttpClient();
         _jwtService = new JwtService(config);
     }
+
+    [HttpGet]
+    public IActionResult Get([FromQuery] string jwt)
+    {
+        throw new NotImplementedException();
+    }
     
     [HttpPost("upload")]
     public async Task<IActionResult> Upload([FromBody] RecordingUploadReq request)
