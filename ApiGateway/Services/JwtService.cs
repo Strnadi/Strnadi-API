@@ -41,7 +41,7 @@ public class JwtService
 
     private readonly SecurityKey _securityKey;
     
-    internal JwtService(IConfiguration configuration)
+    public JwtService(IConfiguration configuration)
     {
         _configuration = configuration;
         _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
