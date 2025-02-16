@@ -75,8 +75,8 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet]
-    public IActionResult Get([FromQuery] string email)
+    [HttpGet("{email}")]
+    public IActionResult Get(string email)
     {
         using var repository = new UsersRepository(_connectionString);
         
