@@ -36,11 +36,11 @@ public class UsersController : ControllerBase
     
     private const string dag_get_endpoint = "users";
     
-    public UsersController(IConfiguration config)
+    public UsersController(IConfiguration config, JwtService jwtService)
     {
         _configuration = config;
+        _jwtService = jwtService;
         _httpClient = new HttpClient();
-        _jwtService = new JwtService(config);
     }
 
     [HttpGet]
