@@ -73,9 +73,11 @@ internal class UsersRepository : RepositoryBase
     public User? GetUser(string email)
     {
         using var command = (NpgsqlCommand)_connection.CreateCommand();
+
+        Console.WriteLine(email);
         
         command.CommandText =
-            $"SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
+            "SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
         
         command.Parameters.AddWithValue("@Email", email);
         
@@ -83,6 +85,8 @@ internal class UsersRepository : RepositoryBase
 
         if (!reader.HasRows)
             return null;
+
+        reader.Read();
         
         return new User
         {
