@@ -45,12 +45,13 @@ public abstract class ServiceClient
 
     protected async Task<(TResponse? Response, HttpResponseMessage Message)> GetAsync<TResponse>(string route)
     {
-        var response = await HttpClient.GetAsync(route);
-        if (!response.IsSuccessStatusCode)
-            return default;
-
         try
         {
+            var response = await HttpClient.GetAsync(route);
+
+            if (!response.IsSuccessStatusCode)
+                return (default, response);
+            
             var content = await response.Content.ReadAsStringAsync();
             return (JsonSerializer.Deserialize<TResponse>(content), response);
         }
@@ -88,7 +89,7 @@ public abstract class ServiceClient
             var response = await HttpClient.PostAsync(route, content);
 
             if (!response.IsSuccessStatusCode)
-                return default;
+                return (default, response);
 
             var responseContent = await response.Content.ReadAsStringAsync();
             return (JsonSerializer.Deserialize<TResponse>(responseContent), response);
