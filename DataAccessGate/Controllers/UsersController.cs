@@ -80,7 +80,7 @@ public class UsersController : ControllerBase
     {
         using var repository = new UsersRepository(_connectionString);
         
-        User? user = repository.GetUser(email);
+        UserModel? user = repository.GetUser(email);
         
         return user is not null ? 
             Ok(user) : 

@@ -14,8 +14,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using DataAccessGate.Sql;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Models.Database;
 using Models.Requests;
 using Shared.Logging;
 
@@ -34,6 +34,19 @@ public class RecordingsController : ControllerBase
     public RecordingsController(IConfiguration configuration)
     {
         _configuration = configuration;
+    }
+
+    [HttpGet("download")]
+    public IActionResult Download([FromQuery] int id, [FromQuery] bool sound)
+    {
+        using var repository = new RecordingsRepository(_connectionString);
+
+        RecordingModel? recording = repository.GetRecording(id, sound);
+
+        if (recording == null)
+            return NotFound();
+
+        return Ok(recording);
     }
     
     [HttpPost("upload")]

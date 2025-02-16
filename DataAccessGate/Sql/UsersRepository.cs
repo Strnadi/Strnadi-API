@@ -55,11 +55,11 @@ internal class UsersRepository : RepositoryBase
         return _connection.ExecuteScalar<int>(sql, new { Email = email });
     }
 
-    public User? GetUser(string email)
+    public UserModel? GetUser(string email)
     {
         const string sql = "SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
         
-        var user = _connection.QueryFirstOrDefault<User>(sql, new { Email = email });
+        var user = _connection.QueryFirstOrDefault<UserModel>(sql, new { Email = email });
         
         return user;
     }

@@ -13,18 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+using Models.Database.Enums;
 
-namespace Shared.Services;
+namespace Models.Database;
 
-public static class EncodingHelper
+public class UserModel
 {
-    public static byte[] DecodeFromBase64(string encoded)
-    {
-        return Convert.FromBase64String(encoded);
-    }
+    public int Id { get; set; }
 
-    public static string EncodeToBase64(byte[] binary)
-    {
-        return Convert.ToBase64String(binary);
-    }
+    public string? Nickname { get; set; }
+
+    public string Email { get; set; }
+    
+    public string? Password { get; set; }
+    
+    public string FirstName { get; set; } 
+
+    public string LastName { get; set; }
+
+    public DateTime CreationDate { get; set; } 
+
+    public bool? IsEmailVerified { get; set; }
+
+    public bool? Consent { get; set; }
+    
+    public string? Role { get; set; }
 }

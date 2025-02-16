@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
 
     private readonly HttpClient _httpClient;
     
-    private readonly IJwtService _jwtService;
+    private readonly JwtService _jwtService;
     
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
     private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
@@ -39,12 +39,12 @@ public class AuthController : ControllerBase
     private const string dag_login_endpoint = "users/authorize-user";
     private const string dag_signup_endpoint = "users/sign-up";
     private const string dag_verify_endpoint = "users/verify";
-    
-    public AuthController(IConfiguration config)
+
+    public AuthController(IConfiguration config, JwtService jwtService)
     {
         _configuration = config;
         _httpClient = new HttpClient();
-        _jwtService = new JwtService(config);
+        _jwtService = jwtService;
     }
     
     [HttpPost("/auth/login")]
@@ -141,6 +141,6 @@ public class AuthController : ControllerBase
     {
         var emailSender = new EmailSender(_configuration);
         Task.Run(() =>
-            emailSender.SendVerificationMessage(HttpContext, ControllerContext, emailAddress, jwt));
+            emailSender.SendVerificationMessage(emailAddress, jwt, HttpContext));
     }
 } 

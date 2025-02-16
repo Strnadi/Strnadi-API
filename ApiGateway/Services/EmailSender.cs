@@ -75,9 +75,9 @@ public class EmailSender : IEmailSender
         }
     }
     
-    public void SendVerificationMessage(HttpContext httpContext, ControllerContext controllerContext, string emailAddress, string jwt)
+    public void SendVerificationMessage(string emailAddress, string jwt, HttpContext httpContext)
     {
-        string link = new LinkGenerator().GenerateLink(jwt, httpContext, controllerContext);
+        string link = new LinkGenerator(_configuration).GenerateLink(httpContext, jwt);
         
         SendMessage(
             emailAddress,

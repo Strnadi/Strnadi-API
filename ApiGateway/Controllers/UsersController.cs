@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2024 Stanislav Motsnyi
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 using System.Text;
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +29,7 @@ public class UsersController : ControllerBase
 
     private readonly HttpClient _httpClient;
     
-    private readonly IJwtService _jwtService;
+    private readonly JwtService _jwtService;
     
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
     private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
@@ -28,8 +43,8 @@ public class UsersController : ControllerBase
         _jwtService = new JwtService(config);
     }
 
-    [HttpGet("{jwt}")]
-    public async Task<IActionResult> Get(string jwt)
+    [HttpGet]
+    public async Task<IActionResult> Get([FromQuery] string jwt)
     {
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
