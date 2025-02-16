@@ -55,7 +55,7 @@ public class RecordingsController : ControllerBase
     [HttpGet("download")]
     public async Task<IActionResult> Download([FromQuery] int id, [FromQuery] string jwt, [FromQuery] bool sound = false)
     {
-        if (_jwtService.TryValidateToken(jwt, out string? email))
+        if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
         var response = await _dagClient.DownloadAsync(id, sound);
