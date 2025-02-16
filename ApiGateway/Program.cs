@@ -19,11 +19,9 @@ using Shared.Routing;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
-builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<ServiceClient, DagClient>();
 builder.Services.AddCors(corsOptions =>
 {
     corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
@@ -34,6 +32,7 @@ builder.Services.AddCors(corsOptions =>
             .AllowAnyHeader();
     });
 });
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
