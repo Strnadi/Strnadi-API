@@ -14,6 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Dapper;
 using DataAccessGate.Services;
 using Models.Requests;
 using Npgsql;
@@ -31,22 +32,24 @@ internal class RecordingsRepository : RepositoryBase
     
     public int AddRecording(int userId, RecordingUploadReqInternal request)
     {
-        using var command = (NpgsqlCommand)_connection.CreateCommand();
-
-        command.CommandText =
-            "INSERT INTO \"Recordings\"(\"UserId\", \"CreatedAt\", \"EstimatedBirdsCount\", \"Device\", \"ByApp\", \"Note\")" +
-            "VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note) RETURNING \"Id\"";
-
-        command.Parameters.AddWithValue("@UserId", userId);
-        command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
-        command.Parameters.AddWithValue("@EstimatedBirdsCount", request.EstimatedBirdsCount);
-        command.Parameters.AddWithValue("@Device", request.Device);
-        command.Parameters.AddWithValue("@ByApp", request.ByApp);
-        command.Parameters.AddWithValue("@Note", request.Note ?? (object)DBNull.Value);
-
+        const string sql = """
+                           INSERT INTO "Recordings"("UserId", "CreatedAt", "EstimatedBirdsCount", "Device", "ByApp", "Note") 
+                           VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note) 
+                           RETURNING "Id"
+                           """;
         try
         {
-            return (int)command.ExecuteScalar()!;
+            var parameters = new
+            {
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                EstimatedBirdsCount = request.EstimatedBirdsCount,
+                Device = request.Device,
+                ByApp = request.ByApp,
+                Note = request.Note ?? (object)DBNull.Value
+            };
+
+            return _connection.ExecuteScalar<int>(sql, parameters);
         }
         catch (Exception ex)
         {
@@ -59,45 +62,36 @@ internal class RecordingsRepository : RepositoryBase
     {
         var fs = new FileSystemHelper();
 
-        using var insertCmd = (NpgsqlCommand)_connection.CreateCommand();
+        const string insertSql = """
 
-        insertCmd.CommandText =
-            $"INSERT INTO \"RecordingParts\"(\"RecordingId\", \"Start\", \"End\", \"GpsLatitudeStart\", \"GpsLongitudeStart\", \"GpsLatitudeEnd\", \"GpsLongitudeEnd\")" +
-            $"VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd) RETURNING \"Id\"";
+                                 INSERT INTO "RecordingParts"(
+                                     "RecordingId", "Start", "End", "GpsLatitudeStart", "GpsLongitudeStart", "GpsLatitudeEnd", "GpsLongitudeEnd") 
+                                 VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd) 
+                                 RETURNING "Id"
+                                 """;
 
-        insertCmd.Parameters.AddWithValue("@RecordingId", request.RecordingId);
-        insertCmd.Parameters.AddWithValue("@Start", request.Start);
-        insertCmd.Parameters.AddWithValue("@End", request.End);
-        insertCmd.Parameters.AddWithValue("@GpsLatitudeStart", request.LatitudeStart);
-        insertCmd.Parameters.AddWithValue("@GpsLongitudeStart", request.LongitudeStart);
-        insertCmd.Parameters.AddWithValue("@GpsLatitudeEnd", request.LatitudeEnd);
-        insertCmd.Parameters.AddWithValue("@GpsLongitudeEnd", request.LongitudeEnd);
-
-        int recPartId;
-        try
+        var insertParameters = new
         {
-            recPartId = (int)insertCmd.ExecuteScalar()!;
-        }
-        catch (NpgsqlException ex)
-        {
-            Logger.Log($"Exception caught while adding recording part: {ex.Message}", LogLevel.Error);
-            return -1;
-        }
-
-        byte[] binary = EncodingHelper.DecodeFromBase64(request.Data);
-        string filePath = fs.SaveRecordingSoundFile(request.RecordingId, recPartId, binary);
-
-        using var updatePathCmd = (NpgsqlCommand)_connection.CreateCommand();
-
-        updatePathCmd.CommandText =
-            "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"Id\" = @Id";
-
-        updatePathCmd.Parameters.AddWithValue("@FilePath", filePath);
-        updatePathCmd.Parameters.AddWithValue("@Id", recPartId);
+            RecordingId = request.RecordingId,
+            Start = request.Start,
+            End = request.End,
+            GpsLatitudeStart = request.LatitudeStart,
+            GpsLongitudeStart = request.LongitudeStart,
+            GpsLatitudeEnd = request.LatitudeEnd,
+            GpsLongitudeEnd = request.LongitudeEnd
+        };
 
         try
         {
-            updatePathCmd.ExecuteNonQuery();
+            int recPartId = _connection.ExecuteScalar<int>(insertSql, insertParameters);
+
+            byte[] binary = EncodingHelper.DecodeFromBase64(request.Data);
+            string filePath = fs.SaveRecordingSoundFile(request.RecordingId, recPartId, binary);
+
+            const string updatePathSql = "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"Id\" = @Id";
+            var updatePathParameters = new { FilePath = filePath, Id = recPartId };
+
+            _connection.Execute(updatePathSql, updatePathParameters);
             return recPartId;
         }
         catch (Exception ex)

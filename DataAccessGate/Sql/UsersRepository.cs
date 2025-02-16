@@ -14,6 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Dapper;
 using Models.Database;
 using Models.Requests;
 using Npgsql;
@@ -29,100 +30,61 @@ internal class UsersRepository : RepositoryBase
 
     public bool AuthorizeUser(string email, string password)
     {
-        using var command = (NpgsqlCommand)_connection.CreateCommand();
+        const string sql = "SELECT 1 FROM \"Users\" WHERE \"Email\" = @Email AND \"Password\" = @Password";
 
-        command.CommandText =
-            $"SELECT * FROM \"Users\" WHERE \"Email\" = @Email AND \"Password\" = @Password";
-        
-        command.Parameters.AddWithValue("@Email", email);
-        command.Parameters.AddWithValue("@Password", password);
+        int rowsCount = _connection.QueryFirstOrDefault<int>(sql, new { Email = email, Password = password });
 
-        using var reader = command.ExecuteReader();
-        return reader.HasRows;
+        return rowsCount != 0;
     }
 
     public bool ExistsUser(string email)
     {
-        using var command = (NpgsqlCommand)_connection.CreateCommand();
-        
-        command.CommandText =
-            $"SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
-        
-        command.Parameters.AddWithValue("@Email", email);
-        
-        using var reader = command.ExecuteReader();
-        return reader.HasRows;
+        const string sql = "SELECT 1 FROM \"Users\" WHERE \"Email\" = @Email";
+
+        return _connection.ExecuteScalar<int?>(sql, new { Email = email }) != null;
     }
-    
+
     /// <returns>An id of user with provided email if exists, otherwise -1</returns>
     public int GetUserId(string email)
     {
         if (!ExistsUser(email))
             return -1;
-        
-        using var command = (NpgsqlCommand)_connection.CreateCommand();
-        
-        command.CommandText =
-            "SELECT \"Id\" FROM \"Users\" WHERE \"Email\" = @Email";
-        
-        command.Parameters.AddWithValue("@Email", email);
 
-        return (int)command.ExecuteScalar()!;
+        const string sql = "SELECT \"Id\" FROM \"Users\" WHERE \"Email\" = @Email";
+        
+        return _connection.ExecuteScalar<int>(sql, new { Email = email });
     }
 
     public User? GetUser(string email)
     {
-        using var command = (NpgsqlCommand)_connection.CreateCommand();
-
-        Console.WriteLine(email);
+        const string sql = "SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
         
-        command.CommandText =
-            "SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
+        var user = _connection.QueryFirstOrDefault<User>(sql, new { Email = email });
         
-        command.Parameters.AddWithValue("@Email", email);
-        
-        using var reader = command.ExecuteReader();
-
-        if (!reader.HasRows)
-            return null;
-
-        reader.Read();
-        
-        return new User
-        {
-            Id = reader.GetValue<int>("Id"),
-            Nickname = reader.GetValue<string>("Nickname"),
-            Email = email,
-            Password = null,
-            FirstName = reader.GetValue<string>("FirstName")!,
-            LastName = reader.GetValue<string>("LastName")!,
-            CreationDate = reader.GetValue<DateTime>("CreationDate"),
-            IsEmailVerified = reader.GetValue<bool>("IsEmailVerified"),
-            Consent = reader.GetValue<bool>("Consent"),
-            Role = reader.GetValue<string>("Role")
-        };
+        return user;
     }
-    
+
     public bool AddUser(SignUpRequest request)
     {
-        using var command = (NpgsqlCommand)_connection.CreateCommand();
-        
-        command.CommandText = $"INSERT INTO \"Users\" (\"Nickname\", " +
-                              $"\"Email\", \"Password\", \"FirstName\", \"LastName\") " +
-                              $"VALUES (@Nickname, @Email, @Password, @FirstName, @LastName)";
-        
-        command.Parameters.AddWithValue("@Nickname", request.Nickname ?? (object) DBNull.Value);
-        command.Parameters.AddWithValue("@Email", request.Email);
-        command.Parameters.AddWithValue("@Password", request.Password);
-        command.Parameters.AddWithValue("@FirstName", request.FirstName);
-        command.Parameters.AddWithValue("@LastName", request.LastName);
+        const string sql = """
+                           INSERT INTO "Users" ("Nickname", "Email", "Password", "FirstName", "LastName") 
+                                               VALUES (@Nickname, @Email, @Password, @FirstName, @LastName)
+                           """;
 
         try
         {
-            command.ExecuteNonQuery();
-            return true;
+            var result = _connection.Execute(sql, new
+            {
+                request.Nickname,
+                request.Email,
+                request.Password,
+                request.FirstName,
+                request.LastName
+            });
+
+            return result > 0;
         }
-        catch (NpgsqlException ex) when (ex.SqlState == "23505")
+        catch (PostgresException ex) when (ex.SqlState == "23505")
         {
             Logger.Log($"Tried to register user with existing email '{request.Email}'");
             return false;
@@ -136,17 +98,12 @@ internal class UsersRepository : RepositoryBase
 
     public bool Verify(string email)
     {
-        using var command = (NpgsqlCommand)_connection.CreateCommand();
-
-        command.CommandText =
-            "UPDATE \"Users\" SET \"IsEmailVerified\" = @IsEmailVerified";
-        
-        command.Parameters.AddWithValue("@IsEmailVerified", true);
+        const string sql = "UPDATE \"Users\" SET \"IsEmailVerified\" = @IsEmailVerified WHERE \"Email\" = @Email";
 
         try
         {
-            command.ExecuteNonQuery();
-            return true;
+            var result = _connection.Execute(sql, new { IsEmailVerified = true, Email = email });
+            return result > 0;
         }
         catch (Exception ex)
         {
