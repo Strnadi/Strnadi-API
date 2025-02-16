@@ -90,16 +90,16 @@ internal class UsersRepository : RepositoryBase
         
         return new User
         {
-            Id = reader.GetValue<int>("\"Id\""),
-            Nickname = reader.GetValue<string>("\"Nickname\""),
+            Id = reader.GetValue<int>("Id"),
+            Nickname = reader.GetValue<string>("Nickname"),
             Email = email,
             Password = null,
-            FirstName = reader.GetValue<string>("\"FirstName\"")!,
-            LastName = reader.GetValue<string>("\"LastName\"")!,
-            CreationDate = reader.GetValue<DateTime>("\"CreationDate\""),
-            IsEmailVerified = reader.GetValue<bool>("\"IsEmailVerified\""),
-            Consent = reader.GetValue<bool>("\"Consent\""),
-            Role = reader.GetValue<string>("\"Role\"")
+            FirstName = reader.GetValue<string>("FirstName")!,
+            LastName = reader.GetValue<string>("LastName")!,
+            CreationDate = reader.GetValue<DateTime>("CreationDate"),
+            IsEmailVerified = reader.GetValue<bool>("IsEmailVerified"),
+            Consent = reader.GetValue<bool>("Consent"),
+            Role = reader.GetValue<string>("Role")
         };
     }
     
