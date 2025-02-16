@@ -19,7 +19,7 @@ public class UsersController : ControllerBase
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
     private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
     
-    private const string dag_get_endpoint = "users/get";
+    private const string dag_get_endpoint = "users";
     
     public UsersController(IConfiguration config)
     {
@@ -28,13 +28,13 @@ public class UsersController : ControllerBase
         _jwtService = new JwtService(config);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] string jwt)
+    [HttpGet("{jwt}")]
+    public async Task<IActionResult> Get(string jwt)
     {
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
-        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_get_endpoint}?email={email}";
+        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_get_endpoint}/{email}";
 
         try
         {
