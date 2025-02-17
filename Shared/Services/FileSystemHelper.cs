@@ -13,23 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace ApiGateway.Services;
+namespace Shared.Services;
 
 public class FileSystemHelper
 {
-    private readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}/recordings/";
+    private readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}recordings/";
     
     /// <returns>Path of the generated file</returns>
-    public string SaveRecordingSoundFile(int recordingId, int recordingPartId, byte[] data)
+    public string SaveRecordingFile(int recordingId, int recordingPartId, byte[] data)
     {
         CreateDirectoryIfNotExists(recordingId);
 
-        string path = _pathToRecordingsDirectory + $"{recordingId}_{recordingPartId}.wav";
+        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.mp3";
         File.WriteAllBytes(path, data);
 
         return path;
     }
-
+    
+    public byte[] ReadRecordingFile(int recordingId, int recordingPartId)
+    {
+        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.mp3";
+        return File.ReadAllBytes(path);
+    }
+    
     private void CreateDirectoryIfNotExists(int recordingId)
     {
         string path = _pathToRecordingsDirectory + recordingId;
