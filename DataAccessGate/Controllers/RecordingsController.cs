@@ -13,6 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using System.Text.Json;
 using DataAccessGate.Sql;
 using Microsoft.AspNetCore.Mvc;
 using Models.Database;
@@ -50,7 +52,7 @@ public class RecordingsController : ControllerBase
         }
 
         Logger.Log($"Recording {recording.Id} was sent to download.");
-        return Ok(recording);
+        return Ok(JsonSerializer.Serialize(recording));
     }
     
     [HttpPost("upload")]
