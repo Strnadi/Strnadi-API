@@ -52,7 +52,7 @@ public class RecordingsController : ControllerBase
         }
 
         Logger.Log($"Recording {recording.Id} was sent to download.");
-        return Ok(JsonSerializer.Serialize(recording));
+        return Ok(recording);
     }
     
     [HttpPost("upload")]
