@@ -19,8 +19,8 @@ using DataAccessGate.Sql;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
-builder.Services.AddScoped<RepositoryBase, RecordingsRepository>();
-builder.Services.AddScoped<RepositoryBase, UsersRepository>();
+builder.Services.AddScoped<RecordingsRepository>();
+builder.Services.AddScoped<UsersRepository>();
 builder.Services.AddControllers();
 builder.Services.AddCors(corsOptions =>
 {
