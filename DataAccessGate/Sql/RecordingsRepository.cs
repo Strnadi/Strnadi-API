@@ -15,7 +15,6 @@
  */
 
 using Dapper;
-using DataAccessGate.Services;
 using Models.Database;
 using Models.Requests;
 using Npgsql;
