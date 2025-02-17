@@ -42,10 +42,14 @@ public class RecordingsController : ControllerBase
         using var repository = new RecordingsRepository(_connectionString);
 
         RecordingModel? recording = repository.GetRecording(id, sound);
-
+        
         if (recording == null)
-            return NotFound(null);
+        {
+            Logger.Log($"Recording {id} not found for downloading.");
+            return NotFound();
+        }
 
+        Logger.Log($"Recording {recording.Id} was sent to download.");
         return Ok(recording);
     }
     
