@@ -63,8 +63,10 @@ public class RecordingsController : ControllerBase
         if (response.Model is null)
         {
             int statusCode = (int)response.Message.StatusCode;
-            string? content = response.Message.Content?.ReadAsStringAsync().Result;
-
+            string? content = response.Message.Content != null!
+                ? await response.Message.Content.ReadAsStringAsync() 
+                : null;
+            
             return StatusCode(statusCode, content);
         }
 
