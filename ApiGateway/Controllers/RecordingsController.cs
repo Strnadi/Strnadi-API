@@ -53,7 +53,7 @@ public class RecordingsController : ControllerBase
     private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
 
     [HttpGet]
-    public async Task<IActionResult> GetRecordings([FromQuery] string jwt)
+    public async Task<IActionResult> GetRecordingsOfUser([FromQuery] string jwt)
     {
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
@@ -65,7 +65,7 @@ public class RecordingsController : ControllerBase
             return await HandleErrorResponseAsync(response.Message);
         }
 
-        return Ok(response.Message);
+        return Ok(response.Recordings);
     }
     
     [HttpGet("download")]
