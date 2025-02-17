@@ -17,16 +17,15 @@
 using Dapper;
 using Models.Database;
 using Models.Requests;
-using Npgsql;
 using Shared.Logging;
 using Shared.Services;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace DataAccessGate.Sql;
 
-internal class RecordingsRepository : RepositoryBase
+public class RecordingsRepository : RepositoryBase
 {
-    public RecordingsRepository(string connectionString) : base(connectionString)
+    public RecordingsRepository(IConfiguration configuration) : base(configuration)
     {
     }
     
@@ -49,7 +48,7 @@ internal class RecordingsRepository : RepositoryBase
                 Note = request.Note ?? (object)DBNull.Value
             };
 
-            return _connection.ExecuteScalar<int>(sql, parameters);
+            return Connection.ExecuteScalar<int>(sql, parameters);
         }
         catch (Exception ex)
         {
@@ -83,7 +82,7 @@ internal class RecordingsRepository : RepositoryBase
 
         try
         {
-            int recPartId = _connection.ExecuteScalar<int>(insertSql, insertParameters);
+            int recPartId = Connection.ExecuteScalar<int>(insertSql, insertParameters);
 
             byte[] binary = EncodingHelper.DecodeFromBase64(request.Data);
             string filePath = fs.SaveRecordingFile(request.RecordingId, recPartId, binary);
@@ -91,7 +90,7 @@ internal class RecordingsRepository : RepositoryBase
             const string updatePathSql = "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"Id\" = @Id";
             var updatePathParameters = new { FilePath = filePath, Id = recPartId };
 
-            _connection.Execute(updatePathSql, updatePathParameters);
+            Connection.Execute(updatePathSql, updatePathParameters);
             return recPartId;
         }
         catch (Exception ex)
@@ -100,30 +99,41 @@ internal class RecordingsRepository : RepositoryBase
             return -1;
         }
     }
-
-    public RecordingModel? GetRecording(int id, bool sound)
+    
+    public RecordingModel? GetRecording(int id)
     {
         string getRecSql = "SELECT * FROM \"Recordings\" WHERE \"Id\" = @Id";
-        var recording = _connection.QueryFirstOrDefault<RecordingModel>(getRecSql, new { Id = id });
+        var recording = Connection.QueryFirstOrDefault<RecordingModel>(getRecSql, new { Id = id });
         
         if (recording is null)
             return null;
         
-        string getPartSql = "SELECT * FROM \"RecordingParts\" WHERE \"RecordingId\" = @RecordingId";
-        recording.Parts = _connection.Query<RecordingPartModel>(getPartSql, new { RecordingId = recording.Id });
-
-        if (sound)
-        {
-            var fsHelper = new FileSystemHelper();
-            
-            foreach (var recordingPart in recording.Parts)
-            {
-                byte[] binary = fsHelper.ReadRecordingFile(recording.Id, recordingPart.Id);
-                string encoded = EncodingHelper.EncodeToBase64(binary);
-                recordingPart.DataBase64 = encoded;
-            }
-        }
-        
         return recording;
+    }
+
+    public IEnumerable<RecordingPartModel> GetRecordingParts(int recordingId, bool withSound)
+    {
+        string getPartSql = "SELECT * FROM \"RecordingParts\" WHERE \"RecordingId\" = @RecordingId";
+
+        RecordingPartModel[] models =
+            Connection.Query<RecordingPartModel>(getPartSql, new { RecordingId = recordingId }).ToArray();
+
+        if (!withSound)
+            return models;
+
+        foreach (var model in models)
+        {
+            model.DataBase64 = GetRecordingPartData(recordingId, model.Id);
+        }
+
+        return models;
+    }
+
+    public string GetRecordingPartData(int recordingId, int recordingPartId)
+    {
+        var fsHelper = new FileSystemHelper();
+        
+        byte[] binary = fsHelper.ReadRecordingFile(recordingId, recordingPartId);
+        return EncodingHelper.EncodeToBase64(binary);
     }
 }

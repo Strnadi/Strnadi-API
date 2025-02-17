@@ -18,8 +18,8 @@ using System.Text.Json;
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
+using Shared.Communication;
 using Shared.Logging;
-using Shared.Routing;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace ApiGateway.Controllers;
@@ -52,6 +52,22 @@ public class RecordingsController : ControllerBase
     
     private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
 
+    [HttpGet]
+    public async Task<IActionResult> GetMetadata([FromQuery] string jwt)
+    {
+        if (!_jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        var response = await _dagClient.GetRecordingsByEmail(email!);
+
+        if (response.Recordings is null)
+        {
+            return await HandleErrorResponseAsync(response.Message);
+        }
+
+        return Ok(response.Message);
+    }
+    
     [HttpGet("download")]
     public async Task<IActionResult> Download([FromQuery] int id, [FromQuery] string jwt, [FromQuery] bool sound = false)
     {
@@ -62,12 +78,7 @@ public class RecordingsController : ControllerBase
 
         if (response.Model is null)
         {
-            int statusCode = (int)response.Message.StatusCode;
-            string? content = response.Message.Content != null!
-                ? await response.Message.Content.ReadAsStringAsync() 
-                : null;
-            
-            return StatusCode(statusCode, content);
+            return await HandleErrorResponseAsync(response.Message);
         }
 
         return Ok(response.Model);
@@ -135,5 +146,15 @@ public class RecordingsController : ControllerBase
             Logger.Log($"Exception caught while redirecting recording part uploading request to DAG: {ex.Message}", LogLevel.Error);
             return StatusCode(500, ex.Message);
         }
+    }
+
+    private async Task<IActionResult> HandleErrorResponseAsync(HttpResponseMessage response)
+    {
+        int statusCode = (int)response.StatusCode;
+        string? content = response.Content != null!
+            ? await response.Content.ReadAsStringAsync() 
+            : null;
+            
+        return StatusCode(statusCode, content);
     }
 }

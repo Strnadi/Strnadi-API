@@ -14,7 +14,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using ApiGateway.Services;
-using Shared.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;

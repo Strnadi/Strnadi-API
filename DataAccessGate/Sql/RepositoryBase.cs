@@ -20,21 +20,26 @@ using Shared.Logging;
 
 namespace DataAccessGate.Sql;
 
-internal abstract class RepositoryBase : IDisposable
+public abstract class RepositoryBase : IDisposable
 {
-    protected DbConnection _connection;
-    protected string _connectionString;
+    protected IConfiguration Configuration { get; init; }
     
-    protected RepositoryBase(string connectionString)
+    protected DbConnection Connection { get; init; }
+    
+    private string ConnectionString =>
+        Configuration["ConnectionStrings:Default"] ??
+        throw new NullReferenceException("Failed to upload connection string from .env file");
+    
+    protected RepositoryBase(IConfiguration configuration)
     {
-        _connectionString = connectionString;
-        _connection = new NpgsqlConnection(connectionString);
-        _connection.Open();
+        Configuration = configuration;
+        Connection = new NpgsqlConnection(ConnectionString);
+        Connection.Open();
     }
 
     public void Dispose()
     {
-        _connection.Close();
-        _connection.Dispose();
+        Connection.Close();
+        Connection.Dispose();
     }
 }

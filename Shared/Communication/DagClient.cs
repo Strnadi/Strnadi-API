@@ -13,10 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
 using Microsoft.Extensions.Configuration;
 using Models.Database;
 
-namespace Shared.Routing;
+namespace Shared.Communication;
 
 public class DagClient : ServiceClient
 {
@@ -35,12 +36,24 @@ public class DagClient : ServiceClient
         _configuration = configuration;
     }
     
-    public async Task<(RecordingModel? Model, HttpResponseMessage Message)> DownloadAsync(int recordingId, bool sound)
+    public async Task<(RecordingModel? Model, HttpResponseMessage Message)> 
+        DownloadAsync(int recordingId, bool sound) 
     {
-        string url = GetDownloadUrl(recordingId, sound);
+        string url = GetRecordingDownloadUrl(recordingId, sound);
         
         return await GetAsync<RecordingModel>(url);
     }
-
-    private string GetDownloadUrl(int recordingId, bool sound) => $"http://{_dagCntName}:{_dagCntPort}/recordings/download?id={recordingId}&sound={sound}";
+    
+    public async Task<(IEnumerable<RecordingModel>? Recordings, HttpResponseMessage Message)> 
+        GetRecordingsByEmail(string email)
+    {
+        string url = GetRecordingUrl(email);
+        return await GetAsync<IEnumerable<RecordingModel>>(url);
+    }
+    
+    private string GetRecordingUrl(string email) =>
+        $"http://{_dagCntName}:{_dagCntPort}/recordings?email={email}";
+    
+    private string GetRecordingDownloadUrl(int recordingId, bool sound) =>
+        $"http://{_dagCntName}:{_dagCntPort}/recordings/download?id={recordingId}&sound={sound}";
 }

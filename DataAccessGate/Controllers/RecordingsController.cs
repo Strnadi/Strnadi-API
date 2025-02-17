@@ -28,22 +28,34 @@ namespace DataAccessGate.Controllers;
 public class RecordingsController : ControllerBase
 {
     private readonly IConfiguration _configuration;
-    
-    private string _connectionString =>
-        _configuration["ConnectionStrings:Default"] ??
-        throw new NullReferenceException("Failed to upload connection string from .env file");
 
     public RecordingsController(IConfiguration configuration)
     {
         _configuration = configuration;
     }
 
-    [HttpGet("download")]
-    public IActionResult Download([FromQuery] int id, [FromQuery] bool sound)
+    [HttpGet]
+    public IActionResult GetByEmail([FromQuery] string email,
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromServices] UsersRepository usersRepo)
     {
-        using var repository = new RecordingsRepository(_connectionString);
+        if (!usersRepo.TryGetUserId(email, out int userId))
+            return BadRequest("Invalid email");
+        
+        var recording = recordingsRepo.GetRecording(userId);
 
-        RecordingModel? recording = repository.GetRecording(id, sound);
+        if (recording is null)
+            return NotFound("Recording does not exist");
+
+        return Ok(recording);
+    }
+
+    [HttpGet("download")]
+    public IActionResult Download([FromQuery] int id,
+        [FromQuery] bool sound,
+        [FromServices] RecordingsRepository repository)
+    {
+        RecordingModel? recording = repository.GetRecording(id);
         
         if (recording == null)
         {
@@ -51,22 +63,20 @@ public class RecordingsController : ControllerBase
             return NotFound();
         }
 
+        recording.Parts = repository.GetRecordingParts(id, sound);
+
         Logger.Log($"Recording {recording.Id} was sent to download.");
         return Ok(recording);
     }
     
     [HttpPost("upload")]
-    public IActionResult Upload([FromBody] RecordingUploadReqInternal request)
+    public IActionResult Upload([FromBody] RecordingUploadReqInternal request,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
     {
-        int userId;
-        
-        using (var usersRepo = new UsersRepository(_connectionString)) 
-            userId = usersRepo.GetUserId(request.Email);
-
-        if (userId == -1)
+        if (!usersRepo.TryGetUserId(request.Email, out int userId))
             return Unauthorized();
 
-        using var recordingsRepo = new RecordingsRepository(_connectionString);
         int recId = recordingsRepo.AddRecording(userId, request);
 
         if (recId != -1)
@@ -76,15 +86,15 @@ public class RecordingsController : ControllerBase
         }
         else
         {
-            Logger.Log($"Recording upload failed");
+            Logger.Log("Recording upload failed");
             return Conflict();
         }
     }
 
     [HttpPost("upload-part")]
-    public IActionResult UploadPart([FromBody] RecordingPartUploadReq request)
+    public IActionResult UploadPart([FromBody] RecordingPartUploadReq request,
+        [FromServices] RecordingsRepository repository)
     {
-        using var repository = new RecordingsRepository(_connectionString);
         int recPartId = repository.AddRecordingPart(request);
 
         if (recPartId != -1)
@@ -94,7 +104,7 @@ public class RecordingsController : ControllerBase
         }
         else
         {
-            Logger.Log($"Recording part '{recPartId} uploading failed");
+            Logger.Log("Recording part uploading failed");
             return Conflict();
         }
     }

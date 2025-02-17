@@ -22,9 +22,9 @@ using Shared.Logging;
 
 namespace DataAccessGate.Sql;
 
-internal class UsersRepository : RepositoryBase
+public class UsersRepository : RepositoryBase
 {
-    public UsersRepository(string connectionString) : base(connectionString)
+    public UsersRepository(IConfiguration configuration) : base(configuration)
     {
     }
 
@@ -32,7 +32,7 @@ internal class UsersRepository : RepositoryBase
     {
         const string sql = "SELECT 1 FROM \"Users\" WHERE \"Email\" = @Email AND \"Password\" = @Password";
 
-        int rowsCount = _connection.QueryFirstOrDefault<int>(sql, new { Email = email, Password = password });
+        int rowsCount = Connection.QueryFirstOrDefault<int>(sql, new { Email = email, Password = password });
 
         return rowsCount != 0;
     }
@@ -41,9 +41,15 @@ internal class UsersRepository : RepositoryBase
     {
         const string sql = "SELECT 1 FROM \"Users\" WHERE \"Email\" = @Email";
 
-        return _connection.ExecuteScalar<int?>(sql, new { Email = email }) != null;
+        return Connection.ExecuteScalar<int?>(sql, new { Email = email }) != null;
     }
 
+    public bool TryGetUserId(string email, out int userId)
+    {
+        userId = GetUserId(email);
+        return userId != -1;
+    }
+    
     /// <returns>An id of user with provided email if exists, otherwise -1</returns>
     public int GetUserId(string email)
     {
@@ -52,14 +58,14 @@ internal class UsersRepository : RepositoryBase
 
         const string sql = "SELECT \"Id\" FROM \"Users\" WHERE \"Email\" = @Email";
         
-        return _connection.ExecuteScalar<int>(sql, new { Email = email });
+        return Connection.ExecuteScalar<int>(sql, new { Email = email });
     }
 
     public UserModel? GetUser(string email)
     {
         const string sql = "SELECT * FROM \"Users\" WHERE \"Email\" = @Email";
         
-        var user = _connection.QueryFirstOrDefault<UserModel>(sql, new { Email = email });
+        var user = Connection.QueryFirstOrDefault<UserModel>(sql, new { Email = email });
         
         return user;
     }
@@ -73,7 +79,7 @@ internal class UsersRepository : RepositoryBase
 
         try
         {
-            var result = _connection.Execute(sql, new
+            var result = Connection.Execute(sql, new
             {
                 request.Nickname,
                 request.Email,
@@ -102,7 +108,7 @@ internal class UsersRepository : RepositoryBase
 
         try
         {
-            var result = _connection.Execute(sql, new { IsEmailVerified = true, Email = email });
+            var result = Connection.Execute(sql, new { IsEmailVerified = true, Email = email });
             return result > 0;
         }
         catch (Exception ex)
