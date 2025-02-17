@@ -24,6 +24,8 @@ public abstract class ServiceClient
 {
     protected HttpClient HttpClient { get; private set; }
 
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     protected ServiceClient()
     {
         HttpClient = new HttpClient();
@@ -53,9 +55,7 @@ public abstract class ServiceClient
                 return (default, response);
             
             var content = await response.Content.ReadAsStringAsync();
-            Logger.Log(content);
-            var responseModel = JsonSerializer.Deserialize<TResponse>(content);
-            Logger.Log(JsonSerializer.Serialize(responseModel));
+            var responseModel = JsonSerializer.Deserialize<TResponse>(content, _jsonSerializerOptions);
             return (responseModel, response);
         }
         catch (Exception ex)
@@ -95,7 +95,7 @@ public abstract class ServiceClient
                 return (default, response);
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            return (JsonSerializer.Deserialize<TResponse>(responseContent), response);
+            return (JsonSerializer.Deserialize<TResponse>(responseContent, _jsonSerializerOptions), response);
         }
         catch (Exception ex)
         {
