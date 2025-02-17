@@ -54,7 +54,9 @@ public abstract class ServiceClient
             
             var content = await response.Content.ReadAsStringAsync();
             Logger.Log(content);
-            return (JsonSerializer.Deserialize<TResponse>(content), response);
+            var responseModel = JsonSerializer.Deserialize<TResponse>(content);
+            Logger.Log(JsonSerializer.Serialize(responseModel));
+            return (responseModel, response);
         }
         catch (Exception ex)
         {
