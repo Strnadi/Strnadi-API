@@ -70,6 +70,7 @@ public class RecordingsController : ControllerBase
             return StatusCode(statusCode, content);
         }
 
+        Logger.Log(response.Model.Id.ToString());
         return Ok(response.Model);
     }
     
