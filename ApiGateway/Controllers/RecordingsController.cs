@@ -53,7 +53,7 @@ public class RecordingsController : ControllerBase
     private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
 
     [HttpGet]
-    public async Task<IActionResult> GetMetadata([FromQuery] string jwt)
+    public async Task<IActionResult> GetRecordings([FromQuery] string jwt)
     {
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();

@@ -42,10 +42,10 @@ public class RecordingsController : ControllerBase
         if (!usersRepo.TryGetUserId(email, out int userId))
             return BadRequest("Invalid email");
         
-        var recording = recordingsRepo.GetRecording(userId);
+        var recording = recordingsRepo.GetUsersRecordings(userId);
 
         if (recording is null)
-            return NotFound("Recording does not exist");
+            return StatusCode(500);
 
         return Ok(recording);
     }
