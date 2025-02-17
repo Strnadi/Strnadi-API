@@ -13,9 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using DataAccessGate.Sql;
+
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
+builder.Services.AddScoped<RepositoryBase, RecordingsRepository>();
+builder.Services.AddScoped<RepositoryBase, UsersRepository>();
 builder.Services.AddControllers();
 builder.Services.AddCors(corsOptions =>
 {

@@ -26,18 +26,9 @@ namespace DataAccessGate.Controllers;
 [Route("/users")]
 public class UsersController : ControllerBase
 {
-    private IConfiguration _configuration;
-    private string _connectionString => _configuration["ConnectionStrings:Default"] ?? throw new NullReferenceException("Failed to upload connection string from .env file");
-    
-    public UsersController(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-    
     [HttpPost("/users/authorize-user")]
-    public IActionResult AuthorizeUser(LoginRequest request)
+    public IActionResult AuthorizeUser([FromBody] LoginRequest request, [FromServices] UsersRepository repository)
     { 
-        using var repository = new UsersRepository(_connectionString);
         bool authorized = repository.AuthorizeUser(request.Email, request.Password);
         
         return authorized ?
@@ -46,10 +37,12 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("/users/sign-up")]
-    public IActionResult SignUp([FromBody] SignUpRequest request)
+    public IActionResult SignUp([FromBody] SignUpRequest request, [FromServices] UsersRepository repository)
     {
-        using var repository = new UsersRepository(_connectionString);
-        if (repository.AddUser(request))
+        bool added = repository.AddUser(request);
+        repository.Dispose();
+        
+        if (added)
         {
             return Ok();
         }
@@ -60,11 +53,12 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("/users/verify")]
-    public IActionResult VerifyUser([FromQuery] string email)
+    public IActionResult VerifyUser([FromQuery] string email, [FromServices] UsersRepository repository)
     {
-        using var repository = new UsersRepository(_connectionString);
-
-        if (repository.Verify(email))
+        bool verified = repository.Verify(email);
+        repository.Dispose();
+        
+        if (verified)
         {
             Logger.Log($"User '{email}' verified successfully");
             return Ok();
@@ -76,14 +70,13 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{email}")]
-    public IActionResult Get(string email)
+    public IActionResult Get(string email, [FromServices] UsersRepository repository)
     {
-        using var repository = new UsersRepository(_connectionString);
-        
         UserModel? user = repository.GetUser(email);
+        repository.Dispose();
         
         return user is not null ? 
             Ok(user) : 
-            NotFound();
+            NotFound("User does not exist.");
     }
 }

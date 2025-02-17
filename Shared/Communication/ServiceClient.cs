@@ -18,7 +18,7 @@ using System.Text;
 using System.Text.Json;
 using Shared.Logging;
 
-namespace Shared.Routing;
+namespace Shared.Communication;
 
 public abstract class ServiceClient
 {

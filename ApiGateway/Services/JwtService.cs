@@ -79,15 +79,11 @@ public class JwtService
 
             if (value is null)
             {
-                Logger.Log("Failed to read email from validated token.");
                 return false;
             }
 
-            Logger.Log("JWT token validated successfully.");
             return true;
         }
-        
-        Logger.Log("Failed to validate JWT token.");
 
         value = default;
         return false;
