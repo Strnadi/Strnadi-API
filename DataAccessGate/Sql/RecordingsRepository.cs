@@ -61,13 +61,12 @@ public class RecordingsRepository : RepositoryBase
     {
         var fs = new FileSystemHelper();
 
-        const string insertSql = """
-
-                                 INSERT INTO "RecordingParts"(
-                                     "RecordingId", "Start", "End", "GpsLatitudeStart", "GpsLongitudeStart", "GpsLatitudeEnd", "GpsLongitudeEnd") 
-                                 VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd) 
-                                 RETURNING "Id"
-                                 """;
+        string insertSql = """
+                           INSERT INTO "RecordingParts"(
+                                "RecordingId", "Start", "End", "GpsLatitudeStart", "GpsLongitudeStart", "GpsLatitudeEnd", "GpsLongitudeEnd") 
+                           VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd) 
+                           RETURNING "Id"
+                           """;
 
         var insertParameters = new
         {
@@ -87,7 +86,7 @@ public class RecordingsRepository : RepositoryBase
             byte[] binary = EncodingHelper.DecodeFromBase64(request.Data);
             string filePath = fs.SaveRecordingFile(request.RecordingId, recPartId, binary);
 
-            const string updatePathSql = "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"Id\" = @Id";
+            string updatePathSql = "UPDATE \"RecordingParts\" SET \"FilePath\" = @FilePath WHERE \"Id\" = @Id";
             var updatePathParameters = new { FilePath = filePath, Id = recPartId };
 
             Connection.Execute(updatePathSql, updatePathParameters);
@@ -99,24 +98,41 @@ public class RecordingsRepository : RepositoryBase
             return -1;
         }
     }
+
+    public IEnumerable<RecordingModel>? GetUsersRecordings(int userId)
+    {
+        try
+        {
+            string sql = "SELECT * FROM \"Recordings\" WHERE \"UserId\" = @UserId";
+            return Connection.Query<RecordingModel>(sql, new { UserId = userId });
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception caught while getting recordings of user '{userId}': {ex.Message}");
+            return null;
+        }
+    }
     
     public RecordingModel? GetRecording(int id)
     {
-        string getRecSql = "SELECT * FROM \"Recordings\" WHERE \"Id\" = @Id";
-        var recording = Connection.QueryFirstOrDefault<RecordingModel>(getRecSql, new { Id = id });
-        
-        if (recording is null)
+        try
+        {
+            string sql = "SELECT * FROM \"Recordings\" WHERE \"Id\" = @Id";
+            return Connection.QueryFirstOrDefault<RecordingModel>(sql, new { Id = id });
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception caught while getting recording '{id}': {ex.Message}");
             return null;
-        
-        return recording;
+        }
     }
 
     public IEnumerable<RecordingPartModel> GetRecordingParts(int recordingId, bool withSound)
     {
-        string getPartSql = "SELECT * FROM \"RecordingParts\" WHERE \"RecordingId\" = @RecordingId";
+        string sql = "SELECT * FROM \"RecordingParts\" WHERE \"RecordingId\" = @RecordingId";
 
         RecordingPartModel[] models =
-            Connection.Query<RecordingPartModel>(getPartSql, new { RecordingId = recordingId }).ToArray();
+            Connection.Query<RecordingPartModel>(sql, new { RecordingId = recordingId }).ToArray();
 
         if (!withSound)
             return models;
