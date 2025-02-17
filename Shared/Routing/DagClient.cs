@@ -42,5 +42,5 @@ public class DagClient : ServiceClient
         return await GetAsync<RecordingModel>(url);
     }
 
-    private string GetDownloadUrl(int recordingId, bool sound) => $"http://{_dagCntName}:{_dagCntPort}/download?id={recordingId}&sound={sound}";
+    private string GetDownloadUrl(int recordingId, bool sound) => $"http://{_dagCntName}:{_dagCntPort}/recordings/download?id={recordingId}&sound={sound}";
 }
