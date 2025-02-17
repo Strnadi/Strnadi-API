@@ -17,7 +17,7 @@ namespace ApiGateway.Services;
 
 public class FileSystemHelper
 {
-    private readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}/binRecordings/";
+    private readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}/recordings/";
     
     /// <returns>Path of the generated file</returns>
     public string SaveRecordingSoundFile(int recordingId, int recordingPartId, byte[] data)

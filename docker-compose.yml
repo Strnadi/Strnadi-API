@@ -23,6 +23,8 @@ services:
       - strnadi-db
     networks:
       - strnadi-network
+    volumes:
+      - /home/stasik/recordings:/app/recordings/
   
   strnadi-db:
     image: postgres
