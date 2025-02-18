@@ -20,7 +20,7 @@ using Models.Requests;
 
 namespace Shared.Communication;
 
-public class DagClient : ServiceClient
+public class DagRecordingsControllerClient : ServiceClient
 {
     private readonly IConfiguration _configuration;
     
@@ -28,18 +28,14 @@ public class DagClient : ServiceClient
     
     private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
     
-    private const string dag_uploadRec_endpoint = "recordings/upload";
-    
-    private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
-    
-    public DagClient(IConfiguration configuration)
+    public DagRecordingsControllerClient(IConfiguration configuration)
     {
         _configuration = configuration;
     }
     
-    public async Task<(int? RecordingId, HttpResponseMessage Message)> UploadRecordingAsync(RecordingUploadReqInternal internalReq)
+    public async Task<(int? RecordingId, HttpResponseMessage Message)> UploadAsync(RecordingUploadReqInternal internalReq)
     {
-        string url = GetRecordingUploadUrl();
+        string url = GetUploadUrl();
         
         (string? RecordingIdStr, HttpResponseMessage Message) 
             response = await PostAsync<RecordingUploadReqInternal, string>(url, internalReq);
@@ -51,14 +47,14 @@ public class DagClient : ServiceClient
     }
     
     public async Task<(RecordingModel? Model, HttpResponseMessage Message)> 
-        DownloadRecordingAsync(int recordingId, bool sound) 
+        DownloadAsync(int recordingId, bool sound) 
     {
-        string url = GetRecordingDownloadUrl(recordingId, sound);
+        string url = GetDownloadUrl(recordingId, sound);
         return await GetAsync<RecordingModel>(url);
     }
     
     public async Task<(IEnumerable<RecordingModel>? Recordings, HttpResponseMessage Message)> 
-        GetRecordingsByEmail(string email)
+        GetByEmailAsync(string email)
     {
         string url = GetRecordingUrl(email);
         return await GetAsync<IEnumerable<RecordingModel>>(url);
@@ -67,9 +63,9 @@ public class DagClient : ServiceClient
     private string GetRecordingUrl(string email) =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings?email={email}";
     
-    private string GetRecordingDownloadUrl(int recordingId, bool sound) =>
+    private string GetDownloadUrl(int recordingId, bool sound) =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings/download?id={recordingId}&sound={sound}";
 
-    private string GetRecordingUploadUrl() =>
+    private string GetUploadUrl() =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings/upload";
 }
