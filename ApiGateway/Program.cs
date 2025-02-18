@@ -14,6 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using ApiGateway.Services;
+using Shared.Communication;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -21,6 +22,7 @@ var configuration = builder.Configuration;
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<DagRecordingsControllerClient>();
 builder.Services.AddCors(corsOptions =>
 {
     corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
