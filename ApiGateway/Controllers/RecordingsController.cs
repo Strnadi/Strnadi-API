@@ -17,6 +17,7 @@ using System.Text;
 using System.Text.Json;
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Diagnostics;
 using Models.Requests;
 using Shared.Communication;
 using Shared.Logging;
@@ -29,8 +30,6 @@ namespace ApiGateway.Controllers;
 public class RecordingsController : ControllerBase
 {
     private readonly IConfiguration _configuration;
-
-    private readonly HttpClient _httpClient;
     
     private readonly JwtService _jwtService;
 
@@ -38,17 +37,10 @@ public class RecordingsController : ControllerBase
     
     public RecordingsController(IConfiguration config, JwtService jwtService, DagRecordingsControllerClient client)
     {
-        _httpClient = new HttpClient();
         _configuration = config;
         _jwtService = jwtService;
         _dagClient = client;
     }
-    
-    private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
-    
-    private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
-    
-    private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
 
     [HttpGet]
     public async Task<IActionResult> GetRecordingsOfUser([FromQuery] string jwt)
@@ -58,9 +50,9 @@ public class RecordingsController : ControllerBase
 
         var response = await _dagClient.GetByEmailAsync(email!);
 
-        if (response.Value is null)
+        if (response?.Value is null)
         {
-            return await HandleErrorResponseAsync(response.Message);
+            return await HandleErrorResponseAsync(response);
         }
 
         return Ok(response.Value);
@@ -74,9 +66,9 @@ public class RecordingsController : ControllerBase
         
         var response = await _dagClient.DownloadAsync(id, sound);
 
-        if (response.Value is null)
+        if (response?.Value is null)
         {
-            return await HandleErrorResponseAsync(response.Message);
+            return await HandleErrorResponseAsync(response);
         }
 
         return Ok(response.Value);
@@ -91,8 +83,8 @@ public class RecordingsController : ControllerBase
         var internalReq = request.ToInternal(email!);
         var response = await _dagClient.UploadAsync(internalReq);
 
-        if (response.Value is null)
-            return await HandleErrorResponseAsync(response.Message);
+        if (response?.Value is null)
+            return await HandleErrorResponseAsync(response);
 
         return Ok(response.Value);
     }
@@ -105,8 +97,8 @@ public class RecordingsController : ControllerBase
 
         var response = await _dagClient.UploadPartAsync(request);
 
-        if (response.Value is null)
-            return await HandleErrorResponseAsync(response.Message);
+        if (response?.Value is null)
+            return await HandleErrorResponseAsync(response);
 
         return Ok(response.Value);
 
@@ -135,11 +127,15 @@ public class RecordingsController : ControllerBase
         // }
     }
 
-    private async Task<IActionResult> HandleErrorResponseAsync(HttpResponseMessage response)
+    private async Task<IActionResult> HandleErrorResponseAsync(IRedirectResult? response)
     {
-        int statusCode = (int)response.StatusCode;
-        string? content = response.Content != null!
-            ? await response.Content.ReadAsStringAsync() 
+        if (response is null)
+            return StatusCode(500);
+        
+        HttpResponseMessage message = response.Message;
+        int statusCode = (int)message.StatusCode;
+        string? content = message.Content != null!
+            ? await message.Content.ReadAsStringAsync() 
             : null;
             
         return StatusCode(statusCode, content);

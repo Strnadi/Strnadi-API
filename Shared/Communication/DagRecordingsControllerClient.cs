@@ -34,7 +34,7 @@ public class DagRecordingsControllerClient : ServiceClient
     {
         string url = GetUploadUrl();
         
-        RedirectResult<string>? response = await PostAsync<RecordingUploadReqInternal, string>(url, internalReq);
+        RedirectResult<string?>? response = await PostAsync<RecordingUploadReqInternal, string>(url, internalReq);
         
         return response is null
             ? null
@@ -47,18 +47,26 @@ public class DagRecordingsControllerClient : ServiceClient
     public async Task<RedirectResult<RecordingModel?>?> DownloadAsync(int recordingId, bool sound) 
     {
         string url = GetDownloadUrl(recordingId, sound);
-        return await GetAsync<RecordingModel?>(url);
+        return await GetAsync<RecordingModel>(url);
     }
     
-    public async Task<RedirectResult<IEnumerable<RecordingModel>>?> GetByEmailAsync(string email)
+    public async Task<RedirectResult<IEnumerable<RecordingModel>?>?> GetByEmailAsync(string email)
     {
         string url = GetRecordingUrl(email);
         return await GetAsync<IEnumerable<RecordingModel>>(url);
     }
     
-    public async Task<RedirectResult<int?>> UploadPartAsync(RecordingPartUploadReq request)
+    public async Task<RedirectResult<int?>?> UploadPartAsync(RecordingPartUploadReq request)
     {
-        throw new NotImplementedException();
+        string url = GetUploadPartUrl();
+        var response = await GetAsync<string>(url);
+        
+        return response is null
+            ? null
+            : new RedirectResult<int?>(response.Value is not null
+                    ? int.Parse(response.Value)
+                    : null,
+                response.Message);
     }
     
     private string GetRecordingUrl(string email) =>
@@ -69,4 +77,7 @@ public class DagRecordingsControllerClient : ServiceClient
 
     private string GetUploadUrl() =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings/upload";
+
+    private string GetUploadPartUrl() =>
+        $"http://{_dagCntName}:{_dagCntPort}/recordings/upload-part";
 }

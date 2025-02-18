@@ -1,3 +1,8 @@
 namespace Shared.Communication;
 
-public record RedirectResult<TResponse>(TResponse? Value, HttpResponseMessage Message);
+public interface IRedirectResult
+{
+    HttpResponseMessage Message { get; }
+}
+
+public record RedirectResult<TResponse>(TResponse? Value, HttpResponseMessage Message) : IRedirectResult;
