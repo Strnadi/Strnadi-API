@@ -19,13 +19,13 @@ public class FileSystemHelper
 {
     private readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}recordings/";
 
-    private const string file_extension = ".wav";
+    private const string file_extension = "wav";
     
     /// <returns>Path of the generated file</returns>
     public string SaveRecordingFile(int recordingId, int recordingPartId, byte[] data)
     {
         CreateDirectoryIfNotExists(recordingId);
-
+        
         string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.{file_extension}";
         File.WriteAllBytes(path, data);
 
