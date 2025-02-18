@@ -34,14 +34,14 @@ public class RecordingsController : ControllerBase
     
     private readonly JwtService _jwtService;
 
-    private readonly DagClient _dagClient;
+    private readonly DagRecordingsControllerClient _dagClient;
     
-    public RecordingsController(IConfiguration config, JwtService jwtService)
+    public RecordingsController(IConfiguration config, JwtService jwtService, DagRecordingsControllerClient client)
     {
         _httpClient = new HttpClient();
         _configuration = config;
         _jwtService = jwtService;
-        _dagClient = new DagClient(config);
+        _dagClient = client;
     }
     
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
@@ -56,7 +56,7 @@ public class RecordingsController : ControllerBase
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
-        var response = await _dagClient.GetRecordingsByEmail(email!);
+        var response = await _dagClient.GetByEmailAsync(email!);
 
         if (response.Recordings is null)
         {
@@ -72,7 +72,7 @@ public class RecordingsController : ControllerBase
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
-        var response = await _dagClient.DownloadRecordingAsync(id, sound);
+        var response = await _dagClient.DownloadAsync(id, sound);
 
         if (response.Model is null)
         {
@@ -89,7 +89,7 @@ public class RecordingsController : ControllerBase
             return Unauthorized();
 
         var internalReq = request.ToInternal(email!);
-        var response = await _dagClient.UploadRecordingAsync(internalReq);
+        var response = await _dagClient.UploadAsync(internalReq);
 
         if (response.RecordingId is null)
             return await HandleErrorResponseAsync(response.Message);
