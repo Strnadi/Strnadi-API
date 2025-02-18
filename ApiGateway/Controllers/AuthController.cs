@@ -24,7 +24,7 @@ using LogLevel = Shared.Logging.LogLevel;
 namespace ApiGateway.Controllers;
 
 [ApiController]
-[Route("auth/")]
+[Route("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
@@ -46,8 +46,17 @@ public class AuthController : ControllerBase
         _httpClient = new HttpClient();
         _jwtService = jwtService;
     }
+
+    [HttpGet]
+    public IActionResult VerifyJwt([FromQuery] string jwt)
+    {
+        if (!_jwtService.TryValidateToken(jwt, out _)) 
+            return Unauthorized();
+
+        return Ok();
+    }
     
-    [HttpPost("/auth/login")]
+    [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request)
     {
         string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_login_endpoint}";
@@ -77,7 +86,7 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("/auth/sign-up")]
+    [HttpPost("sign-up")]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request)
     {
         string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_signup_endpoint}";
@@ -109,7 +118,7 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("/auth/verify")]
+    [HttpPost("verify")]
     public async Task<IActionResult> VerifyUser([FromQuery] string jwt)
     {
         if (!_jwtService.TryValidateToken(jwt, out string? email))
