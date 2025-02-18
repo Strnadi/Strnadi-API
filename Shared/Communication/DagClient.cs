@@ -16,6 +16,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Models.Database;
+using Models.Requests;
 
 namespace Shared.Communication;
 
@@ -36,11 +37,23 @@ public class DagClient : ServiceClient
         _configuration = configuration;
     }
     
+    public async Task<(int? RecordingId, HttpResponseMessage Message)> UploadRecording(RecordingUploadReqInternal internalReq)
+    {
+        string url = GetRecordingUploadUrl();
+        
+        (string? RecordingIdStr, HttpResponseMessage Message) 
+            response = await PostAsync<RecordingUploadReqInternal, string>(url, internalReq);
+        
+        return (response.RecordingIdStr is not null
+            ? int.Parse(response.RecordingIdStr)
+            : null, 
+            response.Message);
+    }
+    
     public async Task<(RecordingModel? Model, HttpResponseMessage Message)> 
         DownloadAsync(int recordingId, bool sound) 
     {
         string url = GetRecordingDownloadUrl(recordingId, sound);
-        
         return await GetAsync<RecordingModel>(url);
     }
     
@@ -56,4 +69,7 @@ public class DagClient : ServiceClient
     
     private string GetRecordingDownloadUrl(int recordingId, bool sound) =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings/download?id={recordingId}&sound={sound}";
+
+    private string GetRecordingUploadUrl() =>
+        $"http://{_dagCntName}:{_dagCntPort}/recordings/upload";
 }
