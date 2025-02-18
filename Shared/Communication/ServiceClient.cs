@@ -104,6 +104,9 @@ public abstract class ServiceClient
 
     private async Task<TResponse?> SerializeResponseContentAsync<TResponse>(HttpContent content)
     {
+        if (typeof(TResponse) == typeof(string))
+            return (TResponse)(object)await content.ReadAsStringAsync();
+        
         return content.Headers.ContentType!.MediaType switch
         {
             "application/json" => JsonSerializer.Deserialize<TResponse>(await content.ReadAsStringAsync(),
