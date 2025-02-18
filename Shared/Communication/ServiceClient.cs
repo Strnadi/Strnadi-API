@@ -91,10 +91,9 @@ public abstract class ServiceClient
         {
             var response = await HttpClient.PostAsync(route, content);
 
-            if (!response.IsSuccessStatusCode)
-                return (default, response);
-
-            return (SerializeResponseContent<TResponse>(response.Content), response);
+            return !response.IsSuccessStatusCode
+                ? (default, response)
+                : (await SerializeResponseContentAsync<TResponse>(response.Content), response);
         }
         catch (Exception ex)
         {
@@ -103,11 +102,11 @@ public abstract class ServiceClient
         }
     }
 
-    private TResponse? SerializeResponseContent<TResponse>(HttpContent content)
+    private async Task<TResponse?> SerializeResponseContentAsync<TResponse>(HttpContent content)
     {
         return content.Headers.ContentType!.MediaType switch
         {
-            "application/json" => JsonSerializer.Deserialize<TResponse>(content.ReadAsStringAsync().Result,
+            "application/json" => JsonSerializer.Deserialize<TResponse>(await content.ReadAsStringAsync(),
                 _jsonSerializerOptions),
             _ => throw new NotSupportedException($"Unsupported content type: {content.Headers.ContentType.MediaType}")
         };

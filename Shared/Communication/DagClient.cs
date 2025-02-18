@@ -37,7 +37,7 @@ public class DagClient : ServiceClient
         _configuration = configuration;
     }
     
-    public async Task<(int? RecordingId, HttpResponseMessage Message)> UploadRecording(RecordingUploadReqInternal internalReq)
+    public async Task<(int? RecordingId, HttpResponseMessage Message)> UploadRecordingAsync(RecordingUploadReqInternal internalReq)
     {
         string url = GetRecordingUploadUrl();
         
@@ -51,7 +51,7 @@ public class DagClient : ServiceClient
     }
     
     public async Task<(RecordingModel? Model, HttpResponseMessage Message)> 
-        DownloadAsync(int recordingId, bool sound) 
+        DownloadRecordingAsync(int recordingId, bool sound) 
     {
         string url = GetRecordingDownloadUrl(recordingId, sound);
         return await GetAsync<RecordingModel>(url);

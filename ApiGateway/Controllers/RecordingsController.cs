@@ -72,7 +72,7 @@ public class RecordingsController : ControllerBase
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
-        var response = await _dagClient.DownloadAsync(id, sound);
+        var response = await _dagClient.DownloadRecordingAsync(id, sound);
 
         if (response.Model is null)
         {
@@ -89,48 +89,13 @@ public class RecordingsController : ControllerBase
             return Unauthorized();
 
         var internalReq = request.ToInternal(email!);
-        var response = await _dagClient.UploadRecording(internalReq);
+        var response = await _dagClient.UploadRecordingAsync(internalReq);
 
         if (response.RecordingId is null)
-        {
             return await HandleErrorResponseAsync(response.Message);
-        }
 
         return Ok(response.RecordingId);
     }
-    
-    // [HttpPost("upload")]
-    // public async Task<IActionResult> Upload([FromBody] RecordingUploadReq request)
-    // {
-    //     if (!_jwtService.TryValidateToken(request.Jwt, out string? email))
-    //         return Unauthorized();
-    //
-    //     var internalReq = request.ToInternal(email!);
-    //     
-    //     var json = JsonSerializer.Serialize(internalReq);
-    //     var content = new StringContent(json, Encoding.UTF8, "application/json");
-    //     
-    //     string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRec_endpoint}";
-    //
-    //     try
-    //     {
-    //         var response = await _httpClient.PostAsync(dagUrl, content);
-    //
-    //         if (!response.IsSuccessStatusCode)
-    //         {
-    //             Logger.Log($"Recording upload failed with status {response.StatusCode.ToString()}", LogLevel.Warning);
-    //             return StatusCode((int)response.StatusCode);
-    //         }
-    //
-    //         int userId = int.Parse(await response.Content.ReadAsStringAsync());
-    //         return Ok(userId);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Logger.Log($"Recording upload failed with error {ex.Message}", LogLevel.Error);
-    //         return StatusCode(500, ex.Message);
-    //     }
-    // }
 
     [HttpPost("upload-part")]
     public async Task<IActionResult> UploadPart([FromBody] RecordingPartUploadReq request)
