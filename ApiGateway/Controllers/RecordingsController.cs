@@ -20,7 +20,7 @@ using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
 using Shared.Communication;
 using Shared.Logging;
-using LogLevel = Shared.Logging.LogLevel;
+using LogLevel = Shared.Logging.LogLevel; 
 
 namespace ApiGateway.Controllers;
 
@@ -47,8 +47,6 @@ public class RecordingsController : ControllerBase
     private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
     
     private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
-    
-    private const string dag_uploadRec_endpoint = "recordings/upload";
     
     private const string dag_uploadRecPart_endpoint = "recordings/upload-part";
 
@@ -83,39 +81,56 @@ public class RecordingsController : ControllerBase
 
         return Ok(response.Model);
     }
-    
+
     [HttpPost("upload")]
     public async Task<IActionResult> Upload([FromBody] RecordingUploadReq request)
     {
-        if (!_jwtService.TryValidateToken(request.Jwt, out string? email))
+        if (!_jwtService.TryValidateToken(request.Jwt, out string? email)) 
             return Unauthorized();
 
         var internalReq = request.ToInternal(email!);
-        
-        var json = JsonSerializer.Serialize(internalReq);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        
-        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRec_endpoint}";
+        var response = await _dagClient.UploadRecording(internalReq);
 
-        try
+        if (response.RecordingId is null)
         {
-            var response = await _httpClient.PostAsync(dagUrl, content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Logger.Log($"Recording upload failed with status {response.StatusCode.ToString()}", LogLevel.Warning);
-                return StatusCode((int)response.StatusCode);
-            }
-
-            int userId = int.Parse(await response.Content.ReadAsStringAsync());
-            return Ok(userId);
+            return await HandleErrorResponseAsync(response.Message);
         }
-        catch (Exception ex)
-        {
-            Logger.Log($"Recording upload failed with error {ex.Message}", LogLevel.Error);
-            return StatusCode(500, ex.Message);
-        }
+
+        return Ok(response.RecordingId);
     }
+    
+    // [HttpPost("upload")]
+    // public async Task<IActionResult> Upload([FromBody] RecordingUploadReq request)
+    // {
+    //     if (!_jwtService.TryValidateToken(request.Jwt, out string? email))
+    //         return Unauthorized();
+    //
+    //     var internalReq = request.ToInternal(email!);
+    //     
+    //     var json = JsonSerializer.Serialize(internalReq);
+    //     var content = new StringContent(json, Encoding.UTF8, "application/json");
+    //     
+    //     string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRec_endpoint}";
+    //
+    //     try
+    //     {
+    //         var response = await _httpClient.PostAsync(dagUrl, content);
+    //
+    //         if (!response.IsSuccessStatusCode)
+    //         {
+    //             Logger.Log($"Recording upload failed with status {response.StatusCode.ToString()}", LogLevel.Warning);
+    //             return StatusCode((int)response.StatusCode);
+    //         }
+    //
+    //         int userId = int.Parse(await response.Content.ReadAsStringAsync());
+    //         return Ok(userId);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Logger.Log($"Recording upload failed with error {ex.Message}", LogLevel.Error);
+    //         return StatusCode(500, ex.Message);
+    //     }
+    // }
 
     [HttpPost("upload-part")]
     public async Task<IActionResult> UploadPart([FromBody] RecordingPartUploadReq request)

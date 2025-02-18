@@ -82,7 +82,7 @@ public abstract class ServiceClient
         }
     }
 
-    protected async Task<(TResponse? Response, HttpResponseMessage Message)> PostAsync<TRequest, TResponse>(string route, TRequest? request)
+    protected async Task<(TResponse? Response, HttpResponseMessage Message)> PostAsync<TRequest, TResponse>(string route, TRequest? request) 
     {
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -94,13 +94,22 @@ public abstract class ServiceClient
             if (!response.IsSuccessStatusCode)
                 return (default, response);
 
-            var responseContent = await response.Content.ReadAsStringAsync();
-            return (JsonSerializer.Deserialize<TResponse>(responseContent, _jsonSerializerOptions), response);
+            return (SerializeResponseContent<TResponse>(response.Content), response);
         }
         catch (Exception ex)
         {
             Logger.Log($"Exception thrown while redirecting request to {route}: {ex.Message}");
             return default;
         }
+    }
+
+    private TResponse? SerializeResponseContent<TResponse>(HttpContent content)
+    {
+        return content.Headers.ContentType!.MediaType switch
+        {
+            "application/json" => JsonSerializer.Deserialize<TResponse>(content.ReadAsStringAsync().Result,
+                _jsonSerializerOptions),
+            _ => throw new NotSupportedException($"Unsupported content type: {content.Headers.ContentType.MediaType}")
+        };
     }
 }
