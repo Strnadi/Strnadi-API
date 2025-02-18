@@ -22,42 +22,43 @@ namespace Shared.Communication;
 
 public class DagRecordingsControllerClient : ServiceClient
 {
-    private readonly IConfiguration _configuration;
+    private string _dagCntName => Configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
     
-    private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
-    
-    private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
-    
-    public DagRecordingsControllerClient(IConfiguration configuration)
+    private string _dagCntPort => Configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
+
+    public DagRecordingsControllerClient(IConfiguration configuration, HttpClient httpClient) : base(configuration, httpClient)
     {
-        _configuration = configuration;
     }
     
-    public async Task<(int? RecordingId, HttpResponseMessage Message)> UploadAsync(RecordingUploadReqInternal internalReq)
+    public async Task<RedirectResult<int?>?> UploadAsync(RecordingUploadReqInternal internalReq)
     {
         string url = GetUploadUrl();
         
-        (string? RecordingIdStr, HttpResponseMessage Message) 
-            response = await PostAsync<RecordingUploadReqInternal, string>(url, internalReq);
+        RedirectResult<string>? response = await PostAsync<RecordingUploadReqInternal, string>(url, internalReq);
         
-        return (response.RecordingIdStr is not null
-            ? int.Parse(response.RecordingIdStr)
-            : null, 
-            response.Message);
+        return response is null
+            ? null
+            : new RedirectResult<int?>(response.Value is not null
+                    ? int.Parse(response.Value)
+                    : null,
+                response.Message);
     }
     
-    public async Task<(RecordingModel? Model, HttpResponseMessage Message)> 
-        DownloadAsync(int recordingId, bool sound) 
+    public async Task<RedirectResult<RecordingModel?>?> DownloadAsync(int recordingId, bool sound) 
     {
         string url = GetDownloadUrl(recordingId, sound);
-        return await GetAsync<RecordingModel>(url);
+        return await GetAsync<RecordingModel?>(url);
     }
     
-    public async Task<(IEnumerable<RecordingModel>? Recordings, HttpResponseMessage Message)> 
-        GetByEmailAsync(string email)
+    public async Task<RedirectResult<IEnumerable<RecordingModel>>?> GetByEmailAsync(string email)
     {
         string url = GetRecordingUrl(email);
         return await GetAsync<IEnumerable<RecordingModel>>(url);
+    }
+    
+    public async Task<RedirectResult<int?>> UploadPartAsync(RecordingPartUploadReq request)
+    {
+        throw new NotImplementedException();
     }
     
     private string GetRecordingUrl(string email) =>

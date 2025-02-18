@@ -58,12 +58,12 @@ public class RecordingsController : ControllerBase
 
         var response = await _dagClient.GetByEmailAsync(email!);
 
-        if (response.Recordings is null)
+        if (response.Value is null)
         {
             return await HandleErrorResponseAsync(response.Message);
         }
 
-        return Ok(response.Recordings);
+        return Ok(response.Value);
     }
     
     [HttpGet("download")]
@@ -74,12 +74,12 @@ public class RecordingsController : ControllerBase
         
         var response = await _dagClient.DownloadAsync(id, sound);
 
-        if (response.Model is null)
+        if (response.Value is null)
         {
             return await HandleErrorResponseAsync(response.Message);
         }
 
-        return Ok(response.Model);
+        return Ok(response.Value);
     }
 
     [HttpPost("upload")]
@@ -91,10 +91,10 @@ public class RecordingsController : ControllerBase
         var internalReq = request.ToInternal(email!);
         var response = await _dagClient.UploadAsync(internalReq);
 
-        if (response.RecordingId is null)
+        if (response.Value is null)
             return await HandleErrorResponseAsync(response.Message);
 
-        return Ok(response.RecordingId);
+        return Ok(response.Value);
     }
 
     [HttpPost("upload-part")]
@@ -103,29 +103,36 @@ public class RecordingsController : ControllerBase
         if (!_jwtService.TryValidateToken(request.Jwt, out string? email)) 
             return Unauthorized();
 
-        var json = JsonSerializer.Serialize(request);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await _dagClient.UploadPartAsync(request);
 
-        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRecPart_endpoint}";
+        if (response.Value is null)
+            return await HandleErrorResponseAsync(response.Message);
 
-        try
-        {
-            var response = await _httpClient.PostAsync(dagUrl, content);
+        return Ok(response.Value);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                Logger.Log($"Recording part upload failed with status '{response.StatusCode.ToString()}'",
-                    LogLevel.Warning);
-                return StatusCode((int)response.StatusCode);
-            }
-
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Exception caught while redirecting recording part uploading request to DAG: {ex.Message}", LogLevel.Error);
-            return StatusCode(500, ex.Message);
-        }
+        // var json = JsonSerializer.Serialize(request);
+        // var content = new StringContent(json, Encoding.UTF8, "application/json");
+        //
+        // string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRecPart_endpoint}";
+        //
+        // try
+        // {
+        //     var response = await _httpClient.PostAsync(dagUrl, content);
+        //
+        //     if (!response.IsSuccessStatusCode)
+        //     {
+        //         Logger.Log($"Recording part upload failed with status '{response.StatusCode.ToString()}'",
+        //             LogLevel.Warning);
+        //         return StatusCode((int)response.StatusCode);
+        //     }
+        //
+        //     return Ok();
+        // }
+        // catch (Exception ex)
+        // {
+        //     Logger.Log($"Exception caught while redirecting recording part uploading request to DAG: {ex.Message}", LogLevel.Error);
+        //     return StatusCode(500, ex.Message);
+        // }
     }
 
     private async Task<IActionResult> HandleErrorResponseAsync(HttpResponseMessage response)
