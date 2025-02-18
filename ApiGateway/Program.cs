@@ -40,5 +40,4 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseRouting();
 app.MapControllers();
-app.MapGet("/gy", () => "превет Аня как делифки");
 app.Run();
