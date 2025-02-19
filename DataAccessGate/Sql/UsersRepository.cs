@@ -30,7 +30,7 @@ public class UsersRepository : RepositoryBase
 
     public bool AuthorizeUser(string email, string password)
     {
-        const string sql = "SELECT 1 FROM \"Users\" WHERE \"Email\" = @Email AND \"Password\" = @Password";
+        const string sql = "SELECT 1 FROM \"Users\" WHERE LOWER(\"Email\") = LOWER(@Email) AND \"Password\" = @Password";
 
         int rowsCount = Connection.QueryFirstOrDefault<int>(sql, new { Email = email, Password = password });
 

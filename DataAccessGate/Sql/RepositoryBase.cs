@@ -22,9 +22,9 @@ namespace DataAccessGate.Sql;
 
 public abstract class RepositoryBase : IDisposable
 {
-    protected IConfiguration Configuration { get; init; }
+    protected IConfiguration Configuration { get; }
     
-    protected DbConnection Connection { get; init; }
+    protected DbConnection Connection { get; }
     
     private string ConnectionString =>
         Configuration["ConnectionStrings:Default"] ??
