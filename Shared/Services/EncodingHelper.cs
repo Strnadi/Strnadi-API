@@ -14,6 +14,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.Security.Cryptography;
+using System.Text;
+
 namespace Shared.Services;
 
 public static class EncodingHelper
@@ -26,5 +29,12 @@ public static class EncodingHelper
     public static string EncodeToBase64(byte[] binary)
     {
         return Convert.ToBase64String(binary);
+    }
+
+    public static string Sha256(string value)
+    {
+        var bytes = Encoding.UTF8.GetBytes(value);
+        var hash = SHA256.HashData(bytes);
+        return Convert.ToBase64String(hash);
     }
 }
