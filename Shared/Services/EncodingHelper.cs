@@ -35,6 +35,6 @@ public static class EncodingHelper
     {
         var bytes = Encoding.UTF8.GetBytes(value);
         var hash = SHA256.HashData(bytes);
-        return Convert.ToBase64String(hash);
+        return Encoding.UTF8.GetString(hash);
     }
 }
