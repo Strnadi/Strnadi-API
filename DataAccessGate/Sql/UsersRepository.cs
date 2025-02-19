@@ -19,6 +19,7 @@ using Models.Database;
 using Models.Requests;
 using Npgsql;
 using Shared.Logging;
+using Shared.Services;
 
 namespace DataAccessGate.Sql;
 
@@ -30,9 +31,11 @@ public class UsersRepository : RepositoryBase
 
     public bool AuthorizeUser(string email, string password)
     {
+        string passwordHashed = EncodingHelper.Sha256(password);
+        
         const string sql = "SELECT 1 FROM \"Users\" WHERE LOWER(\"Email\") = LOWER(@Email) AND \"Password\" = @Password";
 
-        int rowsCount = Connection.QueryFirstOrDefault<int>(sql, new { Email = email, Password = password });
+        int rowsCount = Connection.QueryFirstOrDefault<int>(sql, new { Email = email, Password = passwordHashed });
 
         return rowsCount != 0;
     }
@@ -83,7 +86,7 @@ public class UsersRepository : RepositoryBase
             {
                 request.Nickname,
                 request.Email,
-                request.Password,
+                Password = EncodingHelper.Sha256(request.Password),
                 request.FirstName,
                 request.LastName
             });
