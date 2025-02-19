@@ -15,12 +15,13 @@
  */
 using ApiGateway.Services;
 using Shared.Communication;
+using Shared.Middleware.IpRateLimiter;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<DagRecordingsControllerClient>();
 builder.Services.AddCors(corsOptions =>
@@ -36,6 +37,8 @@ builder.Services.AddCors(corsOptions =>
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+app.UseMiddleware<IpRateLimitingMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseRouting();
