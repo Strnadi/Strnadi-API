@@ -1,19 +1,35 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Shared.Middleware.IpRateLimiter;
 
 public class IpRateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly IMemoryCache _cache;
 
-    private const int requests_limit = 100;
+    private readonly IConfiguration _configuration;
+    private readonly IMemoryCache _cache;
+    private readonly ILogger _logger;
+
+    private int requestsLimit =>
+        int.Parse(_configuration["RequestLimiting:Limit"] ??
+                  throw new NullReferenceException("Invalid configuration key passed"));
+    private TimeSpan timeLimit =>
+        TimeSpan.Parse(_configuration["RequestLimiting:Period"] ??
+                       throw new NullReferenceException("Invalid configuration key passed"));
     
-    public IpRateLimitingMiddleware(RequestDelegate next, IMemoryCache cache)
+    public IpRateLimitingMiddleware(RequestDelegate next,
+        IConfiguration configuration,
+        IMemoryCache cache,
+        ILogger<IpRateLimitingMiddleware> logger)
     {
         _next = next;
+        
+        _configuration = configuration;
         _cache = cache;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -35,15 +51,16 @@ public class IpRateLimitingMiddleware
 
         var cacheEntryOptions = new MemoryCacheEntryOptions()
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
+            AbsoluteExpirationRelativeToNow = timeLimit
         };
 
         _cache.Set(cacheKey, requestsCount, cacheEntryOptions);
 
-        if (requestsCount > requests_limit)
+        if (requestsCount > requestsLimit)
         {
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             await context.Response.WriteAsync("Too many requests");
+            _logger.LogWarning($"IP {ip} exceeded the rate limit");
             return;
         }
 
