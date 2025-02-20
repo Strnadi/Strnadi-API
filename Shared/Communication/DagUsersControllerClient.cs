@@ -36,11 +36,11 @@ public class DagUsersControllerClient : ServiceClient
     }
 
     private string GetAuthorizeUserUrl() =>
-        $"https://{_dagCntName}:{_dagCntPort}/users/authorize-user";
+        $"http://{_dagCntName}:{_dagCntPort}/users/authorize-user";
     
     private string GetSignUpUrl() =>
-        $"https://{_dagCntName}:{_dagCntPort}/users/sign-up";
+        $"http://{_dagCntName}:{_dagCntPort}/users/sign-up";
 
     private string GetVerifyUserUrl(string email) =>
-        $"https://{_dagCntName}:{_dagCntPort}/users/verify?email={email}";
+        $"http://{_dagCntName}:{_dagCntPort}/users/verify?email={email}";
 }
