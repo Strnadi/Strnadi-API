@@ -127,7 +127,7 @@ public class RecordingsController : ControllerBase
         // }
     }
 
-    private async Task<IActionResult> HandleErrorResponseAsync(IRedirectResult? response)
+    private async Task<IActionResult> HandleErrorResponseAsync(IHttpRequestResult? response)
     {
         if (response is null)
             return StatusCode(500);
