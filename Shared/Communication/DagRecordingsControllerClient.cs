@@ -30,43 +30,43 @@ public class DagRecordingsControllerClient : ServiceClient
     {
     }
     
-    public async Task<RedirectResult<int?>?> UploadAsync(RecordingUploadReqInternal internalReq)
+    public async Task<HttpRequestResult<int?>?> UploadAsync(RecordingUploadReqInternal internalReq)
     {
         string url = GetUploadUrl();
         
-        RedirectResult<string?>? response = await PostAsync<RecordingUploadReqInternal, string>(url, internalReq);
+        HttpRequestResult<string?>? response = await PostAsync<RecordingUploadReqInternal, string>(url, internalReq);
         
         return response is null
             ? null
-            : new RedirectResult<int?>(response.Value is not null
-                    ? int.Parse(response.Value)
-                    : null,
-                response.Message);
+            : new HttpRequestResult<int?>(response.Message, 
+                response.Value is not null
+                ? int.Parse(response.Value)
+                : null);
     }
     
-    public async Task<RedirectResult<RecordingModel?>?> DownloadAsync(int recordingId, bool sound) 
+    public async Task<HttpRequestResult<RecordingModel?>?> DownloadAsync(int recordingId, bool sound) 
     {
         string url = GetDownloadUrl(recordingId, sound);
         return await GetAsync<RecordingModel>(url);
     }
     
-    public async Task<RedirectResult<IEnumerable<RecordingModel>?>?> GetByEmailAsync(string email)
+    public async Task<HttpRequestResult<IEnumerable<RecordingModel>?>?> GetByEmailAsync(string email)
     {
         string url = GetRecordingUrl(email);
         return await GetAsync<IEnumerable<RecordingModel>>(url);
     }
     
-    public async Task<RedirectResult<int?>?> UploadPartAsync(RecordingPartUploadReq request)
+    public async Task<HttpRequestResult<int?>?> UploadPartAsync(RecordingPartUploadReq request)
     {
         string url = GetUploadPartUrl();
         var response = await GetAsync<string>(url);
         
         return response is null
             ? null
-            : new RedirectResult<int?>(response.Value is not null
+            : new HttpRequestResult<int?>(response.Message, 
+                response.Value is not null
                     ? int.Parse(response.Value)
-                    : null,
-                response.Message);
+                    : null);
     }
     
     private string GetRecordingUrl(string email) =>
