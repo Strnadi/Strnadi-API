@@ -59,7 +59,7 @@ public class DagRecordingsControllerClient : ServiceClient
     public async Task<HttpRequestResult<int?>?> UploadPartAsync(RecordingPartUploadReq request)
     {
         string url = GetUploadPartUrl();
-        var response = await GetAsync<string>(url);
+        var response = await PostAsync<RecordingPartUploadReq, string>(url, request);
         
         return response is null
             ? null
