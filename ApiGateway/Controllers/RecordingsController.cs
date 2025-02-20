@@ -13,15 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using System.Text;
-using System.Text.Json;
+
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Diagnostics;
 using Models.Requests;
 using Shared.Communication;
-using Shared.Logging;
-using LogLevel = Shared.Logging.LogLevel; 
+using Shared.Extensions;
 
 namespace ApiGateway.Controllers;
 
@@ -52,7 +49,7 @@ public class RecordingsController : ControllerBase
 
         if (response?.Value is null)
         {
-            return await HandleErrorResponseAsync(response);
+            return await this.HandleErrorResponseAsync(response);
         }
 
         return Ok(response.Value);
@@ -68,7 +65,7 @@ public class RecordingsController : ControllerBase
 
         if (response?.Value is null)
         {
-            return await HandleErrorResponseAsync(response);
+            return await this.HandleErrorResponseAsync(response);
         }
 
         return Ok(response.Value);
@@ -84,7 +81,7 @@ public class RecordingsController : ControllerBase
         var response = await _dagClient.UploadAsync(internalReq);
 
         if (response?.Value is null)
-            return await HandleErrorResponseAsync(response);
+            return await this.HandleErrorResponseAsync(response);
 
         return Ok(response.Value);
     }
@@ -98,46 +95,8 @@ public class RecordingsController : ControllerBase
         var response = await _dagClient.UploadPartAsync(request);
 
         if (response?.Value is null)
-            return await HandleErrorResponseAsync(response);
+            return await this.HandleErrorResponseAsync(response);
 
         return Ok(response.Value);
-
-        // var json = JsonSerializer.Serialize(request);
-        // var content = new StringContent(json, Encoding.UTF8, "application/json");
-        //
-        // string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_uploadRecPart_endpoint}";
-        //
-        // try
-        // {
-        //     var response = await _httpClient.PostAsync(dagUrl, content);
-        //
-        //     if (!response.IsSuccessStatusCode)
-        //     {
-        //         Logger.Log($"Recording part upload failed with status '{response.StatusCode.ToString()}'",
-        //             LogLevel.Warning);
-        //         return StatusCode((int)response.StatusCode);
-        //     }
-        //
-        //     return Ok();
-        // }
-        // catch (Exception ex)
-        // {
-        //     Logger.Log($"Exception caught while redirecting recording part uploading request to DAG: {ex.Message}", LogLevel.Error);
-        //     return StatusCode(500, ex.Message);
-        // }
-    }
-
-    private async Task<IActionResult> HandleErrorResponseAsync(IHttpRequestResult? response)
-    {
-        if (response is null)
-            return StatusCode(500);
-        
-        HttpResponseMessage message = response.Message;
-        int statusCode = (int)message.StatusCode;
-        string? content = message.Content != null!
-            ? await message.Content.ReadAsStringAsync() 
-            : null;
-            
-        return StatusCode(statusCode, content);
     }
 }

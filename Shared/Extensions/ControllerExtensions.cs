@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Shared.Communication;
+using Shared.Logging;
 
 namespace Shared.Extensions;
 
@@ -12,6 +13,8 @@ public static class ControllerExtensions
     {
         if (response is null)
             return controller.StatusCode(500);
+
+        Logger.Log($"Operation {controller.HttpContext.Request.Path} failed with status code " + (int)response.StatusCode);
         
         int statusCode = (int)response.StatusCode;
         string? content = response.Content != null!
