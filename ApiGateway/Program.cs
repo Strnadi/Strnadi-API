@@ -26,6 +26,7 @@ builder.Services.AddLogging();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<DagRecordingsControllerClient>();
+builder.Services.AddScoped<DagUsersControllerClient>();
 builder.Services.AddCors(corsOptions =>
 {
     corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
@@ -41,7 +42,6 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 app.UseMiddleware<IpRateLimitingMiddleware>();
-app.UseMiddleware<LoggingMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseRouting();
