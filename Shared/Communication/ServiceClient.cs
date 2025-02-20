@@ -35,12 +35,12 @@ public abstract class ServiceClient
         _httpClient = httpClient;
     }
 
-    protected async Task<HttpResponseMessage?> GetAsync(string route)
+    protected async Task<HttpRequestResult?> GetAsync(string route)
     {
         try
         {
             var response = await _httpClient.GetAsync(route);
-            return response;
+            return new HttpRequestResult(response);
         }
         catch (Exception ex)
         {
@@ -49,18 +49,18 @@ public abstract class ServiceClient
         }
     }
 
-    protected async Task<RedirectResult<TResponse?>?> GetAsync<TResponse>(string route)
+    protected async Task<HttpRequestResult<TResponse?>?> GetAsync<TResponse>(string route)
     {
         try
         {
             var response = await _httpClient.GetAsync(route);
 
             if (!response.IsSuccessStatusCode)
-                return new RedirectResult<TResponse?>(default, response);
+                return new HttpRequestResult<TResponse?>(response, default);
             
             var content = await response.Content.ReadAsStringAsync();
             var responseModel = JsonSerializer.Deserialize<TResponse>(content, _jsonSerializerOptions);
-            return new RedirectResult<TResponse?>(responseModel, response);
+            return new HttpRequestResult<TResponse?>(response, responseModel);
         }
         catch (Exception ex)
         {
@@ -69,7 +69,21 @@ public abstract class ServiceClient
         }
     }
 
-    protected async Task<HttpResponseMessage?> PostAsync<TRequest>(string route, TRequest request)
+    protected async Task<HttpRequestResult?> PostAsync(string route)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync(route, null);
+            return new HttpRequestResult(response);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception thrown while redirecting request to {route}: {ex.Message}");
+            return null;
+        }
+    }
+
+    protected async Task<HttpRequestResult?> PostAsync<TRequest>(string route, TRequest request)
     {
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -77,7 +91,7 @@ public abstract class ServiceClient
         try
         {
             var response = await _httpClient.PostAsync(route, content);
-            return response;
+            return new HttpRequestResult(response);
         }
         catch (Exception ex)
         {
@@ -86,7 +100,7 @@ public abstract class ServiceClient
         }
     }
 
-    protected async Task<RedirectResult<TResponse?>?> PostAsync<TRequest, TResponse>(string route, TRequest? request) 
+    protected async Task<HttpRequestResult<TResponse?>?> PostAsync<TRequest, TResponse>(string route, TRequest? request) 
     {
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -96,8 +110,8 @@ public abstract class ServiceClient
             var response = await _httpClient.PostAsync(route, content);
 
             return !response.IsSuccessStatusCode
-                ? new RedirectResult<TResponse?>(default, response)
-                : new RedirectResult<TResponse?>(await SerializeResponseContentAsync<TResponse>(response.Content), response);
+                ? new HttpRequestResult<TResponse?>(response, default)
+                : new HttpRequestResult<TResponse?>(response, await SerializeResponseContentAsync<TResponse>(response.Content));
         }
         catch (Exception ex)
         {
