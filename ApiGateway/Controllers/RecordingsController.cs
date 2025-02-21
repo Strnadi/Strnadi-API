@@ -64,11 +64,11 @@ public class RecordingsController : ControllerBase
     public async Task<IActionResult> Download([FromQuery] int id, [FromQuery] bool sound = false)
     {
         string? jwt = this.GetJwt();
-
+        
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!_jwtService.TryValidateToken(jwt, out string? email))
+        if (!_jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
         
         var response = await _dagClient.DownloadAsync(id, sound);
