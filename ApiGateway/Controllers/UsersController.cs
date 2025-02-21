@@ -16,6 +16,9 @@
 using System.Text;
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
+using Models.Database;
+using Shared.Communication;
+using Shared.Extensions;
 using Shared.Logging;
 using LogLevel = Shared.Logging.LogLevel;
 
@@ -25,41 +28,32 @@ namespace ApiGateway.Controllers;
 [Route("/users")]
 public class UsersController : ControllerBase
 {
-    private readonly IConfiguration _configuration;
-
-    private readonly HttpClient _httpClient;
+    private readonly DagUsersControllerClient _dagClient;
     
     private readonly JwtService _jwtService;
     
-    private string _dagCntName => _configuration["MSAddresses:DagName"] ?? throw new NullReferenceException("Failed to load microservice name");
-    private string _dagCntPort => _configuration["MSAddresses:DagPort"] ?? throw new NullReferenceException("Failed to load microservice port");
-    
-    private const string dag_get_endpoint = "users";
-    
-    public UsersController(IConfiguration config, JwtService jwtService)
+    public UsersController(JwtService jwtService, DagUsersControllerClient client)
     {
-        _configuration = config;
         _jwtService = jwtService;
-        _httpClient = new HttpClient();
+        _dagClient = client;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] string jwt)
+    public async Task<IActionResult> Get()
     {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
-        string dagUrl = $"http://{_dagCntName}:{_dagCntPort}/{dag_get_endpoint}/{email}";
+        HttpRequestResult<UserModel?>? response = await _dagClient.GetUser(email!);
 
-        try
-        {
-            var response = await _httpClient.GetAsync(dagUrl);
-            return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Exception caught while communicating with DAG module: {ex.Message}", LogLevel.Error);
-            return StatusCode(500, ex.Message);
-        }
+        if (response?.Value is null)
+            return await this.HandleErrorResponseAsync(response);
+
+        return Ok(response.Value);
     } 
 }
