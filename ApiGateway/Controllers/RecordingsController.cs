@@ -40,8 +40,13 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetRecordingsOfUser([FromQuery] string jwt)
+    public async Task<IActionResult> GetRecordingsOfUser()
     {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
@@ -56,8 +61,13 @@ public class RecordingsController : ControllerBase
     }
     
     [HttpGet("download")]
-    public async Task<IActionResult> Download([FromQuery] int id, [FromQuery] string jwt, [FromQuery] bool sound = false)
+    public async Task<IActionResult> Download([FromQuery] int id, [FromQuery] bool sound = false)
     {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
@@ -74,7 +84,12 @@ public class RecordingsController : ControllerBase
     [HttpPost("upload")]
     public async Task<IActionResult> Upload([FromBody] RecordingUploadReq request)
     {
-        if (!_jwtService.TryValidateToken(request.Jwt, out string? email)) 
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null) 
+            return BadRequest("No JWT provided");
+        
+        if (!_jwtService.TryValidateToken(jwt, out string? email)) 
             return Unauthorized();
 
         var internalReq = request.ToInternal(email!);
@@ -89,7 +104,12 @@ public class RecordingsController : ControllerBase
     [HttpPost("upload-part")]
     public async Task<IActionResult> UploadPart([FromBody] RecordingPartUploadReq request)
     {
-        if (!_jwtService.TryValidateToken(request.Jwt, out string? email)) 
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!_jwtService.TryValidateToken(jwt, out string? email)) 
             return Unauthorized();
 
         var response = await _dagClient.UploadPartAsync(request);
