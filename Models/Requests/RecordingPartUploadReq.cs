@@ -17,8 +17,6 @@ namespace Models.Requests;
 
 public class RecordingPartUploadReq
 {
-    public string Jwt { get; set; }
-    
     public int RecordingId { get; set; }
     
     public DateTime Start { get; set; }
