@@ -100,7 +100,7 @@ public class RecordingsController : ControllerBase
         if (recPartId != -1)
         {
             Logger.Log($"Recording part '{recPartId}' was uploaded successfully");
-            return Ok();
+            return Ok(recPartId);
         }
         else
         {

@@ -64,7 +64,7 @@ public class DagRecordingsControllerClient : ServiceClient
         return response is null
             ? null
             : new HttpRequestResult<int?>(response.Message, 
-                response.Value is not null
+                string.IsNullOrEmpty(response.Value)
                     ? int.Parse(response.Value)
                     : null);
     }
