@@ -22,7 +22,7 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 builder.Services.AddHttpClient();
-builder.Services.AddLogging();
+// builder.Services.AddLogging();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<DagRecordingsControllerClient>();
