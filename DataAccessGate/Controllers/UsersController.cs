@@ -79,4 +79,17 @@ public class UsersController : ControllerBase
             Ok(user) : 
             NotFound("User does not exist.");
     }
+
+    [HttpGet("{email}/is-admin")]
+    public IActionResult IsAdmin(string email, [FromServices] UsersRepository repository)
+    {
+        if (!repository.ExistsUser(email))
+            return NotFound($"User '{email}' does not exist.");
+        
+        bool? isAdmin = repository.IsAdmin(email);
+
+        return isAdmin is not null ? 
+            Ok(isAdmin) : 
+            StatusCode(500, "Failed to check if user is admin.");
+    }
 }
