@@ -58,6 +58,20 @@ public class DagUsersControllerClient : ServiceClient
         return await GetAsync<UserModel>(url);
     }
 
+    public async Task<HttpRequestResult<string?>?> GetUserFcmToken(string email)
+    {
+        string url = GetUserFcmTokenUrl(email);
+        
+        return await GetAsync<string>(url);
+    } 
+    
+    public async Task<HttpRequestResult<bool?>?> IsAdminAsync(string? email)
+    {
+        string url = GetIsAdminUrl(email);
+        
+        return await GetAsync<bool?>(url);
+    }
+
     private string GetUserUrl(string email) =>
          $"http://{_dagCntName}:{_dagCntPort}/users/{email}";
     
@@ -69,4 +83,10 @@ public class DagUsersControllerClient : ServiceClient
 
     private string GetVerifyUserUrl(string email) =>
         $"http://{_dagCntName}:{_dagCntPort}/users/verify?email={email}";
+
+    private string GetUserFcmTokenUrl(string email) =>
+        $"http://{_dagCntName}:{_dagCntPort}/users/{email}/fcm-token";
+    
+    private string GetIsAdminUrl(string? email) =>
+        $"http://{_dagCntName}:{_dagCntPort}/users/{email}/is-admin";
 }
