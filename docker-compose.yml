@@ -15,7 +15,7 @@ services:
   strnadi-notifications:
     container_name: ${MS_NOTIFICATIONS}
     build:
-      dockerfile: ./NotificationsService/Dockerfile
+      dockerfile: ./NotificationService/Dockerfile
     ports:
       - "${PORT_NOTIFICATIONS}:8080"
     depends_on:
