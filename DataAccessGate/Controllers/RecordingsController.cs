@@ -33,7 +33,7 @@ public class RecordingsController : ControllerBase
     {
         _configuration = configuration;
     }
-
+    
     [HttpGet]
     public IActionResult GetByEmail([FromQuery] string email,
         [FromServices] RecordingsRepository recordingsRepo,
@@ -50,20 +50,20 @@ public class RecordingsController : ControllerBase
         return Ok(recording);
     }
 
-    [HttpGet("download")]
-    public IActionResult Download([FromQuery] int id,
+    [HttpGet("{recordingId:int}/download")]
+    public IActionResult Download(int recordingId,
         [FromQuery] bool sound,
         [FromServices] RecordingsRepository repository)
     {
-        RecordingModel? recording = repository.GetRecording(id);
+        RecordingModel? recording = repository.GetRecording(recordingId);
         
         if (recording == null)
         {
-            Logger.Log($"Recording {id} not found for downloading.");
+            Logger.Log($"Recording {recordingId} not found for downloading.");
             return NotFound();
         }
 
-        recording.Parts = repository.GetRecordingParts(id, sound);
+        recording.Parts = repository.GetRecordingParts(recordingId, sound);
 
         Logger.Log($"Recording {recording.Id} was sent to download.");
         return Ok(recording);
@@ -107,5 +107,20 @@ public class RecordingsController : ControllerBase
             Logger.Log("Recording part uploading failed");
             return Conflict();
         }
+    }
+
+    [HttpPatch("{recordingId:int}/modify")]
+    public IActionResult Modify(int recordingId,
+        [FromBody] RecordingModel model,
+        [FromServices] RecordingsRepository repository)
+    {
+        if (!repository.ExistsRecording(recordingId))
+            return NotFound($"Recording '{recordingId}' not found");
+        
+        bool success = repository.ModifyRecording(recordingId, model);
+        
+        return success ?
+            Ok() :
+            Conflict();
     }
 }
