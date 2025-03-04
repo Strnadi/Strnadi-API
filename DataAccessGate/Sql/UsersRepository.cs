@@ -120,4 +120,19 @@ public class UsersRepository : RepositoryBase
             return false;
         }
     }
+
+    public bool? IsAdmin(string email)
+    {
+        const string sql = "SELECT \"UserRole\" = 'admin' FROM \"Users\" WHERE \"Email\" = @Email";
+
+        try
+        {
+            return Connection.ExecuteScalar<bool>(sql, new { Email = email });
+        }
+        catch (Exception ex)
+        {
+            Logger.Log("Exception thrown while checking if user is admin: " + ex.Message);
+            return null;
+        }
+    }
 }
