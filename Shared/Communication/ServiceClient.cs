@@ -120,6 +120,43 @@ public abstract class ServiceClient
         }
     }
 
+    protected async Task<HttpRequestResult?> PatchAsync<TRequest>(string route, TRequest request)
+    {
+        var json = JsonSerializer.Serialize(request);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        try
+        {
+            var response = await _httpClient.PatchAsync(route, content);
+            return new HttpRequestResult(response);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception thrown while redirecting request to {route}: {ex.Message}");
+            return null;
+        }
+    }
+    
+    protected async Task<HttpRequestResult<TResponse?>?> PatchAsync<TRequest, TResponse>(string route, TRequest request)
+    {
+        var json = JsonSerializer.Serialize(request);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        try
+        {
+            var response = await _httpClient.PatchAsync(route, content);
+
+            return !response.IsSuccessStatusCode
+                ? new HttpRequestResult<TResponse?>(response, default)
+                : new HttpRequestResult<TResponse?>(response, await SerializeResponseContentAsync<TResponse>(response.Content));
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception thrown while redirecting request to {route}: {ex.Message}");
+            return null;
+        }
+    }
+
     private async Task<TResponse?> SerializeResponseContentAsync<TResponse>(HttpContent content)
     {
         if (typeof(TResponse) == typeof(string))
