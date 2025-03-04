@@ -16,6 +16,7 @@
 
 using ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
+using Models.Database;
 using Models.Requests;
 using Shared.Communication;
 using Shared.Extensions;
@@ -53,15 +54,39 @@ public class RecordingsController : ControllerBase
         var response = await _dagClient.GetByEmailAsync(email!);
 
         if (response?.Value is null)
-        {
             return await this.HandleErrorResponseAsync(response);
-        }
 
         return Ok(response.Value);
     }
+
+    [HttpPatch("{recordingId}/modify")]
+    public async Task<IActionResult> Modify(int recordingId, [FromBody] RecordingModel model, [FromServices] DagUsersControllerClient usersClient)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!_jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        var isAdminResponse = await usersClient.IsAdminAsync(email!);
+        if (isAdminResponse?.Value is null)
+            return await this.HandleErrorResponseAsync(isAdminResponse);
+        
+        var modifyResponse = await _dagClient.ModifyAsync(recordingId, model);
+        
+        if (modifyResponse is null)
+            return await this.HandleErrorResponseAsync(modifyResponse);
+
+        if (!modifyResponse.Success)
+            return StatusCode((int)modifyResponse.StatusCode);
+
+        return Ok();
+    }
     
-    [HttpGet("download")]
-    public async Task<IActionResult> Download([FromQuery] int id, [FromQuery] bool sound = false)
+    [HttpGet("{recordingId:int}/download")]
+    public async Task<IActionResult> Download(int recordingId, [FromQuery] bool sound = false)
     {
         string? jwt = this.GetJwt();
         
@@ -71,7 +96,7 @@ public class RecordingsController : ControllerBase
         if (!_jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
         
-        var response = await _dagClient.DownloadAsync(id, sound);
+        var response = await _dagClient.DownloadAsync(recordingId, sound);
 
         if (response?.Value is null)
         {
