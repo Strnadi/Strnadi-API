@@ -13,11 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using System.Net;
+
 namespace Shared.Communication;
 
 public interface IHttpRequestResult
 {
     HttpResponseMessage Message { get; }
+    
+    bool Success { get; }
+    
+    HttpStatusCode StatusCode { get; }
 }
 
 public record HttpRequestResult : IHttpRequestResult
@@ -25,6 +32,7 @@ public record HttpRequestResult : IHttpRequestResult
     public HttpResponseMessage Message { get; }
     
     public bool Success => Message.IsSuccessStatusCode;
+    public HttpStatusCode StatusCode => Message.StatusCode;
 
     public HttpRequestResult(HttpResponseMessage message)
     {
@@ -37,6 +45,8 @@ public record HttpRequestResult<TResponse> : IHttpRequestResult
     public HttpResponseMessage Message { get; }
     
     public bool Success => Message.IsSuccessStatusCode;
+    
+    public HttpStatusCode StatusCode => Message.StatusCode;
     
     public TResponse? Value { get; }
 
