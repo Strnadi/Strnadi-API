@@ -65,19 +65,30 @@ public class DagRecordingsControllerClient : ServiceClient
             ? null
             : new HttpRequestResult<int?>(response.Message, 
                 string.IsNullOrEmpty(response.Value)
-                    ? int.Parse(response.Value)
+                    ? int.Parse(response.Value!)
                     : null);
+    }
+    
+    public async Task<HttpRequestResult?> ModifyAsync(int recordingId, RecordingModel model)
+    {
+        string url = GetModifyUrl(recordingId);
+
+        return await PatchAsync(url, model);
     }
     
     private string GetRecordingUrl(string email) =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings?email={email}";
     
     private string GetDownloadUrl(int recordingId, bool sound) =>
-        $"http://{_dagCntName}:{_dagCntPort}/recordings/download?id={recordingId}&sound={sound}";
+        $"http://{_dagCntName}:{_dagCntPort}/recordings/{recordingId}/download?sound={sound}";
 
     private string GetUploadUrl() =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings/upload";
 
     private string GetUploadPartUrl() =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings/upload-part";
+
+    private string GetModifyUrl(int recordingId) =>
+        $"http://{_dagCntName}:{_dagCntPort}/recordings/{recordingId}/modify";
+
 }
