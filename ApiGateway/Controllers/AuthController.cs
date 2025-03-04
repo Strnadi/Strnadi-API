@@ -79,7 +79,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("verify")]
-    public async Task<IActionResult> VerifyUser([FromServices] DagUsersControllerClient client)
+    public async Task<IActionResult> VerifyEmail([FromServices] DagUsersControllerClient client)
     {
         string? jwt = this.GetJwt();
 
@@ -89,9 +89,9 @@ public class AuthController : ControllerBase
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
-        HttpRequestResult response = await client.VerifyUser(email!);
+        HttpRequestResult? response = await client.VerifyUser(email!);
 
-        return response.Success ? 
+        return response?.Success is not null && response.Success ? 
             Ok() : 
             StatusCode(500);
     }
