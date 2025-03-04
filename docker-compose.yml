@@ -12,6 +12,16 @@ services:
       - strnadi-db
     networks:
       - strnadi-network
+  strnadi-notifications:
+    container_name: ${MS_NOTIFICATIONS}
+    build:
+      dockerfile: ./NotificationsService/Dockerfile
+    ports:
+      - "${PORT_NOTIFICATIONS}:8080"
+    depends_on:
+      - strnadi-dag
+    networks:
+      - strnadi-network
   
   strnadi-dag:
     container_name: ${MS_DAG}
