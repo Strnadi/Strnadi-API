@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models", "Models\Models.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{1AA4F7B9-096C-4EDF-BA41-5219BAC2DCFF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService", "NotificationService\NotificationService.csproj", "{5EA86F22-FD17-4610-8303-D8C65EA84C5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{1AA4F7B9-096C-4EDF-BA41-5219BAC2DCFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AA4F7B9-096C-4EDF-BA41-5219BAC2DCFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1AA4F7B9-096C-4EDF-BA41-5219BAC2DCFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5EA86F22-FD17-4610-8303-D8C65EA84C5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EA86F22-FD17-4610-8303-D8C65EA84C5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EA86F22-FD17-4610-8303-D8C65EA84C5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EA86F22-FD17-4610-8303-D8C65EA84C5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
