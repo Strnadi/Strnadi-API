@@ -152,4 +152,41 @@ public class RecordingsRepository : RepositoryBase
         byte[] binary = fsHelper.ReadRecordingFile(recordingId, recordingPartId);
         return EncodingHelper.EncodeToBase64(binary);
     }
+
+    public bool ExistsRecording(int recordingId)
+    {
+        const string sql = "SELECT 1 FROM \"Recordings\" WHERE \"Id\" = @Id";
+
+        return Connection.ExecuteScalar<int?>(sql, new { Id = recordingId }) != null;
+    }
+
+    public bool ModifyRecording(int recordingId, RecordingModel model)
+    {
+        try
+        {
+            foreach (var property in model.GetType().GetProperties())
+            {
+                if (property.Name == "Id")
+                    continue;
+
+                if (property.GetValue(model) == null) continue;
+
+                const string sql = "UPDATE \"Recordings\" SET \"@Property\" = @Value WHERE \"Id\" = @Id";
+
+                Connection.Execute(sql, new
+                {
+                    Property = property.Name,
+                    Value = property.GetValue(model),
+                    Id = recordingId
+                });
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log("Exception caught while modifying recording: " + ex.Message, LogLevel.Error);
+            return false;
+        }
+    }
 }
