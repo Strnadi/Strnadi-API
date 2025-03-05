@@ -23,6 +23,7 @@ var configuration = builder.Configuration;
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<RecordingsControllerClient>();
 builder.Services.AddScoped<DagRecordingsControllerClient>();
 builder.Services.AddScoped<DagUsersControllerClient>();
 builder.Services.AddCors(corsOptions =>
