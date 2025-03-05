@@ -39,7 +39,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseMiddleware<IpRateLimitingMiddleware>();
+// app.UseMiddleware<IpRateLimitingMiddleware>(); temporarily turned off 
 
 app.UseHttpsRedirection();
 app.UseRouting();
