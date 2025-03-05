@@ -26,17 +26,14 @@ public class JwtRateLimitingMiddleware
     
     private readonly IConfiguration _configuration;
     private readonly IMemoryCache _cache;
-    private readonly ILogger _logger;
 
     public JwtRateLimitingMiddleware(RequestDelegate next,
         IConfiguration configuration,
-        IMemoryCache cache,
-        ILogger logger)
+        IMemoryCache cache)
     {
         _next = next;
         _configuration = configuration;
         _cache = cache;
-        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
