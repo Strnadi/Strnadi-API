@@ -29,10 +29,10 @@ public class IpRateLimitingMiddleware
     private readonly IConfiguration _configuration;
     private readonly IMemoryCache _cache;
 
-    private int requestsLimit =>
+    private int _requestsLimit =>
         int.Parse(_configuration["RequestLimiting:Limit"] ??
                   throw new NullReferenceException("Invalid configuration key passed"));
-    private TimeSpan timeLimit =>
+    private TimeSpan _timeLimit =>
         TimeSpan.Parse(_configuration["RequestLimiting:Period"] ??
                        throw new NullReferenceException("Invalid configuration key passed"));
     
@@ -65,12 +65,12 @@ public class IpRateLimitingMiddleware
 
         var cacheEntryOptions = new MemoryCacheEntryOptions()
         {
-            AbsoluteExpirationRelativeToNow = timeLimit
+            AbsoluteExpirationRelativeToNow = _timeLimit
         };
 
         _cache.Set(cacheKey, requestsCount, cacheEntryOptions);
-
-        if (requestsCount > requestsLimit)
+        
+        if (requestsCount > _requestsLimit)
         {
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             await context.Response.WriteAsync("Too many requests");
