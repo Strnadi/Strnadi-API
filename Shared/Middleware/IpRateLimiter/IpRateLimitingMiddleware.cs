@@ -17,6 +17,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Shared.Logging;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Shared.Middleware.IpRateLimiter;
 
@@ -26,7 +28,6 @@ public class IpRateLimitingMiddleware
 
     private readonly IConfiguration _configuration;
     private readonly IMemoryCache _cache;
-    private readonly ILogger _logger;
 
     private int requestsLimit =>
         int.Parse(_configuration["RequestLimiting:Limit"] ??
@@ -37,14 +38,12 @@ public class IpRateLimitingMiddleware
     
     public IpRateLimitingMiddleware(RequestDelegate next,
         IConfiguration configuration,
-        IMemoryCache cache,
-        ILogger<IpRateLimitingMiddleware> logger)
+        IMemoryCache cache)
     {
         _next = next;
         
         _configuration = configuration;
         _cache = cache;
-        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -75,7 +74,7 @@ public class IpRateLimitingMiddleware
         {
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             await context.Response.WriteAsync("Too many requests");
-            _logger.LogWarning($"IP {ip} exceeded the rate limit");
+            Logger.Log($"IP {ip} exceeded the rate limit", LogLevel.Warning);
             return;
         }
 
