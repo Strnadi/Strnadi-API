@@ -144,4 +144,15 @@ public class RecordingsController : ControllerBase
 
         return Ok(response.Value);
     }
+
+    [HttpGet("filtered")]
+    public async Task<IActionResult> GetFiltered([FromServices] RecordingsControllerClient client)
+    {
+        var response = await client.GetFilteredSubrecordingsAsync();
+
+        if (response?.Value is null)
+            return await this.HandleErrorResponseAsync(response);
+
+        return Ok(response.Value);
+    }
 }

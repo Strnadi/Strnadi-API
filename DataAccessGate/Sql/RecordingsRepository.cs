@@ -189,4 +189,18 @@ public class RecordingsRepository : RepositoryBase
             return false;
         }
     }
+
+    public IEnumerable<FilteredSubrecordingModel>? GetFilteredRecordings()
+    {
+        try
+        {
+            const string sql = "SELECT * FROM \"FiltredSubrecordings\"";
+            return Connection.Query<FilteredSubrecordingModel>(sql);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log("Exception caught while getting filtered recordings: " + ex.Message, LogLevel.Error);
+            return null;
+        }
+    }
 }

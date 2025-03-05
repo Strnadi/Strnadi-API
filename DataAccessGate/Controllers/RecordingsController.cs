@@ -123,4 +123,15 @@ public class RecordingsController : ControllerBase
             Ok() :
             Conflict();
     }
+
+    [HttpGet("filtered")]
+    public IActionResult GetFiltered([FromServices] RecordingsRepository repo)
+    {
+        var filteredRecordings = repo.GetFilteredRecordings();
+
+        if (filteredRecordings is null)
+            return StatusCode(500, "Failed to get filtered recordings");
+        
+        return Ok(filteredRecordings);
+    }
 }
