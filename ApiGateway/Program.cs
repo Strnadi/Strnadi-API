@@ -22,6 +22,8 @@ var configuration = builder.Configuration;
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<RecordingsControllerClient>();
 builder.Services.AddScoped<DagRecordingsControllerClient>();
@@ -41,6 +43,13 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 // app.UseMiddleware<IpRateLimitingMiddleware>(); temporarily turned off 
+
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+    options.RoutePrefix = string.Empty;
+});
 
 app.UseHttpsRedirection();
 app.UseRouting();
