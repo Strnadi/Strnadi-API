@@ -89,4 +89,5 @@ public class DagUsersControllerClient : ServiceClient
     
     private string GetIsAdminUrl(string? email) =>
         $"http://{_dagCntName}:{_dagCntPort}/users/{email}/is-admin";
+
 }

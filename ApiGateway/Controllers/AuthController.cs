@@ -27,9 +27,9 @@ namespace ApiGateway.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
-    
+
     private readonly JwtService _jwtService;
-    
+
     public AuthController(IConfiguration config, JwtService jwtService)
     {
         _configuration = config;
@@ -43,13 +43,13 @@ public class AuthController : ControllerBase
 
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
-        if (!_jwtService.TryValidateToken(jwt, out _)) 
+
+        if (!_jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
 
         return Ok();
     }
-    
+
     [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
         [FromServices] DagUsersControllerClient client)
@@ -60,11 +60,11 @@ public class AuthController : ControllerBase
             return await this.HandleErrorResponseAsync(response);
 
         string jwt = _jwtService.GenerateToken(request.Email);
-        
+
         return Ok(jwt);
     }
 
-    [HttpPost("sign-up")]
+[HttpPost("sign-up")]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request,
         [FromServices] DagUsersControllerClient client)
     {
