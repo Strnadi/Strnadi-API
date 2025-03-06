@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
 using Shared.Communication;
 using Shared.Extensions;
+using Shared.Logging;
 
 namespace ApiGateway.Controllers;
 
@@ -33,7 +34,7 @@ public class DevicesController : ControllerBase
 
         if (response is null)
             return await this.HandleErrorResponseAsync(response);
-
+        
         return Ok();
     }
 }

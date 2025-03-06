@@ -33,9 +33,10 @@ builder.Services.AddCors(corsOptions =>
     corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
     {
         policyBuilder
-            .AllowAnyOrigin()
+            .WithOrigins(configuration["CORS:AllowedOrigin"])
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 builder.Services.AddControllers();
