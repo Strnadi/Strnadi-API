@@ -29,6 +29,7 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<RecordingsControllerClient>();
 builder.Services.AddScoped<DagRecordingsControllerClient>();
 builder.Services.AddScoped<DagUsersControllerClient>();
+builder.Services.AddScoped<DagDevicesControllerClient>();
 builder.Services.AddCors(corsOptions =>
 {
     corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
