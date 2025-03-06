@@ -21,6 +21,6 @@ namespace ApiGateway.Controllers;
 [Route("utils/")]
 public class UtilitiesController : ControllerBase
 {
-    [HttpGet("health")]
+    [HttpHead("health")]
     public IActionResult Health() => Ok();
 }
