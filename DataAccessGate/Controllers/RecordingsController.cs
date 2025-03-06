@@ -118,6 +118,7 @@ public class RecordingsController : ControllerBase
             return NotFound($"Recording '{recordingId}' not found");
         
         bool success = repository.ModifyRecording(recordingId, model);
+        Logger.Log($"Recording {recordingId} modification " + (success ? "succeeded" : "failed"));
         
         return success ?
             Ok() :
@@ -131,6 +132,7 @@ public class RecordingsController : ControllerBase
 
         if (filteredRecordings is null)
             return StatusCode(500, "Failed to get filtered recordings");
+        
         
         return Ok(filteredRecordings);
     }
