@@ -20,5 +20,5 @@ public class DagDevicesControllerClient : ServiceClient
     }
     
     private string GetDeviceUrl(string email) =>
-        $"http://{_dagCntName}:{_dagCntPort}/devices/device?email={email}";
+        $"http://{_dagCntName}:{_dagCntPort}/devices/{email}/device";
 }

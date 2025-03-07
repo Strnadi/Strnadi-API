@@ -31,9 +31,6 @@ public class LoggingMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         await _next(context);
-        Console.WriteLine();
-        Console.WriteLine($"[{DateTime.Now}]");
-        Console.WriteLine();
         Logger.Log($"Request to {context.Request.Path} from {context.Connection.RemoteIpAddress} with code {context.Response.StatusCode}");
     }
 }
