@@ -30,7 +30,9 @@ public class LinkGenerator
 
     public string GenerateLink(HttpContext context, string jwt)
     {
-        string link = $"{context.Request.Scheme}://{context.Request.Host}/verify?jwt={jwt}";
+        string scheme = context.Request.IsHttps ? "https" : "http";
+        
+        string link = $"{scheme}://{context.Request.Host}/verify?jwt={jwt}";
         Logger.Log($"Generated link for email sending: {link}");
 
         return link;
