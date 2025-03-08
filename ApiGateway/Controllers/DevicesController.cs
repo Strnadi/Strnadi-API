@@ -32,7 +32,7 @@ public class DevicesController : ControllerBase
         
         HttpRequestResult? response = await client.Device(email!, model);
 
-        if (response is null)
+        if (response is null || !response.Success)
             return await this.HandleErrorResponseAsync(response);
         
         return Ok();
