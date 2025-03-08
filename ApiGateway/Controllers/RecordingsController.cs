@@ -45,7 +45,7 @@ public class RecordingsController : ControllerBase
     {
         string? jwt = this.GetJwt();
 
-        if (count < 1)
+        if (count < 0)
             return BadRequest("Invalid recordings count");
 
         if (jwt is null)
