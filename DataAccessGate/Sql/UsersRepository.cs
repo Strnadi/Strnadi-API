@@ -114,11 +114,11 @@ public class UsersRepository : RepositoryBase
 
     public bool Verify(string email)
     {
-        const string sql = "UPDATE \"Users\" SET \"IsEmailVerified\" = @IsEmailVerified WHERE \"Email\" = @Email";
+        const string sql = "UPDATE \"Users\" SET \"IsEmailVerified\" = true WHERE \"Email\" = @Email";
 
         try
         {
-            var result = Connection.Execute(sql, new { IsEmailVerified = true, Email = email });
+            var result = Connection.Execute(sql, new { Email = email });
             return result > 0;
         }
         catch (Exception ex)

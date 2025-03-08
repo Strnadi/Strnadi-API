@@ -78,12 +78,14 @@ public class EmailSender : IEmailSender
     
     public void SendVerificationMessage(string emailAddress, string jwt, HttpContext httpContext)
     {
-        string link = new LinkGenerator(_configuration).GenerateLink(httpContext, jwt);
+        string link = new LinkGenerator(_configuration).GenerateVerificationLink(httpContext, jwt);
         
         SendMessage(
             emailAddress,
-            "Confirm your email in Navrat krale - Nareci ceskych strnadu",
-            "Please confirm you email by clicking this link: " + link
+            "Ověření emailu na NČS",
+            "Dobrý den, na této emailové adrese došlo k registraci na portálu Nářečí Českých Strnadů. " +
+            $"Registraci můžete dokončit kliknutím <a href=\"{link}\">sem</a><br><br> " +
+            "Pokud jste o této akci nevíte můžete tento email ignorovat."
             );
         
         Logger.Log($"Sended verification email to address '{emailAddress}'");

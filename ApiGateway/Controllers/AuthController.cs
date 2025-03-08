@@ -97,6 +97,12 @@ public class AuthController : ControllerBase
             Ok() : 
             StatusCode(500);
     }
+
+    // [HttpPatch("change-password")]
+    // public async Task<IActionResult> ChangePasswordAsync([FromServices] DagUsersControllerClient client)
+    // {
+    //     
+    // }
     
     private void SendVerificationMessageAsync(string emailAddress, string jwt)
     {

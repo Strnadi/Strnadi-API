@@ -28,11 +28,11 @@ public class LinkGenerator
         _configuration = configuration;
     }
 
-    public string GenerateLink(HttpContext context, string jwt)
+    public string GenerateVerificationLink(HttpContext context, string jwt)
     {
         string scheme = context.Request.IsHttps ? "https" : "http";
         
-        string link = $"{scheme}://{context.Request.Host}/users/verify?jwt={jwt}";
+        string link = $"{scheme}://{context.Request.Host}/auth/verify?jwt={jwt}";
         Logger.Log($"Generated link for email sending: {link}");
 
         return link;
