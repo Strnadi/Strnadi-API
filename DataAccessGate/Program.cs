@@ -21,6 +21,7 @@ var configuration = builder.Configuration;
 
 builder.Services.AddScoped<RecordingsRepository>();
 builder.Services.AddScoped<UsersRepository>();
+builder.Services.AddScoped<DevicesRepository>();
 builder.Services.AddControllers();
 builder.Services.AddCors(corsOptions =>
 {
