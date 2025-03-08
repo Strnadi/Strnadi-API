@@ -80,6 +80,13 @@ public class UsersRepository : RepositoryBase
                                                VALUES (@Nickname, @Email, @Password, @FirstName, @LastName)
                            """;
 
+        if (string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password) ||
+            string.IsNullOrWhiteSpace(request.FirstName) ||
+            string.IsNullOrWhiteSpace(request.LastName))
+            return false;
+                
+        
         try
         {
             var result = Connection.Execute(sql, new

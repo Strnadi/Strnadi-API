@@ -39,6 +39,8 @@ public class EmailSender : IEmailSender
     private int _smtpPort => int.Parse(_configuration[$"Smtp:Port"]!);
     
     private string _smtpEmail => _configuration[$"Smtp:Email"]!;
+    
+    private bool _smtpEnableSsl => bool.Parse(_configuration[$"Smtp:EnableSsl"]!);
 
     public EmailSender(IConfiguration configuration)
     {
@@ -53,7 +55,7 @@ public class EmailSender : IEmailSender
             {
                 Port = _smtpPort,
                 Credentials = new NetworkCredential(_smtpEmail, _smtpPassword),
-                EnableSsl = false
+                EnableSsl = _smtpEnableSsl
             };
 
             MailMessage message = new()
@@ -84,5 +86,7 @@ public class EmailSender : IEmailSender
             "Confirm your email in Navrat krale - Nareci ceskych strnadu",
             "Please confirm you email by clicking this link: " + link
             );
+        
+        Logger.Log($"Sended verification email to address '{emailAddress}'");
     }
 }
