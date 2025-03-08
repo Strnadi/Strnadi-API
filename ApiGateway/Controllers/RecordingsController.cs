@@ -41,9 +41,12 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetRecordingsOfUser()
+    public async Task<IActionResult> GetRecordingsOfUser([FromQuery] int count = 0)
     {
         string? jwt = this.GetJwt();
+
+        if (count < 1)
+            return BadRequest("Invalid recordings count");
 
         if (jwt is null)
             return BadRequest("No JWT provided");
@@ -51,7 +54,7 @@ public class RecordingsController : ControllerBase
         if (!_jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
-        var response = await _dagClient.GetByEmailAsync(email!);
+        var response = await _dagClient.GetByEmailAsync(email!, count);
 
         if (response?.Value is null)
             return await this.HandleErrorResponseAsync(response);

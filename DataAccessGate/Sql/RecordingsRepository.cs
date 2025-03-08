@@ -99,12 +99,19 @@ public class RecordingsRepository : RepositoryBase
         }
     }
 
-    public IEnumerable<RecordingModel>? GetUsersRecordings(int userId)
+    public IEnumerable<RecordingModel>? GetUsersRecordings(int userId, int count)
     {
         try
         {
             string sql = "SELECT * FROM \"Recordings\" WHERE \"UserId\" = @UserId";
-            return Connection.Query<RecordingModel>(sql, new { UserId = userId });
+
+            if (count > 0)
+                sql += " LIMIT @Count";
+            
+            return Connection.Query<RecordingModel>(sql,
+                count > 0
+                    ? new { UserId = userId }
+                    : new { UserId = userId, Count = count });
         }
         catch (Exception ex)
         {
