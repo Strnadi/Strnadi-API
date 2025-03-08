@@ -106,7 +106,7 @@ public class RecordingsRepository : RepositoryBase
             string sql = "SELECT * FROM \"Recordings\" WHERE \"UserId\" = @UserId";
 
             if (count > 0)
-                sql += " LIMIT @Count";
+                sql += $" LIMIT {count}";
             
             return Connection.Query<RecordingModel>(sql,
                 count > 0
