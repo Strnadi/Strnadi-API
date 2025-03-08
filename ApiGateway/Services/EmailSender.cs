@@ -51,20 +51,18 @@ public class EmailSender : IEmailSender
     {
         try
         {
-            SmtpClient smtpClient = new(_smtpServerDomain)
-            {
-                Port = _smtpPort,
-                Credentials = new NetworkCredential(_smtpEmail, _smtpPassword),
-                EnableSsl = _smtpEnableSsl
-            };
+            using SmtpClient smtpClient = new(_smtpServerDomain);
+            
+                smtpClient.Port = _smtpPort;
+                smtpClient.Credentials = new NetworkCredential(_smtpEmail, _smtpPassword);
+                smtpClient.EnableSsl = _smtpEnableSsl;
 
-            MailMessage message = new()
-            {
-                From = new MailAddress(_smtpEmail),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
+            using MailMessage message = new();
+                
+                message.From = new MailAddress(_smtpEmail);
+                message.Subject = subject;
+                message.Body = body;
+                message.IsBodyHtml = true;
 
             message.To.Add(emailAddress);
             smtpClient.Send(message);
