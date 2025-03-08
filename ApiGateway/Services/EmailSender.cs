@@ -15,6 +15,7 @@
  */
 using System.Net;
 using System.Net.Mail;
+using System.Security;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Logging;
 using LogLevel = Shared.Logging.LogLevel;
