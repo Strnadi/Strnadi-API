@@ -30,6 +30,8 @@ public class AuthController : ControllerBase
 
     private readonly JwtService _jwtService;
 
+    private const string successful_redirection_page = "https://registration-successful.strnadi.cz";
+
     public AuthController(IConfiguration config, JwtService jwtService)
     {
         _configuration = config;
@@ -94,7 +96,7 @@ public class AuthController : ControllerBase
         HttpRequestResult? response = await client.VerifyUser(email!);
 
         return response?.Success is not null && response.Success ? 
-            Ok() : 
+            RedirectPermanent(successful_redirection_page) : 
             StatusCode(500);
     }
 
