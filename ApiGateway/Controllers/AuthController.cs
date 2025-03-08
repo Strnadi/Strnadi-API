@@ -74,6 +74,8 @@ public class AuthController : ControllerBase
             return await this.HandleErrorResponseAsync(response);
 
         string jwt = _jwtService.GenerateToken(request.Email);
+        
+        SendVerificationMessageAsync(request.Email, jwt);
 
         return Ok(jwt);
     }
@@ -96,7 +98,7 @@ public class AuthController : ControllerBase
             StatusCode(500);
     }
     
-    private void SendVerificationMessageAsynchronously(string emailAddress, string jwt)
+    private void SendVerificationMessageAsync(string emailAddress, string jwt)
     {
         var emailSender = new EmailSender(_configuration);
         Task.Run(() =>

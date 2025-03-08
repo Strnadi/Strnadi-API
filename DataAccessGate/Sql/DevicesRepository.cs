@@ -21,7 +21,13 @@ public class DevicesRepository : RepositoryBase
                            VALUES (@DeviceName, @DevicePlatform, @NewToken, @UserId)
                            """;
         
-        Connection.Execute(sql, new { DeviceName = deviceName, DevicePlatform = devicePlatform, NewToken = newToken, UserId = userId });
+        Connection.Execute(sql, new
+        {
+            DeviceName = deviceName, 
+            DevicePlatform = devicePlatform, 
+            NewToken = newToken, 
+            UserId = userId
+        });
     }
 
     public void UpdateDevice(string oldToken, string newToken)
