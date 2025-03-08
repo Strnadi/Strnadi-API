@@ -36,13 +36,14 @@ public class RecordingsController : ControllerBase
     
     [HttpGet]
     public IActionResult GetByEmail([FromQuery] string email,
+        [FromQuery] int count,
         [FromServices] RecordingsRepository recordingsRepo,
         [FromServices] UsersRepository usersRepo)
     {
         if (!usersRepo.TryGetUserId(email, out int userId))
             return BadRequest("Invalid email");
         
-        var recording = recordingsRepo.GetUsersRecordings(userId);
+        var recording = recordingsRepo.GetUsersRecordings(userId, count);
 
         if (recording is null)
             return StatusCode(500);
