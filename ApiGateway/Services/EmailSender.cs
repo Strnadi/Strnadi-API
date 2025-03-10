@@ -42,10 +42,13 @@ public class EmailSender : IEmailSender
     private string _smtpEmail => _configuration[$"Smtp:Email"]!;
     
     private bool _smtpEnableSsl => bool.Parse(_configuration[$"Smtp:EnableSsl"]!);
+    
+    private readonly LinkGenerator _linkGenerator;
 
     public EmailSender(IConfiguration configuration)
     {
         _configuration = configuration;
+        _linkGenerator = new LinkGenerator(configuration);
     }
 
     public void SendMessage(string emailAddress, string subject, string body)
@@ -78,7 +81,7 @@ public class EmailSender : IEmailSender
     
     public void SendVerificationMessage(string emailAddress, string jwt, HttpContext httpContext)
     {
-        string link = new LinkGenerator(_configuration).GenerateVerificationLink(httpContext, jwt);
+        string link = _linkGenerator.GenerateVerificationLink(httpContext, jwt);
         
         SendMessage(
             emailAddress,
@@ -93,7 +96,7 @@ public class EmailSender : IEmailSender
 
     public void SendPasswordResetMessage(string emailAddress, string jwt, HttpContext httpContext)
     {
-        string link = $"https://registration.strnadi.cz/forgotten-password?jwt={jwt}";
+        string link = _linkGenerator.GeneratePasswordResetLink(jwt);
 
         SendMessage(
             emailAddress,

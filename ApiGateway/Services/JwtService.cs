@@ -66,13 +66,19 @@ public class JwtService
         return tokenHandler.WriteToken(token);
     }
     
-    public bool TryValidateToken(string token, out string? email)
+    public bool TryValidateToken(string? token, out string? email)
     {
         return TryValidateToken(token, out email, GetEmail);
     }
     
-    private bool TryValidateToken<T>(string token, out T? value, Func<string, T?> extractor)
+    private bool TryValidateToken<T>(string? token, out T? value, Func<string, T?> extractor)
     {
+        if (token is null)
+        {
+            value = default;
+            return false;
+        }
+        
         if (Validate(token))
         {
             value = extractor(token);

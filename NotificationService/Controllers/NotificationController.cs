@@ -29,7 +29,7 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet("recording-was-confirmed")]
-    public IActionResult RecordingWasConfirmed([FromQuery] [FromServices] DagUsersControllerClient client)
+    public IActionResult RecordingWasConfirmed([FromServices] DagUsersControllerClient client)
     {
         throw new NotImplementedException();
         //

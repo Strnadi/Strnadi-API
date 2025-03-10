@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 using Models.Requests;
 using Shared.Communication;
 using Shared.Extensions;
+using LinkGenerator = ApiGateway.Services.LinkGenerator;
 
 namespace ApiGateway.Controllers;
 
@@ -63,8 +64,8 @@ public class AuthController : ControllerBase
 
         return Ok(jwt);
     }
-
-[HttpPost("sign-up")]
+    
+    [HttpPost("sign-up")]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request,
         [FromServices] DagUsersControllerClient client)
     {
@@ -94,7 +95,8 @@ public class AuthController : ControllerBase
         HttpRequestResult? response = await client.VerifyUser(email!);
 
         bool success = response?.Success is not null && response.Success;
-        string redirectionPage = $"https://registration-result.strnadi.cz?success={success}";
+
+        string redirectionPage = new LinkGenerator(_configuration).GenerateEmailVerificationRedirectionLink(success);
 
         return RedirectPermanent(redirectionPage);
     }
@@ -110,7 +112,7 @@ public class AuthController : ControllerBase
     }
     
     [HttpPatch("change-password")]
-    public async Task<IActionResult> ForgottenPasswordAsync(
+    public async Task<IActionResult> ChangePasswordAsync(
         [FromBody] ChangePasswordRequest request,
         [FromServices] DagUsersControllerClient client)
     {
