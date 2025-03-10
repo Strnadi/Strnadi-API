@@ -71,6 +71,13 @@ public class DagUsersControllerClient : ServiceClient
         
         return await GetAsync<bool?>(url);
     }
+    
+    public async Task<HttpRequestResult?> ChangePassword(ChangePasswordRequest request)
+    {
+        string url = GetChangePasswordUrl(request.Email!, request.NewPassword); // email cannot not null here
+
+        return await PatchAsync(url);
+    }
 
     private string GetUserUrl(string email) =>
          $"http://{_dagCntName}:{_dagCntPort}/users/{email}";
@@ -82,12 +89,14 @@ public class DagUsersControllerClient : ServiceClient
         $"http://{_dagCntName}:{_dagCntPort}/users/sign-up";
 
     private string GetVerifyUserUrl(string email) =>
-        $"http://{_dagCntName}:{_dagCntPort}/users/verify?email={email}";
+        $"http://{_dagCntName}:{_dagCntPort}/users/{email}/verify";
 
     private string GetUserFcmTokenUrl(string email) =>
         $"http://{_dagCntName}:{_dagCntPort}/users/{email}/fcm-token";
     
     private string GetIsAdminUrl(string? email) =>
         $"http://{_dagCntName}:{_dagCntPort}/users/{email}/is-admin";
-
+    
+    private string GetChangePasswordUrl(string email, string newPassword) =>
+        $"http://{_dagCntName}:{_dagCntPort}/users/{email}/change-password?newPassword={newPassword}";
 }

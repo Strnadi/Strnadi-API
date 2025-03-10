@@ -99,16 +99,50 @@ public class AuthController : ControllerBase
         return RedirectPermanent(redirectionPage);
     }
 
-    // [HttpPatch("change-password")]
-    // public async Task<IActionResult> ChangePasswordAsync([FromServices] DagUsersControllerClient client)
-    // {
-    //     
-    // }
+    [HttpGet("request-password-reset")]
+    public IActionResult RequestPasswordReset([FromQuery] string email)
+    {
+        string jwt = _jwtService.GenerateToken(email);
+        
+        SendPasswordResetMessageAsync(email, jwt);
+
+        return Ok();
+    }
+    
+    [HttpPatch("change-password")]
+    public async Task<IActionResult> ForgottenPasswordAsync(
+        [FromBody] ChangePasswordRequest request,
+        [FromServices] DagUsersControllerClient client)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!_jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        request.Email = email;
+
+        HttpRequestResult? response = await client.ChangePassword(request);
+
+        if (response is null || !response.Success)
+            return await this.HandleErrorResponseAsync(response);
+        
+        return Ok();
+    }   
     
     private void SendVerificationMessageAsync(string emailAddress, string jwt)
     {
         var emailSender = new EmailSender(_configuration);
         Task.Run(() =>
             emailSender.SendVerificationMessage(emailAddress, jwt, HttpContext));
+    }
+
+    private void SendPasswordResetMessageAsync(string emailAddress, string jwt)
+    {
+        var emailSender = new EmailSender(_configuration);
+        Task.Run(() => 
+            emailSender.SendPasswordResetMessage(emailAddress, jwt, HttpContext));
     }
 }

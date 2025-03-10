@@ -120,6 +120,20 @@ public abstract class ServiceClient
         }
     }
 
+    protected async Task<HttpRequestResult?> PatchAsync(string route)
+    {
+        try
+        {
+            var response = await _httpClient.PatchAsync(route, null);
+            return new HttpRequestResult(response);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception thrown while redirection request to {route}: {ex.Message}");
+            return null;
+        }
+    }
+    
     protected async Task<HttpRequestResult?> PatchAsync<TRequest>(string route, TRequest request)
     {
         var json = JsonSerializer.Serialize(request);
