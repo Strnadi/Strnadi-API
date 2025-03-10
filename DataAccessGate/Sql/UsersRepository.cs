@@ -100,7 +100,7 @@ public class UsersRepository : RepositoryBase
 
             return result > 0;
         }
-        catch (PostgresException ex) when (ex.SqlState == "23505")
+        catch (PostgresException ex) when (ex.SqlState == "23505") // 23505 means uniqueness violation
         {
             Logger.Log($"Tried to register user with existing email '{request.Email}'");
             return false;
@@ -118,6 +118,7 @@ public class UsersRepository : RepositoryBase
 
         try
         {
+            Logger.Log($"User '{email}' verified successfully");
             var result = Connection.Execute(sql, new { Email = email });
             return result > 0;
         }
@@ -139,6 +140,24 @@ public class UsersRepository : RepositoryBase
         catch (Exception ex)
         {
             Logger.Log("Exception thrown while checking if user is admin: " + ex.Message);
+            return null;
+        }
+    }
+
+    public bool? ChangePassword(string email, string newPassword)
+    {
+        const string sql = """UPDATE "Users" SET "Password" = @Password WHERE "Email" = @Email""";
+
+        try
+        {
+            string passwordHash = EncodingHelper.Sha256(newPassword);
+            int result = Connection.Execute(sql, new { Password = passwordHash, Email = email });
+            Logger.Log($"Password change{(result == 1 ? "d successfuly" : "failed")}");
+            return result == 1;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log("Exception thrown while changing password: " + ex.Message);
             return null;
         }
     }

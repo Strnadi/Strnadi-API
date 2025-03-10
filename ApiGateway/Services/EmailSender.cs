@@ -86,8 +86,23 @@ public class EmailSender : IEmailSender
             "Dobrý den, na této emailové adrese došlo k registraci na portálu Nářečí Českých Strnadů. " +
             $"Registraci můžete dokončit kliknutím <a href=\"{link}\">sem</a><br><br> " +
             "Pokud jste o této akci nevíte můžete tento email ignorovat."
-            );
+        );
         
         Logger.Log($"Sended verification email to address '{emailAddress}'");
+    }
+
+    public void SendPasswordResetMessage(string emailAddress, string jwt, HttpContext httpContext)
+    {
+        string link = $"https://registration.strnadi.cz/forgotten-password?jwt={jwt}";
+
+        SendMessage(
+            emailAddress,
+            "Nářečí Českých Strnadů - Změna hesla",
+            "Dostali jsme žádost o změnu hesla na portálu Nářečí Českých Strnadů. \n " +
+            $"Změnu můžete provést <a href={link}>zde</a>. \n \n " +
+            $"Pokud jste změnu neudělali vy můžete tento email ignorovat."
+        );
+        
+        Logger.Log($"Sended password reset email to address '{emailAddress}'");
     }
 }

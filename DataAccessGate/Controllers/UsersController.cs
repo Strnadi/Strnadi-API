@@ -52,8 +52,8 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpPost("/users/verify")]
-    public IActionResult VerifyUser([FromQuery] string email, [FromServices] UsersRepository repository)
+    [HttpPost("{email}/verify")]
+    public IActionResult VerifyUser(string email, [FromServices] UsersRepository repository)
     {
         bool verified = repository.Verify(email);
         repository.Dispose();
@@ -91,5 +91,29 @@ public class UsersController : ControllerBase
         return isAdmin is not null ? 
             Ok(isAdmin) : 
             StatusCode(500, "Failed to check if user is admin.");
+    }
+
+    [HttpPatch("{email}/change-password")]
+    public IActionResult ChangePassword(string email,
+        [FromQuery] string newPassword,
+        [FromServices] UsersRepository repo)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword))
+            return BadRequest("New password cannot be empty.");
+        
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest("Email cannot be empty.");
+        
+        if (!repo.ExistsUser(email))
+            return NotFound($"User '{email}' does not exist.");
+        
+        bool? changed = repo.ChangePassword(email, newPassword);
+        
+        if (changed is null)
+            return StatusCode(500, "Failed to change password.");
+        
+        return changed.Value ? 
+            Ok() : 
+            StatusCode(401, "Failed to change password.");
     }
 }
