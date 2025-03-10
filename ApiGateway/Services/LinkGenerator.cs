@@ -33,8 +33,17 @@ public class LinkGenerator
         string scheme = context.Request.IsHttps ? "https" : "http";
         
         string link = $"{scheme}://{context.Request.Host}/auth/verify?jwt={jwt}";
-        Logger.Log($"Generated link for email sending: {link}");
 
         return link;
+    }
+
+    public string GenerateEmailVerificationRedirectionLink(bool success)
+    {
+        return $"https://registration.strnadi.cz?success={success}";
+    }
+
+    public string GeneratePasswordResetLink(string jwt)
+    {
+        return $"https://registration.strnadi.cz/forgotten-password?jwt={jwt}";
     }
 }

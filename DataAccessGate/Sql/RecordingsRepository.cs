@@ -107,15 +107,30 @@ public class RecordingsRepository : RepositoryBase
 
             if (count > 0)
                 sql += $" LIMIT {count}";
-            
-            return Connection.Query<RecordingModel>(sql,
-                count > 0
-                    ? new { UserId = userId }
-                    : new { UserId = userId, Count = count });
+
+            return Connection.Query<RecordingModel>(sql, new { UserId = userId });
         }
         catch (Exception ex)
         {
             Logger.Log($"Exception caught while getting recordings of user '{userId}': {ex.Message}");
+            return null;
+        }
+    }
+    
+    public IEnumerable<RecordingModel>? GetAllRecordings(int count)
+    {
+        try
+        {
+            string sql = """SELECT * FROM "Recordings";""";
+
+            if (count > 0)
+                sql += $" LIMIT {count}";
+
+            return Connection.Query<RecordingModel>(sql);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Exception caight while getting all recordings: {ex.Message}");
             return null;
         }
     }

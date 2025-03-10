@@ -35,20 +35,19 @@ public class RecordingsController : ControllerBase
     }
     
     [HttpGet]
-    public IActionResult GetByEmail([FromQuery] string email,
+    public IActionResult GetByEmail([FromQuery] string? email,
         [FromQuery] int count,
         [FromServices] RecordingsRepository recordingsRepo,
         [FromServices] UsersRepository usersRepo)
     {
-        if (!usersRepo.TryGetUserId(email, out int userId))
-            return BadRequest("Invalid email");
-        
-        var recording = recordingsRepo.GetUsersRecordings(userId, count);
+        var recordings = email is not null && usersRepo.TryGetUserId(email, out int userId) ?
+            recordingsRepo.GetUsersRecordings(userId, count) :
+            recordingsRepo.GetAllRecordings(count);
 
-        if (recording is null)
+        if (recordings is null)
             return StatusCode(500);
 
-        return Ok(recording);
+        return Ok(recordings);
     }
 
     [HttpGet("{recordingId:int}/download")]
