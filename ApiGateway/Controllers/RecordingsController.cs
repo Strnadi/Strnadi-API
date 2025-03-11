@@ -41,7 +41,7 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetRecordings([FromQuery] int count = 0)
+    public async Task<IActionResult> GetRecordings([FromQuery] int count = 0, [FromQuery] bool parts = false)
     {
         string? jwt = this.GetJwt();
 
@@ -50,8 +50,7 @@ public class RecordingsController : ControllerBase
 
         _jwtService.TryValidateToken(jwt, out string? email);
         
-        var response = await _dagClient.GetRecordings(email, count);
-
+        var response = await _dagClient.GetRecordings(email, count, parts);
         if (response?.Value is null)
             return await this.HandleErrorResponseAsync(response);
 

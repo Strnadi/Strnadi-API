@@ -35,18 +35,24 @@ public class RecordingsController : ControllerBase
     }
     
     [HttpGet]
-    public IActionResult GetByEmail([FromQuery] string? email,
+    public IActionResult Get([FromQuery] string? email,
         [FromQuery] int count,
         [FromServices] RecordingsRepository recordingsRepo,
-        [FromServices] UsersRepository usersRepo)
+        [FromServices] UsersRepository usersRepo,
+        [FromQuery] bool? parts = false)
     {
         var recordings = email is not null && usersRepo.TryGetUserId(email, out int userId) ?
             recordingsRepo.GetUsersRecordings(userId, count) :
             recordingsRepo.GetAllRecordings(count);
-
+        
         if (recordings is null)
             return StatusCode(500);
 
+        if (parts == true)
+        {
+            recordingsRepo.LoadRepresentantParts(recordings);
+        }
+        
         return Ok(recordings);
     }
 
@@ -124,7 +130,7 @@ public class RecordingsController : ControllerBase
             Ok() :
             Conflict();
     }
-
+    
     [HttpGet("filtered")]
     public IActionResult GetFiltered([FromServices] RecordingsRepository repo)
     {

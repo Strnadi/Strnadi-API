@@ -25,6 +25,8 @@ namespace DataAccessGate.Sql;
 
 public class UsersRepository : RepositoryBase
 {
+    // TODO: поменять способ хеширования паролей с использованием BCrypt.NET
+    
     public UsersRepository(IConfiguration configuration) : base(configuration)
     {
     }
