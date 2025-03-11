@@ -1,0 +1,84 @@
+openapi: "3.1.0"
+info:
+  title: "StrnadiAPI API"
+  description: "StrnadiAPI API"
+  version: "1.0.0"
+servers:
+  - url: "https://StrnadiAPI"
+paths:
+  /auth/login:
+    post:
+      summary: "POST auth/login"
+      responses:
+        "200":
+          description: "OK"
+  /auth/sign-up:
+    post:
+      summary: "POST auth/sign-up"
+      responses:
+        "200":
+          description: "OK"
+  /auth/verify:
+    post:
+      summary: "POST auth/verify"
+      parameters:
+        - name: "jwt"
+          in: "query"
+          required: false
+      responses:
+        "200":
+          description: "OK"
+  /recordings:
+    get:
+      summary: "GET recordings"
+      parameters:
+        - name: "jwt"
+          in: "query"
+          required: false
+      responses:
+        "200":
+          description: "OK"
+  /recordings/download:
+    get:
+      summary: "GET recordings/download"
+      parameters:
+        - name: "id"
+          in: "query"
+          required: false
+        - name: "jwt"
+          in: "query"
+          required: false
+        - name: "sound"
+          in: "query"
+          required: false
+      responses:
+        "200":
+          description: "OK"
+  /recordings/upload:
+    post:
+      summary: "POST recordings/upload"
+      responses:
+        "200":
+          description: "OK"
+  /recordings/upload-part:
+    post:
+      summary: "POST recordings/upload-part"
+      responses:
+        "200":
+          description: "OK"
+  /users:
+    get:
+      summary: "GET users"
+      parameters:
+        - name: "jwt"
+          in: "query"
+          required: false
+      responses:
+        "200":
+          description: "OK"
+  /utils/health:
+    get:
+      summary: "GET utils/health"
+      responses:
+        "200":
+          description: "OK"

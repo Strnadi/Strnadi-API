@@ -1,0 +1,13 @@
+.idea
+**/bin
+**/obj
+.env
+services
+*.DotSettings.user
+*/appsettings.json 
+ApiGateway
+DataAccessGate
+Models
+NotificationService
+RecordingsService
+Shared
