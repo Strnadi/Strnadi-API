@@ -1,16 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway", "ApiGateway\ApiGateway.csproj", "{4CF93890-3506-4662-91ED-B9DD85DBFAFA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway_old", "ApiGateway\ApiGateway_old.csproj", "{4CF93890-3506-4662-91ED-B9DD85DBFAFA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccessGate", "DataAccessGate\DataAccessGate.csproj", "{2205B08E-6A98-4FCD-BF27-3E82D4E62DF5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccessGate_old", "DataAccessGate_old\DataAccessGate_old.csproj", "{2205B08E-6A98-4FCD-BF27-3E82D4E62DF5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models", "Models\Models.csproj", "{7240DC65-F13F-4B29-8259-767F1F7ED814}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models_old", "Models_old\Models_old.csproj", "{7240DC65-F13F-4B29-8259-767F1F7ED814}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{1AA4F7B9-096C-4EDF-BA41-5219BAC2DCFF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared_old", "Shared_old\Shared_old.csproj", "{1AA4F7B9-096C-4EDF-BA41-5219BAC2DCFF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService", "NotificationService\NotificationService.csproj", "{5EA86F22-FD17-4610-8303-D8C65EA84C5B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService_old", "NotificationService_old\NotificationService_old.csproj", "{5EA86F22-FD17-4610-8303-D8C65EA84C5B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecordingsService", "RecordingsService\RecordingsService.csproj", "{D0DB3F6C-B3E1-4399-8A5C-0B63F14B6B1A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecordingsService_old", "RecordingsService_old\RecordingsService_old.csproj", "{D0DB3F6C-B3E1-4399-8A5C-0B63F14B6B1A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
