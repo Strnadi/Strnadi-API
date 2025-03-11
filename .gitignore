@@ -6,8 +6,8 @@ services
 *.DotSettings.user
 */appsettings.json 
 ApiGateway
-DataAccessGate
-Models
-NotificationService
-RecordingsService
-Shared
+DataAccessGate_old
+Models_old
+NotificationService_old
+RecordingsService_old
+Shared_old
