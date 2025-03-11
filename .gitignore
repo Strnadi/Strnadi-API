@@ -1,8 +1,0 @@
-.idea
-**/bin
-**/obj
-.env
-services
-*.DotSettings.user
-*/appsettings.json 
-hello
