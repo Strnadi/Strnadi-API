@@ -80,7 +80,7 @@ public class DagRecordingsControllerClient : ServiceClient
         $"http://{_dagCntName}:{_dagCntPort}/recordings?" +
         $"{(email is not null ? $"email={email}&" : "")}" +
         $"count={count}" +
-        $"{(parts ? $"parts={parts}" : "")}";
+        $"{(parts ? $"&parts={parts}" : "")}";
     
     private string GetDownloadUrl(int recordingId, bool sound) =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings/{recordingId}/download?sound={sound}";
