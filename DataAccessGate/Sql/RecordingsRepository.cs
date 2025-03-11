@@ -216,13 +216,21 @@ public class RecordingsRepository : RepositoryBase
     {
         try
         {
-            const string sql = "SELECT * FROM \"FiltredSubrecordings\"";
+            const string sql = "SELECT * FROM \"FilteredRecordingParts\"";
             return Connection.Query<FilteredSubrecordingModel>(sql);
         }
         catch (Exception ex)
         {
             Logger.Log("Exception caught while getting filtered recordings: " + ex.Message, LogLevel.Error);
             return null;
+        }
+    }
+
+    public void LoadRepresentantParts(IEnumerable<RecordingModel> recordings)
+    {
+        foreach (var recording in recordings)
+        {
+            recording.Parts = GetRecordingParts(recording.Id, false).ToArray();
         }
     }
 }

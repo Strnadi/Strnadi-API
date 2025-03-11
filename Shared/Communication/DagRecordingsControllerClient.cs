@@ -50,9 +50,9 @@ public class DagRecordingsControllerClient : ServiceClient
         return await GetAsync<RecordingModel>(url);
     }
     
-    public async Task<HttpRequestResult<IEnumerable<RecordingModel>?>?> GetRecordings(string? email, int count)
+    public async Task<HttpRequestResult<IEnumerable<RecordingModel>?>?> GetRecordings(string? email, int count, bool parts)
     {
-        string url = GetUrl(email, count);
+        string url = GetUrl(email, count, parts);
         return await GetAsync<IEnumerable<RecordingModel>>(url);
     }
     
@@ -76,8 +76,11 @@ public class DagRecordingsControllerClient : ServiceClient
         return await PatchAsync(url, model);
     }
     
-    private string GetUrl(string? email, int count) =>
-        $"http://{_dagCntName}:{_dagCntPort}/recordings?{(email is not null ? "email={email}&" : "")}count={count}";
+    private string GetUrl(string? email, int count, bool parts) =>
+        $"http://{_dagCntName}:{_dagCntPort}/recordings?" +
+        $"{(email is not null ? $"email={email}&" : "")}" +
+        $"count={count}" +
+        $"{(parts ? $"parts={parts}" : "")}";
     
     private string GetDownloadUrl(int recordingId, bool sound) =>
         $"http://{_dagCntName}:{_dagCntPort}/recordings/{recordingId}/download?sound={sound}";
