@@ -5,6 +5,7 @@
 services
 *.DotSettings.user
 */appsettings.json 
+
 ApiGateway
 DataAccessGate_old
 Models_old
