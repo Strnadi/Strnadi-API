@@ -1,3 +1,4 @@
+using Email;
 using Repository;
 
 class Program
@@ -23,6 +24,7 @@ class Program
         services.AddSwaggerGen();
         services.AddControllers();
         services.AddRepositories();
+        services.AddEmailServices();
         services.AddCors(corsOptions =>
         {
             corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
