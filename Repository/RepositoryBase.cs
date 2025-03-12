@@ -36,7 +36,7 @@ public abstract class RepositoryBase : IDisposable
         }
         catch (Exception e)
         {
-            Logger.Log("Failed to execute action: " + e.Message, LogLevel.Error);
+            Logger.Log("Failed to execute SQL query: " + e.Message, LogLevel.Error);
             return default;
         }
     }
