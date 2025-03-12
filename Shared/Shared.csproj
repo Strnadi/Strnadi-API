@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <OutputPath Condition="'$(Configuration)' == 'Debug'">$(SolutionDir)bin/Debug/</OutputPath>
+        <OutputPath Condition="'$(Configuration)' == 'Release'">$(SolutionDir)bin/Release/</OutputPath>
+        <BaseIntermediateOutputPath Condition="'$(Configuration)' == 'Debug'">$(SolutionDir)obj/Debug/$(MSBuildProjectName)</BaseIntermediateOutputPath>
+        <BaseIntermediateOutputPath Condition="'$(Configuration)' == 'Release'">$(SolutionDir)obj/Release/$(MSBuildProjectName)</BaseIntermediateOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.AspNetCore.Http.Abstractions">
+        <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.http.abstractions\2.3.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.AspNetCore.Http.Features">
+        <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.http.features\2.3.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Features.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.AspNetCore.Mvc.Core">
+        <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.mvc.core\2.3.0\lib\netstandard2.0\Microsoft.AspNetCore.Mvc.Core.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.Extensions.Primitives">
+        <HintPath>..\..\..\..\.nuget\packages\microsoft.extensions.primitives\9.0.2\lib\net9.0\Microsoft.Extensions.Primitives.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>
