@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        
+        <OutputPath Condition="'$(Configuration)' == 'Debug'">$(SolutionDir)bin/Debug/</OutputPath>
+        <OutputPath Condition="'$(Configuration)' == 'Release'">$(SolutionDir)bin/Release/</OutputPath>
+        <BaseIntermediateOutputPath Condition="'$(Configuration)' == 'Debug'">$(SolutionDir)obj/Debug/$(MSBuildProjectName)</BaseIntermediateOutputPath>
+        <BaseIntermediateOutputPath Condition="'$(Configuration)' == 'Release'">$(SolutionDir)obj/Release/$(MSBuildProjectName)</BaseIntermediateOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.3.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.3.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DataAccessGate_old\DataAccessGate_old.csproj" />
+      <ProjectReference Include="..\Repository\Repository.csproj" />
+      <ProjectReference Include="..\Shared\Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.IdentityModel.Tokens">
+        <HintPath>..\..\..\..\.nuget\packages\microsoft.identitymodel.tokens\8.4.0\lib\net9.0\Microsoft.IdentityModel.Tokens.dll</HintPath>
+      </Reference>
+      <Reference Include="System.IdentityModel.Tokens.Jwt">
+        <HintPath>..\..\..\..\.nuget\packages\system.identitymodel.tokens.jwt\8.4.0\lib\net9.0\System.IdentityModel.Tokens.Jwt.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>
