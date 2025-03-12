@@ -1,5 +1,6 @@
-﻿using ApiGateway.Services;
-using Auth.Models;
+﻿using Auth.Models;
+using Auth.Services;
+using Email;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
@@ -40,6 +41,7 @@ public class AuthController : ControllerBase
     
     [HttpPost("sign-up")]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request,
+        [FromServices] EmailService emailService,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
     {
@@ -52,12 +54,19 @@ public class AuthController : ControllerBase
             request.Email,
             request.Password,
             request.FirstName,
-            request.LastName);
+            request.LastName,
+            request.Consent);
         
         if (!created)
             return StatusCode(500, "Failed to create user");
         
         string jwt = jwtService.GenerateToken(request.Email);
+        
+        emailService.SendEmailVerificationMessage(request.Email,
+            request.Nickname,
+            jwt,
+            HttpContext);
+        
         return Ok(jwt);
     }
 }

@@ -16,9 +16,9 @@ v auth:
 /email/send-password-reset-mail
 
 /users
-/users/{id}
-/users/{id}/verify-email
-/users/{id}/change-password
+/users/{email}
+/users/{email}/verify-email
+/users/{email}/change-password
 
 /devices/add
     "fcmToken"
