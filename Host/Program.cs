@@ -1,3 +1,5 @@
+using Repository;
+
 class Program
 {
     static void Main(string[] args)
@@ -20,6 +22,7 @@ class Program
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
         services.AddControllers();
+        services.AddRepositories();
         services.AddCors(corsOptions =>
         {
             corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
