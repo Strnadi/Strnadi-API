@@ -1,18 +1,27 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Shared.Logging;
 
 namespace Email;
 
 public class EmailService
 {
+    private readonly IConfiguration _configuration;
+    
+    public EmailService(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+    
     public void SendEmailVerificationMessage(string emailAddress,
         string? nickname,
         string jwt,
-        HttpContext httpContext,
-        [FromServices] LinkGenerator linkGenerator,
-        [FromServices] EmailSender emailSender)
+        HttpContext httpContext)
     {
+        LinkGenerator linkGenerator = new LinkGenerator(_configuration);
+        EmailSender emailSender = new EmailSender(_configuration);
+        
         string link = linkGenerator.GenerateVerificationLink(httpContext, jwt);
         
         emailSender.SendMessage(
@@ -35,10 +44,11 @@ public class EmailService
 
     public void SendPasswordResetMessage(string emailAddress,
         string? nickname,
-        string jwt,
-        [FromServices] LinkGenerator linkGenerator,
-        [FromServices] EmailSender emailSender)
+        string jwt)
     {
+        LinkGenerator linkGenerator = new LinkGenerator(_configuration);
+        EmailSender emailSender = new EmailSender(_configuration);
+        
         string link = linkGenerator.GeneratePasswordResetLink(jwt);
 
         emailSender.SendMessage(

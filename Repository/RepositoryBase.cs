@@ -28,19 +28,6 @@ public abstract class RepositoryBase : IDisposable
         Connection.Dispose();
     }
     
-    protected T? ExecuteSafely<T>(Func<T> action)
-    {
-        try
-        {
-            return action();
-        }
-        catch (Exception e)
-        {
-            Logger.Log("Failed to execute action: " + e.Message, LogLevel.Error);
-            return default;
-        }
-    }
-    
     protected async Task<T?> ExecuteSafelyAsync<T>(Func<Task<T>> action)
     {
         try

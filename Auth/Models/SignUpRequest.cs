@@ -11,4 +11,6 @@ public class SignUpRequest
     public string FirstName { get; set; }
     
     public string LastName { get; set; }
+    
+    public bool Consent { get; set; }
 }

@@ -1,3 +1,4 @@
+using Auth;
 using Email;
 using Repository;
 
@@ -25,6 +26,7 @@ class Program
         services.AddControllers();
         services.AddRepositories();
         services.AddEmailServices();
+        services.AddAuthServices();
         services.AddCors(corsOptions =>
         {
             corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>

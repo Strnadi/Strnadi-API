@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Repository", "Repository\Re
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Email", "Email\Email.csproj", "{A4F05980-A0DD-401A-AC31-B09B2EE320E5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Users", "Users\Users.csproj", "{389BF85D-A907-44E5-992F-DBFF24B2B4A3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,5 +68,9 @@ Global
 		{A4F05980-A0DD-401A-AC31-B09B2EE320E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4F05980-A0DD-401A-AC31-B09B2EE320E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4F05980-A0DD-401A-AC31-B09B2EE320E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{389BF85D-A907-44E5-992F-DBFF24B2B4A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{389BF85D-A907-44E5-992F-DBFF24B2B4A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{389BF85D-A907-44E5-992F-DBFF24B2B4A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{389BF85D-A907-44E5-992F-DBFF24B2B4A3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
