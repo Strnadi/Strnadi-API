@@ -5,7 +5,8 @@ services:
     container_name: strnadi-host
     networks:
       - strnadi-network
-    build: /home/stasik/Strnadi-API/Host/Dockerfile
+    build: 
+      dockerfile: /home/stasik/Strnadi-API/Host/Dockerfile
     ports:
       - "12001:8080"
     depends_on:
