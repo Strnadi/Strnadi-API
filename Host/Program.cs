@@ -37,7 +37,6 @@ class Program
     {
         services.AddMemoryCache();
         services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen();
         services.AddControllers();
         services.AddRepositories();
         services.AddEmailServices();
@@ -52,6 +51,7 @@ class Program
                     .AllowAnyHeader();
             });
         });
+        services.AddSwaggerGen();
     }
     
     static void ConfigureApp(WebApplication app, IConfiguration configuration) 
