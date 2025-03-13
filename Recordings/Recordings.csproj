@@ -22,8 +22,21 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Auth\Auth.csproj" />
       <ProjectReference Include="..\DataAccessGate_old\DataAccessGate_old.csproj" />
       <ProjectReference Include="..\Repository\Repository.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="obj\**" />
     </ItemGroup>
 
 </Project>
