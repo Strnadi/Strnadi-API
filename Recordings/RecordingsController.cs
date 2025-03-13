@@ -36,7 +36,7 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromBody] RecordingUploadModel recording,
+    public async Task<IActionResult> Upload([FromBody] RecordingUploadModel model,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
@@ -49,11 +49,32 @@ public class RecordingsController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
-        var recordingId = await recordingsRepo.UploadAsync(email!, recording);
+        int? recordingId = await recordingsRepo.UploadAsync(email!, model);
         
         if (recordingId is null)
             return StatusCode(500, "Failed to upload recording");
 
         return Ok(recordingId);
+    }
+
+    [HttpPost("upload-part")]
+    public async Task<IActionResult> UploadPart([FromBody] RecordingPartUploadModel model,
+        [FromServices] JwtService jwtService,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null) 
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+        
+        int? recordingPartId = await recordingsRepo.UploadPartAsync(model);
+        
+        if (recordingPartId is null)
+            return StatusCode(500, "Failed to upload recording");
+
+        return Ok(recordingPartId);
     }
 }
