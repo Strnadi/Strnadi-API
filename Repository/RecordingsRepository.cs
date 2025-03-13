@@ -126,4 +126,27 @@ public class RecordingsRepository : RepositoryBase
             });
         });
     }
+
+    public async Task<int?> UploadPartAsync(RecordingPartUploadModel model)
+    {
+        return await ExecuteSafelyAsync(async () =>
+        {
+            const string sql = """
+                               INSERT INTO "RecordingParts"("RecordingId", "Start", "End", "GpsLatitudeStart", "GpsLongitudeStart", "GpsLatitudeEnd", "GpsLongitudeEnd")
+                               VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd)
+                               RETURNING "Id"
+                               """;
+
+            return await Connection.ExecuteScalarAsync<int?>(sql, new
+            {
+                model.RecordingId,
+                model.Start,
+                model.End,
+                model.GpsLatitudeStart,
+                model.GpsLongitudeStart,
+                model.GpsLatitudeEnd,
+                model.GpsLongitudeEnd
+            });
+        });
+    }
 }
