@@ -51,8 +51,8 @@ public class RecordingsRepository : RepositoryBase
         {
             const string sql = """
                                SELECT * 
-                               FROM "Recordings" 
-                               WHERE "UserEmail" = @Email
+                               FROM recordings
+                               WHERE user_email = @Email
                                """;
             return await Connection.QueryAsync<RecordingModel>(sql, new { Email = email });
         });
@@ -60,7 +60,7 @@ public class RecordingsRepository : RepositoryBase
     private async Task<IEnumerable<RecordingModel>?> GetAllAsync() =>
         await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
         {
-            const string sql = """SELECT * FROM "Recordings" """;
+            const string sql = "SELECT * FROM recordings";
             return await Connection.QueryAsync<RecordingModel>(sql);
         });
 
@@ -78,7 +78,7 @@ public class RecordingsRepository : RepositoryBase
     
     private async Task<RecordingModel?> GetAsync(int id) =>
         await ExecuteSafelyAsync(async () => await Connection.QueryFirstOrDefaultAsync<RecordingModel>(
-            """SELECT * FROM "Recordings" WHERE "Id" = @Id""",
+            "SELECT * FROM recordings WHERE id = @Id",
             new
             {
                 Id = id
@@ -114,7 +114,7 @@ public class RecordingsRepository : RepositoryBase
     private async Task<IEnumerable<RecordingPartModel>?> GetPartsUnsafeAsync(int recordingId) =>
         await ExecuteSafelyAsync<IEnumerable<RecordingPartModel>?>(async () =>
         {
-            const string sql = """SELECT * FROM "RecordingParts" WHERE "RecordingId" = @RecordingId""";
+            const string sql = "SELECT * FROM recording_parts WHERE recording_id = @RecordingId";
             return await Connection.QueryAsync<RecordingPartModel>(sql, new { RecordingId = recordingId });
         });
 
@@ -122,7 +122,7 @@ public class RecordingsRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
-                               INSERT INTO "Recordings"("UserEmail", "CreatedAt", "EstimatedBirdsCount", "Device", "ByApp", "Note", "Name")
+                               INSERT INTO recordings(user_email, created_at, estimated_birds_count, device, by_app, note, name)
                                VALUES (@UserEmail, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name) 
                                RETURNING "Id"
                                """;
@@ -154,16 +154,18 @@ public class RecordingsRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
-                               INSERT INTO "RecordingParts"("RecordingId", "Start", "End", "GpsLatitudeStart", "GpsLongitudeStart", "GpsLatitudeEnd", "GpsLongitudeEnd")
-                               VALUES (@RecordingId, @Start, @End, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd)
+                               INSERT INTO recording_parts(
+                                   recording_id, start_date, end_date, gps_latitude_start, gps_longitude_start, gps_latitude_end, gps_longitude_end
+                               )
+                               VALUES (@RecordingId, @StartDate, @EndDate, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd)
                                RETURNING "Id"
                                """;
 
             return await Connection.ExecuteScalarAsync<int?>(sql, new
             {
                 model.RecordingId,
-                model.Start,
-                model.End,
+                model.StartDate,
+                model.EndDate,
                 model.GpsLatitudeStart,
                 model.GpsLongitudeStart,
                 model.GpsLatitudeEnd,
@@ -182,7 +184,7 @@ public class RecordingsRepository : RepositoryBase
     private async Task UpdateFilePathAsync(int recordingPartId,
         string filePath) =>
         await ExecuteSafelyAsync(async () => await Connection.ExecuteAsync(
-            """UPDATE "RecordingParts" SET "FilePath" = @FilePath WHERE "Id" = @Id""",
+            """UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id""",
             new
             {
                 FilePath = filePath,
@@ -197,11 +199,11 @@ public class RecordingsRepository : RepositoryBase
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetAllFilteredPartsAsync(int recordingId) =>
         await ExecuteSafelyAsync(async () =>
         {
-            const string sql = $"""
-                                   SELECT * 
-                                   FROM "FilteredRecordingParts" 
-                                   WHERE "RecordingPartId" = @RecordingPartId
-                                """;
+            const string sql = """
+                                  SELECT * 
+                                  FROM filtered_recording_parts 
+                                  WHERE recording_part_id = @RecordingPartId
+                               """;
 
             return await Connection.QueryAsync<FilteredRecordingPartModel>(sql, new { RecordingPartId = recordingId });
         });
@@ -211,10 +213,10 @@ public class RecordingsRepository : RepositoryBase
         {
             const string sql = $"""
                                    SELECT *
-                                   FROM "FilteredRecordingParts"
+                                   FROM filtered_recording_parts
                                    WHERE 
-                                       "RecordingPartId" = @RecordingPartId
-                                       AND "State" IN (1, 2)
+                                       recording_part_id = @RecordingPartId
+                                       AND state IN (1, 2)
                                 """;
             
             return await Connection.QueryAsync<FilteredRecordingPartModel>(sql, new { RecordingPartId = recordingId });
