@@ -46,7 +46,9 @@
     <ItemGroup>
       <ProjectReference Include="..\Auth\Auth.csproj" />
       <ProjectReference Include="..\Email\Email.csproj" />
+      <ProjectReference Include="..\Recordings\Recordings.csproj" />
       <ProjectReference Include="..\Repository\Repository.csproj" />
+      <ProjectReference Include="..\Users\Users.csproj" />
     </ItemGroup>
 
 </Project>

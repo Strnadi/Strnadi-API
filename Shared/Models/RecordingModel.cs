@@ -24,8 +24,6 @@ public class RecordingModel
     public DateTime CreatedAt { get; set; }
     
     public short EstimatedBirdsCount { get; set; }
-    
-    public string Device { get; set; }
 
     public bool ByApp { get; set; }
 
