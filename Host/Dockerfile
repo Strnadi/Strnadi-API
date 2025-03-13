@@ -8,6 +8,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Host/Host.csproj", "Host/"]
 RUN dotnet restore "Host/Host.csproj"
+RUN dotnet restore "Shared/Shared.csproj"
 COPY . .
 WORKDIR "/src/Host"
 RUN dotnet build "Host.csproj" -c $BUILD_CONFIGURATION -o /app/build
