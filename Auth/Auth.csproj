@@ -40,13 +40,4 @@
       <ProjectReference Include="..\Shared\Shared.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Reference Include="Microsoft.IdentityModel.Tokens">
-        <HintPath>..\..\..\..\.nuget\packages\microsoft.identitymodel.tokens\8.4.0\lib\net9.0\Microsoft.IdentityModel.Tokens.dll</HintPath>
-      </Reference>
-      <Reference Include="System.IdentityModel.Tokens.Jwt">
-        <HintPath>..\..\..\..\.nuget\packages\system.identitymodel.tokens.jwt\8.4.0\lib\net9.0\System.IdentityModel.Tokens.Jwt.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
 </Project>

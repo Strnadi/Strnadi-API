@@ -7,25 +7,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Reference Include="Microsoft.AspNetCore.Http.Abstractions">
-        <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.http.abstractions\2.3.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
-      </Reference>
-      <Reference Include="Microsoft.AspNetCore.Mvc.Core">
-        <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.mvc.core\2.3.0\lib\netstandard2.0\Microsoft.AspNetCore.Mvc.Core.dll</HintPath>
-      </Reference>
-      <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
-        <HintPath>..\..\..\..\.nuget\packages\microsoft.extensions.configuration.abstractions\9.0.2\lib\net9.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
-      </Reference>
-      <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
-        <HintPath>..\..\..\..\.nuget\packages\microsoft.extensions.dependencyinjection.abstractions\8.0.2\lib\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Shared\Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0-preview.1.25080.5" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0-preview.1.25080.5" />
       <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="7.3.1" />
       <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.1" />
       <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.3.1" />
