@@ -31,7 +31,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DataAccessGate_old\DataAccessGate_old.csproj" />
       <ProjectReference Include="..\Email\Email.csproj" />
       <ProjectReference Include="..\Repository\Repository.csproj" />
       <ProjectReference Include="..\Shared\Shared.csproj" />

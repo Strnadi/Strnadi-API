@@ -17,7 +17,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Auth\Auth.csproj" />
-      <ProjectReference Include="..\DataAccessGate_old\DataAccessGate_old.csproj" />
       <ProjectReference Include="..\Email\Email.csproj" />
       <ProjectReference Include="..\Repository\Repository.csproj" />
     </ItemGroup>
