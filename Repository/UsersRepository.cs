@@ -30,7 +30,7 @@ public class UsersRepository : RepositoryBase
     {
         return await ExecuteSafelyAsync(async () =>
         {
-            const string sql = """SELECT COUNT(*) FROM "Users" WHERE "Email" = @Email""";
+            const string sql = "SELECT COUNT(*) FROM users WHERE email = @Email";
             return await Connection.ExecuteScalarAsync<int>(sql, new { Email = email }) != 0;
         });
     }
@@ -39,7 +39,7 @@ public class UsersRepository : RepositoryBase
     {
         return await ExecuteSafelyAsync(async () =>
         {
-            const string sql = """SELECT "Password" FROM "Users" WHERE "Email" = @Email""";
+            const string sql = "SELECT password FROM users WHERE email = @Email";
 
             if (!await ExistsAsync(email))
                 return false;
@@ -67,7 +67,7 @@ public class UsersRepository : RepositoryBase
         {
             const string sql =
                 """
-                INSERT INTO "Users" ("Nickname", "Email", "Password", "FirstName", "LastName", "Consent") 
+                INSERT INTO users(nickname, email, password, first_name, last_name, consent) 
                 VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @Consent)
                 """;
             
@@ -90,7 +90,7 @@ public class UsersRepository : RepositoryBase
     {
         return await ExecuteSafelyAsync(async () =>
         {
-            const string sql = """SELECT * FROM "Users" WHERE "Email" = @Email""";
+            const string sql = "SELECT * FROM users WHERE email = @Email";
             return await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { Email = email });
         });
     }
@@ -99,7 +99,7 @@ public class UsersRepository : RepositoryBase
     {
         return await ExecuteSafelyAsync(async () =>
         {
-            const string sql = """UPDATE "Users" SET "IsEmailVerified" = true WHERE "Email" = @Email""";
+            const string sql = "UPDATE users SET is_email_verified = true WHERE email = @Email";
             return await Connection.ExecuteAsync(sql, new { Email = email }) != 0;
         });
     }
@@ -111,11 +111,11 @@ public class UsersRepository : RepositoryBase
             const string sql =
                 """
                 SELECT CASE 
-                    WHEN "UserRole" = 'admin' 
+                    WHEN role = 'admin' 
                         THEN TRUE
                         ELSE FALSE
-                FROM "Users"
-                WHERE "Email" = @Email
+                FROM users
+                WHERE email = @Email
                 """;
             
             return await Connection.ExecuteScalarAsync<bool>(sql, new { Email = email });
@@ -129,7 +129,7 @@ public class UsersRepository : RepositoryBase
             BCryptService bcrypt = new BCryptService();
             string newHashedPassword = bcrypt.HashPassword(newPassword);
 
-            const string sql = """UPDATE "Users" SET "Password" = @NewHashedPasswod WHERE "Email" = @Email""";
+            const string sql = "UPDATE users SET password = @NewHashedPasswod WHERE email = @Email";
             return await Connection.ExecuteAsync(sql,
                        new
                        {
