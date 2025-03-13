@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Models.Database;
+using Shared.Models.Requests;
 using Shared.Tools;
 
 namespace Repository;
@@ -11,41 +12,63 @@ public class RecordingsRepository : RepositoryBase
     {
     }
 
-    public async Task<RecordingModel[]?> Get(string? email, bool parts, bool sound)
+    public async Task<RecordingModel[]?> GetAsync(string? email, bool parts, bool sound)
+    {
+        RecordingModel[]? recordings = (email is not null
+            ? await GetByEmailAsync(email)
+            : await GetAllAsync())?.ToArray();
+
+        if (recordings is null)
+            return null;
+
+        if (parts)
+            foreach (var recording in recordings)
+                recording.Parts = await GetPartsAsync(recording.Id, sound);
+
+        return recordings;
+    }
+
+    private async Task<IEnumerable<RecordingModel>?> GetByEmailAsync(string email)
     {
         return await ExecuteSafelyAsync(async () =>
         {
-            RecordingModel[] recordings = (email is not null
-                ? await GetByEmailUnsafeAsync(email)
-                : await GetAllUnsafeAsync()).ToArray();
-
-            if (parts)
-                foreach (var recording in recordings)
-                    recording.Parts = await GetPartsAsync(recording.Id, sound);
-
-            return recordings;
+            const string sql = """
+                               SELECT * 
+                               FROM "Recordings" 
+                               WHERE "UserEmail" = @Email
+                               """;
+            return await Connection.QueryAsync<RecordingModel>(sql, new { Email = email });
         });
     }
 
-    private async Task<IEnumerable<RecordingModel>> GetByEmailUnsafeAsync(string email)
+    private async Task<IEnumerable<RecordingModel>?> GetAllAsync()
     {
-        const string sql = """
-                           SELECT * 
-                           FROM "Recordings" 
-                           WHERE "UserId" = (
-                               SELECT "Id" 
-                               FROM "Users"
-                               WHERE "Email" = @Email
-                           );
-                           """;
-        return await Connection.QueryAsync<RecordingModel>(sql, new { Email = email });
+        return await ExecuteSafelyAsync(async () =>
+        {
+            const string sql = """SELECT * FROM "Recordings" """;
+            return await Connection.QueryAsync<RecordingModel>(sql);
+        });
     }
 
-    private async Task<IEnumerable<RecordingModel>> GetAllUnsafeAsync()
+    public async Task<RecordingModel?> GetAsync(int id, bool parts, bool sound)
     {
-        const string sql = """SELECT * FROM "Recordings" """;
-        return await Connection.QueryAsync<RecordingModel>(sql);
+        var recording = await GetAsync(id);
+            
+        if (recording is null || !parts)
+            return recording;
+            
+        recording.Parts = await GetPartsAsync(id, sound);
+            
+        return recording;
     }
+    
+    private async Task<RecordingModel?> GetAsync(int id) =>
+        await ExecuteSafelyAsync(async () => await Connection.QueryFirstOrDefaultAsync<RecordingModel>(
+            """SELECT * FROM "Recordings" WHERE "Id" = @Id""",
+            new
+            {
+                Id = id
+            }));
 
     public async Task<IEnumerable<RecordingPartModel>?> GetPartsAsync(int recordingId, bool sound)
     {
@@ -79,6 +102,28 @@ public class RecordingsRepository : RepositoryBase
         {
             const string sql = """SELECT * FROM "RecordingParts" WHERE "RecordingId" = @RecordingId""";
             return await Connection.QueryAsync<RecordingPartModel>(sql, new { RecordingId = recordingId });
+        });
+    }
+
+    public async Task<int?> UploadAsync(string email, RecordingUploadModel model)
+    {
+        return await ExecuteSafelyAsync(async () =>
+        {
+            const string sql = """
+                               INSERT INTO "Recordings"("UserEmail", "CreatedAt", "EstimatedBirdsCount", "Device", "ByApp", "Note", "Name")
+                               VALUES (@UserEmail, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name) 
+                               RETURNING "Id"
+                               """;
+            return await Connection.ExecuteScalarAsync<int?>(sql, new
+            {
+                UserEmail = email,
+                model.CreatedAt,
+                model.EstimatedBirdsCount,
+                model.Device,
+                model.ByApp,
+                model.Note,
+                model.Name
+            });
         });
     }
 }
