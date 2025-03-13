@@ -3,12 +3,6 @@
 **/obj
 .env
 services
+endpoints
 *.DotSettings.user
 */appsettings.json 
-
-ApiGateway
-DataAccessGate_old
-Models_old
-NotificationService_old
-RecordingsService_old
-Shared_old
