@@ -56,7 +56,7 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
-    [HttpPatch("{email}/verify-email")]
+    [HttpGet("{email}/verify-email")]
     public async Task<IActionResult> VerifyEmailAsync(string email,
         [FromServices] JwtService jwtService,
         [FromServices] LinkGenerator linkGenerator,
