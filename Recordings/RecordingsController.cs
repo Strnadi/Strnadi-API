@@ -1,5 +1,19 @@
+/*
+ * Copyright (C) 2024 Stanislav Motsnyi
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 using Auth.Services;
-using Microsoft.AspNetCore.Http;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
@@ -12,17 +26,24 @@ namespace Recordings;
 public class RecordingsController : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetRecordings([FromServices] RecordingsRepository repo,
+    public async Task<IActionResult> GetRecordingsAsync([FromServices] RecordingsRepository repo,
         [FromQuery] string? email = null,
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
     {
         var recordings = await repo.GetAsync(email, parts, sound);
+
+        if (recordings is null)
+            return StatusCode(500, "Failed to get recordings");
+
+        if (recordings.Length is 0)
+            return NoContent();
+        
         return Ok(recordings);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetRecording(int id,
+    public async Task<IActionResult> GetRecordingAsync(int id,
         [FromServices] RecordingsRepository repo,
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
@@ -30,13 +51,13 @@ public class RecordingsController : ControllerBase
         var recording = await repo.GetAsync(id, parts, sound);
         
         if (recording is null)
-            return NotFound("Recording with provided ID not found");
+            return NoContent();
         
         return Ok(recording);
     }
 
     [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromBody] RecordingUploadModel model,
+    public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadModel model,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
@@ -58,7 +79,7 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpPost("upload-part")]
-    public async Task<IActionResult> UploadPart([FromBody] RecordingPartUploadModel model,
+    public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadModel model,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
     {
@@ -77,4 +98,28 @@ public class RecordingsController : ControllerBase
 
         return Ok(recordingPartId);
     }
+
+    [HttpGet("filtered")]
+    public async Task<IActionResult> GetFilteredPartsAsync([FromQuery] int recordingPartId,
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromQuery] bool verified = false)
+    {
+        var filtered = await recordingsRepo.GetFilteredParts(recordingPartId, verified);
+        
+        if (filtered is null) 
+            return StatusCode(500, "Failed to get filtered parts");
+
+        if (filtered.Length is 0)
+            return NoContent();
+
+        return Ok(filtered);
+    }
+
+    // [HttpPost("filtered/upload")]
+    // public async Task<IActionResult> UploadFilteredPartAsync(FilteredRecordingPartUploadModel model,
+    //     [FromServices] JwtService jwtService,
+    //     [FromServices] RecordingsRepository recordingsRepo)
+    // {
+    //     
+    // }
 }

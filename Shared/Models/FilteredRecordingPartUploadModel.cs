@@ -13,11 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace Auth.Models;
+namespace Shared.Models;
 
-public class LoginRequest
+public class FilteredRecordingPartUploadModel
 {
-    public string Email { get; set; }
+    public int RecordingPartId { get; set; }
+
+    public DateTime Start { get; set; }
     
-    public string Password { get; set; }
+    public DateTime End { get; set; }
+    
+    public string DialectCode { get; set; }
 }
