@@ -15,7 +15,9 @@
  */
 using Auth;
 using Email;
+using Recordings;
 using Repository;
+using Users;
 
 class Program
 {
@@ -37,7 +39,10 @@ class Program
     {
         services.AddMemoryCache();
         services.AddEndpointsApiExplorer();
-        services.AddControllers();
+        services.AddControllers()
+            .AddApplicationPart(typeof(UsersController).Assembly)
+            .AddApplicationPart(typeof(AuthController).Assembly)
+            .AddApplicationPart(typeof(RecordingsController).Assembly);
         services.AddRepositories();
         services.AddEmailServices();
         services.AddAuthServices();
