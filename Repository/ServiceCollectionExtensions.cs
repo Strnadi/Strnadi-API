@@ -30,5 +30,7 @@ public static class ServiceCollectionExtensions
         {
             services.AddScoped(repoType);
         }
+        
+        services.AddSwaggerGen();
     }
 }
