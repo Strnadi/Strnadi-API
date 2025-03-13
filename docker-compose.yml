@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - /home/stasik/${MS_DB}:/var/lib/postgresql/data
+      - /home/stasik/strnadi-db:/var/lib/postgres/data
 
 networks:
   strnadi-network:
