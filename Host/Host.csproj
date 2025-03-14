@@ -45,6 +45,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Auth\Auth.csproj" />
+      <ProjectReference Include="..\Devices\Devices.csproj" />
       <ProjectReference Include="..\Email\Email.csproj" />
       <ProjectReference Include="..\Recordings\Recordings.csproj" />
       <ProjectReference Include="..\Repository\Repository.csproj" />

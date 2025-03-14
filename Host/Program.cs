@@ -13,11 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
 using Auth;
+using Devices;
 using Email;
 using Recordings;
 using Repository;
 using Users;
+
+namespace Host;
 
 class Program
 {
@@ -42,7 +46,8 @@ class Program
         services.AddControllers()
             .AddApplicationPart(typeof(UsersController).Assembly)
             .AddApplicationPart(typeof(AuthController).Assembly)
-            .AddApplicationPart(typeof(RecordingsController).Assembly);
+            .AddApplicationPart(typeof(RecordingsController).Assembly)
+            .AddApplicationPart(typeof(DevicesController).Assembly);
         services.AddRepositories();
         services.AddEmailServices();
         services.AddAuthServices();
