@@ -20,7 +20,7 @@ public class RecordingModel
 {
     public int Id { get; set; }
     
-    public int UserEmail { get; set; }
+    public string UserEmail { get; set; }
     
     public DateTime CreatedAt { get; set; }
     
