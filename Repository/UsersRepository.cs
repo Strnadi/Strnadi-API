@@ -26,18 +26,15 @@ public class UsersRepository : RepositoryBase
     {
     }
 
-    public async Task<bool> ExistsAsync(string email)
-    {
-        return await ExecuteSafelyAsync(async () =>
+    public async Task<bool> ExistsAsync(string email) =>
+        await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT COUNT(*) FROM users WHERE email = @Email";
             return await Connection.ExecuteScalarAsync<int>(sql, new { Email = email }) != 0;
         });
-    }
-    
-    public async Task<bool> IsAuthorizedAsync(string email, string password)
-    {
-        return await ExecuteSafelyAsync(async () =>
+
+    public async Task<bool> IsAuthorizedAsync(string email, string password) =>
+        await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT password FROM users WHERE email = @Email";
 
@@ -54,16 +51,14 @@ public class UsersRepository : RepositoryBase
             var bcrypt = new BCryptService();
             return bcrypt.VerifyPassword(password, oldHashedPassword!);
         });
-    }
 
     public async Task<bool> CreateUserAsync(string? nickname,
         string email,
         string password,
         string firstName,
         string lastName, 
-        bool consent)
-    {
-        return await ExecuteSafelyAsync(async () =>
+        bool consent) =>
+        await ExecuteSafelyAsync(async () =>
         {
             const string sql =
                 """
@@ -84,11 +79,9 @@ public class UsersRepository : RepositoryBase
                 Consent = consent 
             }) != 0;
         });
-    }
 
-    public async Task<UserModel?> GetUserByEmail(string email)
-    {
-        return await ExecuteSafelyAsync(async () =>
+    public async Task<UserModel?> GetUserByEmail(string email) =>
+        await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE email = @Email";
             var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { Email = email });
@@ -99,20 +92,16 @@ public class UsersRepository : RepositoryBase
             user.Password = null;
             return user;
         });
-    }
 
-    public async Task<bool> VerifyEmailAsync(string email)
-    {
-        return await ExecuteSafelyAsync(async () =>
+    public async Task<bool> VerifyEmailAsync(string email) =>
+        await ExecuteSafelyAsync(async () =>
         {
             const string sql = "UPDATE users SET is_email_verified = true WHERE email = @Email";
             return await Connection.ExecuteAsync(sql, new { Email = email }) != 0;
         });
-    }
 
-    public async Task<bool> IsAdminAsync(string email)
-    {
-        return await ExecuteSafelyAsync(async () =>
+    public async Task<bool> IsAdminAsync(string email) =>
+        await ExecuteSafelyAsync(async () =>
         {
             const string sql =
                 """
@@ -126,22 +115,19 @@ public class UsersRepository : RepositoryBase
             
             return await Connection.ExecuteScalarAsync<bool>(sql, new { Email = email });
         });
-    }
 
-    public async Task<bool> ChangePasswordAsync(string email, string newPassword)
-    {
-        return await ExecuteSafelyAsync(async () =>
+    public async Task<bool> ChangePasswordAsync(string email, string newPassword) =>
+        await ExecuteSafelyAsync(async () =>
         {
             BCryptService bcrypt = new BCryptService();
             string newHashedPassword = bcrypt.HashPassword(newPassword);
 
             const string sql = "UPDATE users SET password = @NewHashedPasswod WHERE email = @Email";
             return await Connection.ExecuteAsync(sql,
-                       new
-                       {
-                           Email = email,
-                           NewHashedPassword = newHashedPassword
-                       }) == 1;
+                new
+                {
+                    Email = email,
+                    NewHashedPassword = newHashedPassword
+                }) == 1;
         });
-    }
 }
