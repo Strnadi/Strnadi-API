@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Users", "Users\Users.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Recordings", "Recordings\Recordings.csproj", "{E208AA9A-0AA4-4DED-A945-248C31E06E9E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Devices", "Devices\Devices.csproj", "{8F8AF851-C955-41B6-A936-03BB66756B1B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +50,9 @@ Global
 		{E208AA9A-0AA4-4DED-A945-248C31E06E9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E208AA9A-0AA4-4DED-A945-248C31E06E9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E208AA9A-0AA4-4DED-A945-248C31E06E9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F8AF851-C955-41B6-A936-03BB66756B1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F8AF851-C955-41B6-A936-03BB66756B1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F8AF851-C955-41B6-A936-03BB66756B1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F8AF851-C955-41B6-A936-03BB66756B1B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
