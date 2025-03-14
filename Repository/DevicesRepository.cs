@@ -1,6 +1,5 @@
 using Dapper;
 using Microsoft.Extensions.Configuration;
-using Shared.Models.Requests;
 using Shared.Models.Requests.Devices;
 
 namespace Repository;
@@ -39,7 +38,7 @@ public class DevicesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             if (!await ExistsAsync(request.OldFcmToken))
-                return false;
+                            return false;
             
             const string sql = "UPDATE devices SET fcm_token = @NewFcmToken WHERE fcm_token = @OldFcmToken";
 
@@ -48,5 +47,16 @@ public class DevicesRepository : RepositoryBase
                 request.NewFcmToken, 
                 request.OldFcmToken
             }) != 0;
+        });
+
+    public async Task<bool> DeleteAsync(string fcmToken) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            if (!await ExistsAsync(fcmToken))
+                return false;
+
+            const string sql = "DELETE FROM Devices WHERE fcm_token = @FcmToken";
+
+            return await Connection.ExecuteAsync(sql, new { FcmToken = fcmToken }) != 0;
         });
 }
