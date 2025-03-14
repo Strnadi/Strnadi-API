@@ -15,9 +15,7 @@
  */
 using Dapper;
 using Microsoft.Extensions.Configuration;
-using Shared.Models;
 using Shared.Models.Database.Recordings;
-using Shared.Models.Requests;
 using Shared.Models.Requests.Recordings;
 using Shared.Tools;
 
@@ -60,11 +58,8 @@ public class RecordingsRepository : RepositoryBase
         });
 
     private async Task<IEnumerable<RecordingModel>?> GetAllAsync() =>
-        await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
-        {
-            const string sql = "SELECT * FROM recordings";
-            return await Connection.QueryAsync<RecordingModel>(sql);
-        });
+        await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () => 
+            await Connection.QueryAsync<RecordingModel>("SELECT * FROM recordings"));
 
     public async Task<RecordingModel?> GetAsync(int id, bool parts, bool sound)
     {

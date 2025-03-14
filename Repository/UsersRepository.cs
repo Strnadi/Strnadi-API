@@ -91,7 +91,13 @@ public class UsersRepository : RepositoryBase
         return await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE email = @Email";
-            return await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { Email = email });
+            var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { Email = email });
+
+            if (user is null)
+                return null;
+            
+            user.Password = null;
+            return user;
         });
     }
 
