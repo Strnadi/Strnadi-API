@@ -18,6 +18,7 @@ using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
 using Shared.Models.Requests;
+using Shared.Models.Requests.Recordings;
 
 namespace Recordings;
 
@@ -57,7 +58,7 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpPost("upload")]
-    public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadModel model,
+    public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
@@ -70,7 +71,7 @@ public class RecordingsController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
-        int? recordingId = await recordingsRepo.UploadAsync(email!, model);
+        int? recordingId = await recordingsRepo.UploadAsync(email!, request);
         
         if (recordingId is null)
             return StatusCode(500, "Failed to upload recording");
@@ -79,7 +80,7 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpPost("upload-part")]
-    public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadModel model,
+    public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
     {
@@ -91,7 +92,7 @@ public class RecordingsController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
         
-        int? recordingPartId = await recordingsRepo.UploadPartAsync(model);
+        int? recordingPartId = await recordingsRepo.UploadPartAsync(request);
         
         if (recordingPartId is null)
             return StatusCode(500, "Failed to upload recording");

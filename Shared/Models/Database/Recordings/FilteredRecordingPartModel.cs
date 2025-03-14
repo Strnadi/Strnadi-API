@@ -13,23 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace Shared.Models;
+namespace Shared.Models.Database.Recordings;
 
-public class RecordingModel
+public class FilteredRecordingPartModel
 {
-    public int Id { get; set; }
-    
-    public int UserId { get; set; }
-    
-    public DateTime CreatedAt { get; set; }
-    
-    public short EstimatedBirdsCount { get; set; }
+    public DateTime Start { get; set; }
+    public DateTime End { get; set; }
 
-    public bool ByApp { get; set; }
-
-    public string? Note { get; set; }
-
-    public string? NotePost { get; set; }
-    
-    public IEnumerable<RecordingPartModel>? Parts { get; set; }
+    public string? DialectCode { get; set; }
 }

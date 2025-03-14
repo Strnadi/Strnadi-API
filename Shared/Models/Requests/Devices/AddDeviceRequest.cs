@@ -1,6 +1,6 @@
-namespace Shared.Models.Requests;
+namespace Shared.Models.Requests.Devices;
 
-public class AddDeviceModel
+public class AddDeviceRequest
 {
     public string UserEmail { get; set; }
     

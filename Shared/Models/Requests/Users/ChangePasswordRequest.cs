@@ -13,29 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace Shared.Models;
+namespace Shared.Models.Requests.Users;
 
-public class RecordingPartModel
+public class ChangePasswordRequest
 {
-    public int Id { get; set; }
-    
-    public int RecordingId { get; set; }
- 
-    public DateTime Start { get; set; }
-    
-    public DateTime End { get; set; }
-    
-    public decimal GpsLatitudeStart { get; set; }
-    
-    public decimal GpsLatitudeEnd { get; set; }
-    
-    public decimal GpsLongitudeStart { get; set; }
-    
-    public decimal GpsLongitudeEnd { get; set; }
-
-    public string? Square { get; set; }
-
-    public string? FilePath { get; set; }
-
-    public string? DataBase64 { get; set; }
+    public string NewPassword { get; set; }
 }
