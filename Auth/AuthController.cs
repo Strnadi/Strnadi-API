@@ -45,6 +45,9 @@ public class AuthController : ControllerBase
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
     {
+        if (!await repo.ExistsAsync(request.Email))
+            return Conflict("User doesn't exist");
+        
         bool authorized = await repo.IsAuthorizedAsync(request.Email, request.Password);
         
         if (!authorized)
