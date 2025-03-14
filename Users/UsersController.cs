@@ -17,7 +17,9 @@ using Auth.Services;
 using Email;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Shared.Extensions;
+using Shared.Logging;
 using Shared.Models.Requests;
 
 namespace Users;
@@ -77,6 +79,8 @@ public class UsersController : ControllerBase
             return NotFound("User not found");
         
         bool verified = await usersRepo.VerifyEmailAsync(email);
+        
+        Logger.Log($"Email verified: '{email}'");
         
         string redirectionPage = linkGenerator.GenerateEmailVerificationRedirectionLink(verified);
         return RedirectPermanent(redirectionPage);

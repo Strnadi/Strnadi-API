@@ -158,7 +158,7 @@ public class RecordingsRepository : RepositoryBase
                                    recording_id, start_date, end_date, gps_latitude_start, gps_longitude_start, gps_latitude_end, gps_longitude_end
                                )
                                VALUES (@RecordingId, @StartDate, @EndDate, @GpsLatitudeStart, @GpsLongitudeStart, @GpsLatitudeEnd, @GpsLongitudeEnd)
-                               RETURNING "Id"
+                               RETURNING id
                                """;
 
             return await Connection.ExecuteScalarAsync<int?>(sql, new
@@ -184,7 +184,7 @@ public class RecordingsRepository : RepositoryBase
     private async Task UpdateFilePathAsync(int recordingPartId,
         string filePath) =>
         await ExecuteSafelyAsync(async () => await Connection.ExecuteAsync(
-            """UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id""",
+            "UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id",
             new
             {
                 FilePath = filePath,
@@ -211,13 +211,13 @@ public class RecordingsRepository : RepositoryBase
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetVerifiedFilteredPartsAsync(int recordingId) =>
         await ExecuteSafelyAsync(async () =>
         {
-            const string sql = $"""
-                                   SELECT *
-                                   FROM filtered_recording_parts
-                                   WHERE 
-                                       recording_part_id = @RecordingPartId
-                                       AND state IN (1, 2)
-                                """;
+            const string sql = """
+                                  SELECT *
+                                  FROM filtered_recording_parts
+                                  WHERE 
+                                      recording_part_id = @RecordingPartId
+                                      AND state IN (1, 2)
+                               """;
             
             return await Connection.QueryAsync<FilteredRecordingPartModel>(sql, new { RecordingPartId = recordingId });
         });
