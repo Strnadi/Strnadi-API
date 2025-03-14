@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Requests;
+using Shared.Models.Requests.Users;
 
 namespace Users;
 

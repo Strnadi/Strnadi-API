@@ -13,19 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace Shared.Models.Requests;
+namespace Shared.Models.Requests.Recordings;
 
-public class RecordingUploadModel
+public class RecordingPartUploadRequest
 {
-    public DateTime CreatedAt { get; set; }
-
-    public short EstimatedBirdsCount { get; set; }
-
-    public string Device { get; set; }
-
-    public bool ByApp { get; set; }
+    public int RecordingId { get; set; }
     
-    public string? Note { get; set; }
+    public DateTime StartDate { get; set; }
     
-    public string? Name { get; set; }
+    public DateTime EndDate { get; set; }
+
+    public decimal GpsLatitudeStart { get; set; }
+
+    public decimal GpsLatitudeEnd { get; set; }
+    
+    public decimal GpsLongitudeStart { get; set; }
+    
+    public decimal GpsLongitudeEnd { get; set; }
+    
+    public string DataBase64 { get; set; }
 }

@@ -16,7 +16,9 @@
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Shared.Models;
+using Shared.Models.Database.Recordings;
 using Shared.Models.Requests;
+using Shared.Models.Requests.Recordings;
 using Shared.Tools;
 
 namespace Repository;
@@ -118,7 +120,7 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.QueryAsync<RecordingPartModel>(sql, new { RecordingId = recordingId });
         });
 
-    public async Task<int?> UploadAsync(string email, RecordingUploadModel model) =>
+    public async Task<int?> UploadAsync(string email, RecordingUploadRequest request) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
@@ -129,28 +131,28 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteScalarAsync<int?>(sql, new
             {
                 UserEmail = email,
-                model.CreatedAt,
-                model.EstimatedBirdsCount,
-                model.Device,
-                model.ByApp,
-                model.Note,
-                model.Name
+                request.CreatedAt,
+                request.EstimatedBirdsCount,
+                request.Device,
+                request.ByApp,
+                request.Note,
+                request.Name
             });
         });
 
-    public async Task<int?> UploadPartAsync(RecordingPartUploadModel model)
+    public async Task<int?> UploadPartAsync(RecordingPartUploadRequest request)
     {
-        int? partId = await UploadPartModelToDbAsync(model);
+        int? partId = await UploadPartModelToDbAsync(request);
 
         if (partId is null)
             return null;
         
-        await SaveSoundFileAsync(model.RecordingId, partId.Value, model.DataBase64);
+        await SaveSoundFileAsync(request.RecordingId, partId.Value, request.DataBase64);
         
         return partId;
     }
 
-    private async Task<int?> UploadPartModelToDbAsync(RecordingPartUploadModel model) =>
+    private async Task<int?> UploadPartModelToDbAsync(RecordingPartUploadRequest request) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
@@ -163,13 +165,13 @@ public class RecordingsRepository : RepositoryBase
 
             return await Connection.ExecuteScalarAsync<int?>(sql, new
             {
-                model.RecordingId,
-                model.StartDate,
-                model.EndDate,
-                model.GpsLatitudeStart,
-                model.GpsLongitudeStart,
-                model.GpsLatitudeEnd,
-                model.GpsLongitudeEnd
+                request.RecordingId,
+                request.StartDate,
+                request.EndDate,
+                request.GpsLatitudeStart,
+                request.GpsLongitudeStart,
+                request.GpsLatitudeEnd,
+                request.GpsLongitudeEnd
             });
         });
 

@@ -13,9 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace Shared.Models.Requests;
+namespace Shared.Models.Database.Recordings;
 
-public class ChangePasswordRequest
+public class FilteredRecordingPartUploadModel
 {
-    public string NewPassword { get; set; }
+    public int RecordingPartId { get; set; }
+
+    public DateTime Start { get; set; }
+    
+    public DateTime End { get; set; }
+    
+    public string DialectCode { get; set; }
 }
