@@ -70,7 +70,7 @@ public class DevicesRepository : RepositoryBase
             if (!await ExistsAsync(fcmToken))
                 return false;
 
-            const string sql = "DELETE FROM Devices WHERE fcm_token = @FcmToken";
+            const string sql = "DELETE FROM devices WHERE fcm_token = @FcmToken";
 
             return await Connection.ExecuteAsync(sql, new { FcmToken = fcmToken }) != 0;
         });
