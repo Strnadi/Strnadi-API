@@ -20,6 +20,7 @@ using Email;
 using Recordings;
 using Repository;
 using Users;
+using Utils;
 
 namespace Host;
 
@@ -47,7 +48,8 @@ class Program
             .AddApplicationPart(typeof(UsersController).Assembly)
             .AddApplicationPart(typeof(AuthController).Assembly)
             .AddApplicationPart(typeof(RecordingsController).Assembly)
-            .AddApplicationPart(typeof(DevicesController).Assembly);
+            .AddApplicationPart(typeof(DevicesController).Assembly)
+            .AddApplicationPart(typeof(UtilsController).Assembly);
         services.AddRepositories();
         services.AddEmailServices();
         services.AddAuthServices();
