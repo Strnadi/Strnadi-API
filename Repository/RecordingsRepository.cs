@@ -124,7 +124,7 @@ public class RecordingsRepository : RepositoryBase
             const string sql = """
                                INSERT INTO recordings(user_email, created_at, estimated_birds_count, device, by_app, note, name)
                                VALUES (@UserEmail, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name) 
-                               RETURNING "Id"
+                               RETURNING id
                                """;
             return await Connection.ExecuteScalarAsync<int?>(sql, new
             {
