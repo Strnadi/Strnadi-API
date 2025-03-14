@@ -17,6 +17,7 @@ using Auth.Services;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
+using Shared.Models.Database.Recordings;
 using Shared.Models.Requests;
 using Shared.Models.Requests.Recordings;
 
@@ -116,11 +117,11 @@ public class RecordingsController : ControllerBase
         return Ok(filtered);
     }
 
-    // [HttpPost("filtered/upload")]
-    // public async Task<IActionResult> UploadFilteredPartAsync(FilteredRecordingPartUploadModel model,
-    //     [FromServices] JwtService jwtService,
-    //     [FromServices] RecordingsRepository recordingsRepo)
-    // {
-    //     
-    // }
+    [HttpPost("filtered/upload")]
+    public async Task<IActionResult> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model,
+        [FromServices] JwtService jwtService,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        throw new NotImplementedException();
+    }
 }
