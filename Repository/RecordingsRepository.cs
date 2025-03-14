@@ -74,12 +74,17 @@ public class RecordingsRepository : RepositoryBase
     }
     
     private async Task<RecordingModel?> GetAsync(int id) =>
-        await ExecuteSafelyAsync(async () => await Connection.QueryFirstOrDefaultAsync<RecordingModel>(
-            "SELECT * FROM recordings WHERE id = @Id",
-            new
-            {
-                Id = id
-            }));
+        await ExecuteSafelyAsync(async () =>
+        {
+            var r = await Connection.QueryFirstOrDefaultAsync<RecordingModel>(
+                "SELECT * FROM recordings WHERE id = @Id",
+                new
+                {
+                    Id = id
+                });
+            Console.WriteLine(r.UserEmail);
+            return r;
+        });
 
     public async Task<IEnumerable<RecordingPartModel>?> GetPartsAsync(int recordingId, bool sound) =>
         await ExecuteSafelyAsync<IEnumerable<RecordingPartModel>?>(async () =>
