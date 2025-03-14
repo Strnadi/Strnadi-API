@@ -53,8 +53,36 @@ public class DevicesController : ControllerBase
         if (!await usersRepo.ExistsAsync(email!))
             return Conflict("User doesn't exist");
 
+        if (!await devicesRepo.ExistsAsync(request.OldFcmToken))
+            return Conflict("Device doesn't exist");
+        
         bool success = await devicesRepo.UpdateAsync(request);
         
         return success ? Ok() : StatusCode(500, "Failed to update device");
+    }
+
+    [HttpDelete("delete/{fcmToken}")]
+    public async Task<IActionResult> Delete([FromRoute] string fcmToken,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] DevicesRepository devicesRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (!await usersRepo.ExistsAsync(email!))
+            return Conflict("User doesn't exist");
+        
+        if (!await devicesRepo.ExistsAsync(fcmToken))
+            return Conflict("Device doesn't exist");
+
+        bool success = await devicesRepo.DeleteAsync(fcmToken);
+        
+        return success ? Ok() : StatusCode(500, "Failed to delete device");
     }
 }
