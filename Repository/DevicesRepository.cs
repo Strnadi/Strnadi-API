@@ -28,7 +28,7 @@ public class DevicesRepository : RepositoryBase
     public async Task<bool> ExistsAsync(string fcmToken) =>
         await ExecuteSafelyAsync(async () =>
         {
-            const string sql = "SELECT COUNT(*) FROM Devices WHERE fcm_token = @FcmToken";
+            const string sql = "SELECT COUNT(*) FROM devices WHERE fcm_token = @FcmToken";
             return await Connection.ExecuteScalarAsync<int>(sql, new { FcmToken = fcmToken }) != 0;
         });
     
