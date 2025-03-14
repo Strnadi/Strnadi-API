@@ -22,6 +22,8 @@ public static class ServiceCollectionExtensions
 {
     public static void AddRepositories(this IServiceCollection services)
     {
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+        
         Assembly currentAssembly = Assembly.GetExecutingAssembly();
         var repoBaseType = typeof(RepositoryBase);
         var repoTypes = currentAssembly.GetTypes().Where(t => t != repoBaseType && t.IsAssignableTo(repoBaseType));
