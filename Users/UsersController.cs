@@ -46,7 +46,7 @@ public class UsersController : ControllerBase
             return BadRequest("Invalid email");
         
         if (!await usersRepo.ExistsAsync(email))
-            return NotFound("User not found");
+            return Conflict("User not found");
 
         if (!await usersRepo.IsAdminAsync(email))
             return BadRequest("User is not an admin");

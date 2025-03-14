@@ -17,7 +17,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
-using Shared.Models.Requests;
 using Shared.Models.Requests.Devices;
 
 namespace Devices;
