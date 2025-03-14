@@ -50,6 +50,7 @@
       <ProjectReference Include="..\Recordings\Recordings.csproj" />
       <ProjectReference Include="..\Repository\Repository.csproj" />
       <ProjectReference Include="..\Users\Users.csproj" />
+      <ProjectReference Include="..\Utils\Utils.csproj" />
     </ItemGroup>
 
 </Project>
