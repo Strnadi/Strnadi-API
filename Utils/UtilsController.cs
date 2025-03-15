@@ -13,24 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
+﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Shared.Extensions;
+namespace Utils;
 
-public static class HttpContextExtensions
+[ApiController]
+[Route("utils")]
+public class UtilsController : ControllerBase
 {
-    public static string? GetJwt(this HttpContext context)
-    {
-        if (!context.Request.Headers.TryGetValue("Authorization", out StringValues authHeader)) 
-            return null;
-        
-        var bearerToken = authHeader.ToString();
-        
-        return bearerToken.StartsWith("Bearer ",
-            StringComparison.OrdinalIgnoreCase)
-            ? bearerToken.Substring("Bearer ".Length)
-                .Trim()
-            : null;
-    }
+    [HttpHead("health")]
+    public IActionResult Health() => Ok();
 }

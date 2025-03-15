@@ -13,24 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
+namespace Shared.Models.Requests.Recordings;
 
-namespace Shared.Extensions;
-
-public static class HttpContextExtensions
+public class RecordingPartUploadRequest
 {
-    public static string? GetJwt(this HttpContext context)
-    {
-        if (!context.Request.Headers.TryGetValue("Authorization", out StringValues authHeader)) 
-            return null;
-        
-        var bearerToken = authHeader.ToString();
-        
-        return bearerToken.StartsWith("Bearer ",
-            StringComparison.OrdinalIgnoreCase)
-            ? bearerToken.Substring("Bearer ".Length)
-                .Trim()
-            : null;
-    }
+    public int RecordingId { get; set; }
+    
+    public DateTime StartDate { get; set; }
+    
+    public DateTime EndDate { get; set; }
+
+    public decimal GpsLatitudeStart { get; set; }
+
+    public decimal GpsLatitudeEnd { get; set; }
+    
+    public decimal GpsLongitudeStart { get; set; }
+    
+    public decimal GpsLongitudeEnd { get; set; }
+    
+    public string DataBase64 { get; set; }
 }

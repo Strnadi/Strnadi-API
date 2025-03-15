@@ -1,56 +1,20 @@
 version: '3'
-  
+
 services:
-  strnadi-gateway:
-    container_name: ${MS_GATEWAY}
-    build:
-      dockerfile: ./ApiGateway/Dockerfile
-    ports:
-      - "${PORT_GATEWAY}:8080"
-    depends_on:
-      - strnadi-dag
-      - strnadi-db
+  strnadi-host:
+    container_name: strnadi-host
     networks:
       - strnadi-network
-    
-  strnadi-notifications:
-    container_name: ${MS_NOTIFICATIONS}
-    build:
-      dockerfile: ./NotificationService/Dockerfile
-    ports:
-      - "${PORT_NOTIFICATIONS}:8080"
-    depends_on:
-      - strnadi-dag
-    networks:
-      - strnadi-network
-  
-  strnadi-recordings:
-    container_name: ${MS_RECORDINGS
-    build:
-      dockerfile: ./RecordingsService/Dockerfile
-    ports:
-      - "${PORT_RECORDINGS}:8080"
-    depends_on:
-      - strnadi-dag
-    networks:
-      - strnadi-network
-  
-  strnadi-dag:
-    container_name: ${MS_DAG}
-    ports:
-      - "${PORT_DAG}:8080"
     build: 
-      dockerfile: ./DataAccessGate/Dockerfile
+      dockerfile: /home/stasik/Strnadi-API/Host/Dockerfile
+    ports:
+      - "12001:8080"
     depends_on:
       - strnadi-db
-    networks:
-      - strnadi-network
-    volumes:
-      - /home/stasik/recordings:/app/recordings/
-  
+    
   strnadi-db:
     image: postgres
-    container_name: ${MS_DB}
+    container_name: strnadi-db
     networks:
       - strnadi-network
     environment:
@@ -58,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - /home/stasik/${MS_DB}:/var/lib/postgresql/data
+      - /home/stasik/strnadi-db:/var/lib/postgres/data
 
 networks:
   strnadi-network:

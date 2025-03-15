@@ -13,24 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
+namespace Shared.Models.Requests.Recordings;
 
-namespace Shared.Extensions;
-
-public static class HttpContextExtensions
+public class RecordingUploadRequest
 {
-    public static string? GetJwt(this HttpContext context)
-    {
-        if (!context.Request.Headers.TryGetValue("Authorization", out StringValues authHeader)) 
-            return null;
-        
-        var bearerToken = authHeader.ToString();
-        
-        return bearerToken.StartsWith("Bearer ",
-            StringComparison.OrdinalIgnoreCase)
-            ? bearerToken.Substring("Bearer ".Length)
-                .Trim()
-            : null;
-    }
+    public DateTime CreatedAt { get; set; }
+
+    public short EstimatedBirdsCount { get; set; }
+
+    public string Device { get; set; }
+
+    public bool ByApp { get; set; }
+    
+    public string? Note { get; set; }
+    
+    public string? Name { get; set; }
 }
