@@ -37,13 +37,7 @@ public class RecordingsRepository : RepositoryBase
             : await GetAllAsync())?.ToArray();
 
         if (recordings is null)
-        {
-            Console.WriteLine("No recordings found");
             return null;
-        }
-        
-        foreach (var recording in recordings)
-            Console.WriteLine(recording.UserEmail);
 
         if (parts)
             foreach (var recording in recordings)
@@ -88,7 +82,6 @@ public class RecordingsRepository : RepositoryBase
                 {
                     Id = id
                 });
-            Console.WriteLine(r.UserEmail);
             return r;
         });
 
