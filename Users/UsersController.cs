@@ -42,7 +42,7 @@ public class UsersController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
-        if (email != emailFromJwt && !await usersRepo.IsAdminAsync(email))
+        if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
             return BadRequest("User does not belong to this email or is not an admin");
         
         if (!await usersRepo.ExistsAsync(email))
