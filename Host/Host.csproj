@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        
+        <OutputPath Condition="'$(Configuration)' == 'Debug'">$(SolutionDir)bin/Debug/</OutputPath>
+        <OutputPath Condition="'$(Configuration)' == 'Release'">$(SolutionDir)bin/Release/</OutputPath>
+        <BaseIntermediateOutputPath Condition="'$(Configuration)' == 'Debug'">$(SolutionDir)obj/Debug/$(MSBuildProjectName)</BaseIntermediateOutputPath>
+        <BaseIntermediateOutputPath Condition="'$(Configuration)' == 'Release'">$(SolutionDir)obj/Release/$(MSBuildProjectName)</BaseIntermediateOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+      <Content Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="obj\Host.csproj.nuget.dgspec.json" />
+      <_ContentIncludedByDefault Remove="obj\project.assets.json" />
+      <_ContentIncludedByDefault Remove="obj\project.packagespec.json" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="7.3.1" />
+      <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.1" />
+      <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.3.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Auth\Auth.csproj" />
+      <ProjectReference Include="..\Devices\Devices.csproj" />
+      <ProjectReference Include="..\Email\Email.csproj" />
+      <ProjectReference Include="..\Recordings\Recordings.csproj" />
+      <ProjectReference Include="..\Repository\Repository.csproj" />
+      <ProjectReference Include="..\Users\Users.csproj" />
+      <ProjectReference Include="..\Utils\Utils.csproj" />
+    </ItemGroup>
+
+</Project>

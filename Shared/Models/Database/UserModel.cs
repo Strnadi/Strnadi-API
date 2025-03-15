@@ -13,24 +13,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 
-namespace Shared.Extensions;
+namespace Shared.Models;
 
-public static class HttpContextExtensions
+public class UserModel
 {
-    public static string? GetJwt(this HttpContext context)
-    {
-        if (!context.Request.Headers.TryGetValue("Authorization", out StringValues authHeader)) 
-            return null;
-        
-        var bearerToken = authHeader.ToString();
-        
-        return bearerToken.StartsWith("Bearer ",
-            StringComparison.OrdinalIgnoreCase)
-            ? bearerToken.Substring("Bearer ".Length)
-                .Trim()
-            : null;
-    }
+    public int Id { get; set; }
+
+    public string? Nickname { get; set; }
+
+    public string Email { get; set; }
+    
+    public string? Password { get; set; }
+    
+    public string FirstName { get; set; } 
+
+    public string LastName { get; set; }
+
+    public DateTime CreationDate { get; set; } 
+
+    public bool? IsEmailVerified { get; set; }
+
+    public bool? Consent { get; set; }
+    
+    public string? Role { get; set; }
 }

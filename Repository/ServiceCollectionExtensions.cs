@@ -13,24 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
+using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Shared.Extensions;
+namespace Repository;
 
-public static class HttpContextExtensions
+public static class ServiceCollectionExtensions
 {
-    public static string? GetJwt(this HttpContext context)
+    public static void AddRepositories(this IServiceCollection services)
     {
-        if (!context.Request.Headers.TryGetValue("Authorization", out StringValues authHeader)) 
-            return null;
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         
-        var bearerToken = authHeader.ToString();
+        Assembly currentAssembly = Assembly.GetExecutingAssembly();
+        var repoBaseType = typeof(RepositoryBase);
+        var repoTypes = currentAssembly.GetTypes().Where(t => t != repoBaseType && t.IsAssignableTo(repoBaseType));
+
+        foreach (Type repoType in repoTypes)
+        {
+            services.AddScoped(repoType);
+        }
         
-        return bearerToken.StartsWith("Bearer ",
-            StringComparison.OrdinalIgnoreCase)
-            ? bearerToken.Substring("Bearer ".Length)
-                .Trim()
-            : null;
+        services.AddSwaggerGen();
     }
 }
