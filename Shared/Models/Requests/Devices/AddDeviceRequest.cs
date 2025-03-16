@@ -23,5 +23,5 @@ public class AddDeviceRequest
 
     public string DevicePlatform { get; set; }
     
-    public string DeviceName { get; set; }
+    public string DeviceModel { get; set; }
 }

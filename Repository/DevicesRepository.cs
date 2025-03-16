@@ -36,8 +36,8 @@ public class DevicesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
-                               INSERT INTO devices(user_email, fcm_token, device_platform, device_name)
-                               VALUES(@UserEmail, @FcmToken, @DevicePlatform, @DeviceName)
+                               INSERT INTO devices(user_email, fcm_token, device_platform, device_model)
+                               VALUES(@UserEmail, @FcmToken, @DevicePlatform, @DeviceModel)
                                """;
 
             return await Connection.ExecuteAsync(sql, new
@@ -45,7 +45,7 @@ public class DevicesRepository : RepositoryBase
                 request.UserEmail,
                 request.FcmToken,
                 request.DevicePlatform,
-                request.DeviceName
+                request.DeviceModel
             }) != 0;
         });
 
