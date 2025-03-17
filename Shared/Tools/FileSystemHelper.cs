@@ -27,7 +27,7 @@ public class FileSystemHelper
         CreateRecordingsDirectoryIfNotExists(recordingId);
         
         string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.{recording_file_extension}";
-        File.WriteAllBytes(path, data);
+        await File.WriteAllBytesAsync(path, data);
 
         return path;
     }
