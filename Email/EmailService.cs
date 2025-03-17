@@ -43,13 +43,13 @@ public class EmailService
             emailAddress,
             subject: "Nářečí českých strnadů – potvrzení nového uživatele",
             body: $"""
-                  Děkujeme za zájem o projekt občanské vědy Nářečí českých strnadů.
+                  Děkujeme za zájem o projekt občanské vědy Nářečí českých strnadů.<br>
                   
-                  Registraci nového uživatele {(nickname != null ? $"s přezdívkou <strong>{nickname}</strong>" : "")} potvrdíte kliknutím na <a href='{link}'>tento link</a>.
-                  Pokud jste se do projektu neregistrovali nebo jste zadali tuto e-mailovou adresu omylem, zprávu ignorujte.
-                  
-                  Vaši strnadi 
-                  
+                  Registraci nového uživatele {(nickname != null ? $"s přezdívkou <strong>{nickname}</strong>" : "")} potvrdíte kliknutím na <a href='{link}'>tento link</a>.<br>
+                  Pokud jste se do projektu neregistrovali nebo jste zadali tuto e-mailovou adresu omylem, zprávu ignorujte.<br>
+                  <br>
+                  <h5>Vaši strnadi</h5><br> 
+                  <br>
                   <a href='https://www.strnadi.cz'>www.strnadi.cz</a>
                   """
         );
@@ -70,11 +70,11 @@ public class EmailService
             emailAddress,
             subject: "Nářečí českých strnadů – zapomenuté heslo",
             body: $"""
-                   Nové heslo pro váš uživatelský účet v projektu Nářečí českých strnadů {(nickname != null ? $"s přezdívkou <strong>{nickname}</strong>" : "")} můžete zvolit online po kliknutí na <a href='{link}'>tento link</a>. 
-                   Pokud heslo měnit nechcete, zprávu ignorujte. 
-                   
-                   Vaši strnadi 
-                   
+                   Nové heslo pro váš uživatelský účet v projektu Nářečí českých strnadů {(nickname != null ? $"s přezdívkou <strong>{nickname}</strong>" : "")} můžete zvolit online po kliknutí na <a href='{link}'>tento link</a>. <br>
+                   Pokud heslo měnit nechcete, zprávu ignorujte. <br>
+                   <br>
+                   <h5>Vaši strnadi</h5><br>
+                   <br>
                    <a href='https://www.strnadi.cz'>www.strnadi.cz</a>
                    """
         );
