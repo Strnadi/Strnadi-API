@@ -17,6 +17,7 @@
 using Auth;
 using Devices;
 using Email;
+using Photos;
 using Recordings;
 using Repository;
 using Users;
@@ -49,7 +50,8 @@ class Program
             .AddApplicationPart(typeof(AuthController).Assembly)
             .AddApplicationPart(typeof(RecordingsController).Assembly)
             .AddApplicationPart(typeof(DevicesController).Assembly)
-            .AddApplicationPart(typeof(UtilsController).Assembly);
+            .AddApplicationPart(typeof(UtilsController).Assembly)
+            .AddApplicationPart(typeof(PhotosController).Assembly);
         services.AddRepositories();
         services.AddEmailServices();
         services.AddAuthServices();
