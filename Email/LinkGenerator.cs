@@ -32,7 +32,7 @@ public class LinkGenerator
     {
         string scheme = context.Request.IsHttps ? "https" : "http";
         
-        string link = $"{scheme}://{context.Request.Host}/auth/verify?jwt={jwt}";
+        string link = $"{scheme}://{context.Request.Host}/auth/verify-email?jwt={jwt}";
 
         return link;
     }
