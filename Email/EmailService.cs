@@ -43,11 +43,14 @@ public class EmailService
             emailAddress,
             subject: "Nářečí českých strnadů – potvrzení nového uživatele",
             body: $"""
+                  <p style='font-size:1rem'>
                   Děkujeme za zájem o projekt občanské vědy Nářečí českých strnadů.<br>
+                  <br>
+                  Registraci nového uživatele {(string.IsNullOrEmpty(nickname) ? $"s přezdívkou <strong>{nickname}</strong>" : "")} potvrdíte kliknutím na <a href='{link}'>tento link</a>.<br>
                   
-                  Registraci nového uživatele {(nickname != null ? $"s přezdívkou <strong>{nickname}</strong>" : "")} potvrdíte kliknutím na <a href='{link}'>tento link</a>.<br>
                   Pokud jste se do projektu neregistrovali nebo jste zadali tuto e-mailovou adresu omylem, zprávu ignorujte.<br>
                   <br>
+                  </p>
                   <h5>Vaši strnadi</h5><br> 
                   <br>
                   <a href='https://www.strnadi.cz'>www.strnadi.cz</a>
