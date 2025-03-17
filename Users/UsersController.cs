@@ -58,30 +58,25 @@ public class UsersController : ControllerBase
 
     [HttpGet("{email}/verify-email")]
     public async Task<IActionResult> VerifyEmailAsync(string email,
+        [FromQuery] string jwt,
         [FromServices] JwtService jwtService,
         [FromServices] LinkGenerator linkGenerator,
         [FromServices] UsersRepository usersRepo)
-    {
-        string? jwt = this.GetJwt();
-        
-        if (jwt is null) 
-            return BadRequest("No JWT provided");
-        
+    { 
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         if (email != emailFromJwt)
-            return BadRequest("Invalid email");
+            return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(false));
             
         if (!await usersRepo.ExistsAsync(email))
-            return NotFound("User not found");
+            return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(false));
         
         bool verified = await usersRepo.VerifyEmailAsync(email);
         
         Logger.Log($"Email verified: '{email}'");
         
-        string redirectionPage = linkGenerator.GenerateEmailVerificationRedirectionLink(verified);
-        return RedirectPermanent(redirectionPage);
+        return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(verified));
     }
 
     [HttpPatch("{email}/change-password")]
