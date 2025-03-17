@@ -25,6 +25,6 @@ public class PhotosController : ControllerBase
 
         bool success = await repo.UploadAsync(request);
         
-        return success ? Ok() : StatusCode(500, "Failed to save recording photo");
+        return success ? Ok() : Conflict("Failed to save recording photo");
     }
 }

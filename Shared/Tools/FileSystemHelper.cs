@@ -18,15 +18,15 @@ namespace Shared.Tools;
 public class FileSystemHelper
 {
     private readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}recordings/";
-
-    private const string file_extension = "wav";
+    
+    private const string recording_file_extension = "wav";
     
     /// <returns>Path of the generated file</returns>
-    public string SaveRecordingFile(int recordingId, int recordingPartId, byte[] data)
+    public async Task<string> SaveRecordingFileAsync(int recordingId, int recordingPartId, byte[] data)
     {
-        CreateDirectoryIfNotExists(recordingId);
+        CreateRecordingsDirectoryIfNotExists(recordingId);
         
-        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.{file_extension}";
+        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.{recording_file_extension}";
         File.WriteAllBytes(path, data);
 
         return path;
@@ -34,17 +34,53 @@ public class FileSystemHelper
     
     public byte[] ReadRecordingFile(int recordingId, int recordingPartId)
     {
-        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.{file_extension}";
+        string path = GetRecordingPartFilePath(recordingId, recordingPartId);
         return File.ReadAllBytes(path);
     }
     
-    private void CreateDirectoryIfNotExists(int recordingId)
+    public async Task<string> SaveRecordingPhotoFileAsync(int recordingId, int photoId, string base64, string format)
     {
-        string path = _pathToRecordingsDirectory + recordingId;
+        CreateRecordingPhotosDirectoryIfNotExists(recordingId);
 
-        if (!Directory.Exists(path))
-        {
-            Directory.CreateDirectory(path);
-        }
+        string path = GetRecordingPhotoFilePath(recordingId, photoId, format);
+        
+        byte[] bytes = Convert.FromBase64String(base64);
+        await File.WriteAllBytesAsync(path, bytes);
+
+        return path;
+    }
+
+    private string GetRecordingsDirectoryPath(int recordingId)
+    {
+        return _pathToRecordingsDirectory + $"{recordingId}/";
+    }
+
+    private string GetRecordingPartFilePath(int recordingId, int recordingPartId)
+    {
+        return $"{GetRecordingsDirectoryPath(recordingId)}/{recordingId}_{recordingPartId}.{recording_file_extension}";
+    }
+
+    private string GetRecordingPhotosDirectoryPath(int recordingId)
+    {
+        return GetRecordingsDirectoryPath(recordingId) + "/photos";
+    }
+    
+    private void CreateRecordingsDirectoryIfNotExists(int recordingId)
+    {
+        string path = GetRecordingsDirectoryPath(recordingId);
+
+        if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+    }
+
+    private void CreateRecordingPhotosDirectoryIfNotExists(int recordingId)
+    {
+        string path = GetRecordingPhotosDirectoryPath(recordingId);
+
+        if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+    }
+
+    private string GetRecordingPhotoFilePath(int recordingId, int photoId, string format)
+    {
+        return GetRecordingPhotosDirectoryPath(recordingId) + $"/{photoId}.{format}";
     }
 }

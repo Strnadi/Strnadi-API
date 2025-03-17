@@ -177,7 +177,7 @@ public class RecordingsRepository : RepositoryBase
     private async Task SaveSoundFileAsync(int recordingId, int recordingPartId, string base64)
     {
         byte[] binary = Convert.FromBase64String(base64);
-        string filePath = _fileSystemHelper.SaveRecordingFile(recordingId, recordingPartId, binary);
+        string filePath = await _fileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, binary);
 
         await UpdateFilePathAsync(recordingPartId, filePath);
     }
