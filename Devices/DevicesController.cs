@@ -47,7 +47,7 @@ public class DevicesController : ControllerBase
 
         bool success = await devicesRepo.AddAsync(request);
         
-        return success ? Ok() : StatusCode(500, "Failed to add device");
+        return success ? Ok() : Conflict();
     }
 
     [HttpPatch("update")]
