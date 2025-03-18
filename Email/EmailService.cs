@@ -51,7 +51,7 @@ public class EmailService
                   Pokud jste se do projektu neregistrovali nebo jste zadali tuto e-mailovou adresu omylem, zprávu ignorujte.<br>
                   <br>
                   </p>
-                  <h5>Vaši strnadi</h5><br> 
+                  <h3>Vaši strnadi</h3><br> 
                   <br>
                   <a href='https://www.strnadi.cz'>www.strnadi.cz</a>
                   """
