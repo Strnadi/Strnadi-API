@@ -106,7 +106,7 @@ public class RecordingsController : ControllerBase
         [FromServices] RecordingsRepository recordingsRepo,
         [FromQuery] bool verified = false)
     {
-        var filtered = await recordingsRepo.GetFilteredParts(recordingPartId, verified);
+        var filtered = await recordingsRepo.GetFilteredPartsAsync(recordingPartId, verified);
         
         if (filtered is null) 
             return StatusCode(500, "Failed to get filtered parts");
@@ -122,6 +122,18 @@ public class RecordingsController : ControllerBase
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
     {
-        throw new NotImplementedException();
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        bool added = await recordingsRepo.UploadFilteredPartAsync(model);
+        
+        return added ? 
+            Ok() :
+            Conflict();
     }
 }

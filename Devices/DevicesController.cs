@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-﻿using Auth.Services;
+using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
