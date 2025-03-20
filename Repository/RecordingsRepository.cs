@@ -192,7 +192,7 @@ public class RecordingsRepository : RepositoryBase
                 Id = recordingPartId
             }));
 
-    public async Task<FilteredRecordingPartModel[]?> GetFilteredParts(int recordingPartId, bool verified) =>
+    public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int recordingPartId, bool verified) =>
         (verified
             ? await GetVerifiedFilteredPartsAsync(recordingPartId)
             : await GetAllFilteredPartsAsync(recordingPartId))?.ToArray();
@@ -221,5 +221,16 @@ public class RecordingsRepository : RepositoryBase
                                """;
             
             return await Connection.QueryAsync<FilteredRecordingPartModel>(sql, new { RecordingPartId = recordingId });
+        });
+
+    public async Task<bool> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            const string sql = """
+                               INSERT INTO filtered_recording_parts(recording_part_id, start_time, end_time)
+                               VALUES (@RecordingPartId, @StartTime, @EndTime)
+                               """;
+            
+            return await Connection.ExecuteAsync(sql, model) != 0;
         });
 }
