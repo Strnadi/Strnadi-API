@@ -37,7 +37,7 @@ public class EmailService
         LinkGenerator linkGenerator = new LinkGenerator(_configuration);
         EmailSender emailSender = new EmailSender(_configuration);
         
-        string link = linkGenerator.GenerateVerificationLink(httpContext, jwt);
+        string link = linkGenerator.GenerateVerificationLink(httpContext, emailAddress, jwt);
         
         emailSender.SendMessage(
             emailAddress,
