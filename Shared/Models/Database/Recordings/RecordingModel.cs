@@ -22,6 +22,8 @@ public class RecordingModel
     
     public string UserEmail { get; set; }
     
+    public string Name { get; set; }
+    
     public DateTime CreatedAt { get; set; }
     
     public short EstimatedBirdsCount { get; set; }
