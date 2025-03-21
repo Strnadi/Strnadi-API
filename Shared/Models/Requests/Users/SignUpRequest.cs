@@ -26,6 +26,10 @@ public class SignUpRequest
     public string FirstName { get; set; }
     
     public string LastName { get; set; }
+
+    public uint PostCode { get; set; }
     
+    public string City { get; set; }
+
     public bool Consent { get; set; }
 }

@@ -13,10 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using Auth.Models;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Shared.Tools;
 using Shared.Models;
+using Shared.Models.Database;
 
 namespace Repository;
 
@@ -52,31 +55,28 @@ public class UsersRepository : RepositoryBase
             return bcrypt.VerifyPassword(password, oldHashedPassword!);
         });
 
-    public async Task<bool> CreateUserAsync(string? nickname,
-        string email,
-        string password,
-        string firstName,
-        string lastName, 
-        bool consent) =>
+    public async Task<bool> CreateUserAsync(SignUpRequest request) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql =
                 """
-                INSERT INTO users(nickname, email, password, first_name, last_name, consent) 
-                VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @Consent)
+                INSERT INTO users(nickname, email, password, first_name, last_name, post_code, city, consent) 
+                VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @PostCode, @City, @Consent)
                 """;
             
             var bcrypt = new BCryptService();
-            string hashedPassword = bcrypt.HashPassword(password);
+            string hashedPassword = bcrypt.HashPassword(request.Password);
             
             return await Connection.ExecuteAsync(sql, new
             {
-                Nickname = nickname,
-                Email = email,
+                request.Nickname,
+                request.Email,
                 Password = hashedPassword,
-                FirstName = firstName,
-                LastName = lastName,
-                Consent = consent 
+                request.FirstName,
+                request.LastName,
+                request.PostCode,
+                request.City,
+                request.Consent 
             }) != 0;
         });
 
