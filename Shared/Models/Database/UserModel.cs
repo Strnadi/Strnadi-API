@@ -14,7 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace Shared.Models;
+namespace Shared.Models.Database;
 
 public class UserModel
 {
@@ -29,6 +29,10 @@ public class UserModel
     public string FirstName { get; set; } 
 
     public string LastName { get; set; }
+
+    public int PostCode { get; set; }
+
+    public string City { get; set; }
 
     public DateTime CreationDate { get; set; } 
 
