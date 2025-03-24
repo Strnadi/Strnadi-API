@@ -74,4 +74,20 @@ public class DevicesRepository : RepositoryBase
 
             return await Connection.ExecuteAsync(sql, new { FcmToken = fcmToken }) != 0;
         });
+
+    public async Task<bool> ChangeEmailAsync(string newUserEmail, string oldFcmToken) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            if (!await ExistsAsync(oldFcmToken))
+                return false;
+            
+            const string sql = "UPDATE devices SET user_email = @NewUserEmail WHERE fcm_token = @OldFcmToken;";
+
+            return await Connection.ExecuteAsync(sql,
+                       new
+                       {
+                           NewUserEmail = newUserEmail,
+                           OldFcmToken = oldFcmToken
+                       }) != 0;
+        });
 }
