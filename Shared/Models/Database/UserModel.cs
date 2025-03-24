@@ -30,9 +30,9 @@ public class UserModel
 
     public string LastName { get; set; }
 
-    public int PostCode { get; set; }
+    public int? PostCode { get; set; }
 
-    public string City { get; set; }
+    public string? City { get; set; }
 
     public DateTime CreationDate { get; set; } 
 

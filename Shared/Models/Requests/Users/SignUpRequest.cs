@@ -27,9 +27,9 @@ public class SignUpRequest
     
     public string LastName { get; set; }
 
-    public int PostCode { get; set; }
+    public int? PostCode { get; set; }
     
-    public string City { get; set; }
+    public string? City { get; set; }
 
     public bool Consent { get; set; }
 }
