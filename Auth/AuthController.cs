@@ -49,7 +49,7 @@ public class AuthController : ControllerBase
         if (!await repo.ExistsAsync(request.Email))
             return Conflict("User doesn't exist");
         
-        bool authorized = await repo.IsAuthorizedAsync(request.Email, request.Password);
+        bool authorized = await repo.AuthorizeAsync(request.Email, request.Password);
         
         if (!authorized)
             return Unauthorized();
@@ -75,12 +75,31 @@ public class AuthController : ControllerBase
             return Conflict("Failed to create user");
         
         string jwt = jwtService.GenerateToken(request.Email);
-        
-        emailService.SendEmailVerificationMessage(request.Email,
-            request.Nickname,
-            jwt,
-            HttpContext);
+        emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, jwt, HttpContext);
         
         return Ok(jwt);
+    }
+
+    [HttpGet("{email}/resend-verify-email")]
+    public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] string email,
+        [FromServices] JwtService jwtService,
+        [FromServices] EmailService emailService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+            return Unauthorized();
+
+        if (email != emailFromJwt)
+            return BadRequest("Invalid email");
+
+        if (!await usersRepo.IsEmailVerifiedAsync(email))
+            return StatusCode(208, "Email is already verified"); // Already reported
+
+        string newJwt = jwtService.GenerateToken(email);
+        emailService.SendEmailVerificationAsync(email, nickname: null, newJwt, HttpContext);
+
+        return Ok();
     }
 }

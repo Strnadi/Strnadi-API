@@ -28,8 +28,14 @@ public class EmailService
     {
         _configuration = configuration;
     }
-    
-    public void SendEmailVerificationMessage(string emailAddress,
+
+    public void SendEmailVerificationAsync(string emailAddress,
+        string? nickname,
+        string jwt,
+        HttpContext httpContext) =>
+        Task.Run(() => SendEmailVerification(emailAddress, nickname, jwt, httpContext));
+
+    private void SendEmailVerification(string emailAddress,
         string? nickname,
         string jwt,
         HttpContext httpContext)
@@ -60,7 +66,7 @@ public class EmailService
         Logger.Log($"Sended verification email to address '{emailAddress}'");
     }
 
-    public void SendPasswordResetMessage(string emailAddress,
+    private void SendPasswordResetMessage(string emailAddress,
         string? nickname,
         string jwt)
     {
