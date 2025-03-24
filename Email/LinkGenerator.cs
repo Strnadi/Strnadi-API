@@ -39,7 +39,7 @@ public class LinkGenerator
 
     public string GenerateEmailVerificationRedirectionLink(bool success)
     {
-        return $"https://new.strnadi.cz/email-verifikovan";
+        return $"https://new.strnadi.cz/ucet/email-{(success ? "" : "ne")}verifikovan";
     }
 
     public string GeneratePasswordResetLink(string jwt)

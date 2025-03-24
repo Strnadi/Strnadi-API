@@ -37,7 +37,7 @@ public class UsersRepository : RepositoryBase
             return await Connection.ExecuteScalarAsync<int>(sql, new { Email = email }) != 0;
         });
 
-    public async Task<bool> IsAuthorizedAsync(string email, string password) =>
+    public async Task<bool> AuthorizeAsync(string email, string password) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT password FROM users WHERE email = @Email";
@@ -130,5 +130,16 @@ public class UsersRepository : RepositoryBase
                     Email = email,
                     NewHashedPassword = newHashedPassword
                 }) == 1;
+        });
+
+    public async Task<bool> IsEmailVerifiedAsync(string email) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            if (!await ExistsAsync(email))
+                return false;
+
+            const string sql = "SELECT is_email_verified FROM users WHERE email = @Email";
+
+            return await Connection.ExecuteScalarAsync<bool>(sql, new { Email = email });
         });
 }
