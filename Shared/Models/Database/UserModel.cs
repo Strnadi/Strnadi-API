@@ -30,7 +30,7 @@ public class UserModel
 
     public string LastName { get; set; }
 
-    public uint PostalCode { get; set; }
+    public int PostCode { get; set; }
 
     public string City { get; set; }
 

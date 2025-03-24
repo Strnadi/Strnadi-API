@@ -19,6 +19,7 @@ using Email;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
+using Shared.Models.Requests.Users;
 
 namespace Auth;
 
@@ -71,7 +72,7 @@ public class AuthController : ControllerBase
         bool created = await repo.CreateUserAsync(request);
         
         if (!created)
-            return StatusCode(500, "Failed to create user");
+            return Conflict("Failed to create user");
         
         string jwt = jwtService.GenerateToken(request.Email);
         

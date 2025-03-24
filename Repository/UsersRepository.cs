@@ -20,6 +20,7 @@ using Microsoft.Extensions.Configuration;
 using Shared.Tools;
 using Shared.Models;
 using Shared.Models.Database;
+using Shared.Models.Requests.Users;
 
 namespace Repository;
 
@@ -122,7 +123,7 @@ public class UsersRepository : RepositoryBase
             BCryptService bcrypt = new BCryptService();
             string newHashedPassword = bcrypt.HashPassword(newPassword);
 
-            const string sql = "UPDATE users SET password = @NewHashedPasswod WHERE email = @Email";
+            const string sql = "UPDATE users SET password = @NewHashedPassword WHERE email = @Email";
             return await Connection.ExecuteAsync(sql,
                 new
                 {
