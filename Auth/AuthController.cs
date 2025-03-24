@@ -94,7 +94,7 @@ public class AuthController : ControllerBase
         if (email != emailFromJwt)
             return BadRequest("Invalid email");
 
-        if (!await usersRepo.IsEmailVerifiedAsync(email))
+        if (await usersRepo.IsEmailVerifiedAsync(email))
             return StatusCode(208, "Email is already verified"); // Already reported
 
         string newJwt = jwtService.GenerateToken(email);
