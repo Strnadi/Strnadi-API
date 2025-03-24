@@ -45,8 +45,10 @@ public class DevicesController : ControllerBase
         if (!await usersRepo.ExistsAsync(email))
             return Conflict("User doesn't exist");
 
-        bool success = await devicesRepo.AddAsync(request);
-        
+        var success = await devicesRepo.ExistsAsync(request.FcmToken)
+            ? await devicesRepo.ChangeEmailAsync(request.UserEmail, request.FcmToken)
+            : await devicesRepo.AddAsync(request);
+
         return success ? Ok() : Conflict();
     }
 
