@@ -102,6 +102,8 @@ public class UsersController : ControllerBase
         if (!changed)
             return StatusCode(500, "Failed to change password");
 
+        Logger.Log($"Password changed for email: '{email}'");
+        
         return Ok();
     }
 }

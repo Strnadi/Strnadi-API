@@ -2,6 +2,7 @@ using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
+using Shared.Logging;
 using Shared.Models.Requests.Photos;
 
 namespace Photos;
@@ -24,6 +25,7 @@ public class PhotosController : ControllerBase
             return Unauthorized();
 
         bool success = await repo.UploadAsync(request);
+        if (success) Logger.Log($"Photo for recording {request.RecordingId} has been uploaded");
         
         return success ? Ok() : Conflict("Failed to save recording photo");
     }
