@@ -17,6 +17,7 @@ using Auth.Services;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
+using Shared.Logging;
 using Shared.Models.Database.Recordings;
 using Shared.Models.Requests;
 using Shared.Models.Requests.Recordings;
@@ -61,7 +62,6 @@ public class RecordingsController : ControllerBase
     [HttpPost("upload")]
     public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadRequest request,
         [FromServices] JwtService jwtService,
-        [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
@@ -76,6 +76,8 @@ public class RecordingsController : ControllerBase
         
         if (recordingId is null)
             return StatusCode(500, "Failed to upload recording");
+        
+        Logger.Log($"Recording {recordingId} has been uploaded");
 
         return Ok(recordingId);
     }
@@ -98,6 +100,8 @@ public class RecordingsController : ControllerBase
         if (recordingPartId is null)
             return StatusCode(500, "Failed to upload recording");
 
+        Logger.Log($"Recording part {recordingPartId} has been uploaded");
+        
         return Ok(recordingPartId);
     }
 
@@ -131,6 +135,9 @@ public class RecordingsController : ControllerBase
             return Unauthorized();
 
         bool added = await recordingsRepo.UploadFilteredPartAsync(model);
+        
+        if (added)
+            Logger.Log($"Filtered part for recording part {model.RecordingPartId} has been uploaded");
         
         return added ? 
             Ok() :

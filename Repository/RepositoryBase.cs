@@ -14,9 +14,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using System.Data.Common;
+using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Shared.Logging;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Repository;
 
@@ -63,6 +66,8 @@ public abstract class RepositoryBase : IDisposable
         }
         catch (Exception e)
         {
+            string methodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "UnknownMethod"; 
+            Logger.Log($"Execution of {GetType().Name}.{methodName} failed. ", LogLevel.Error);
             Logger.Log("Failed to execute SQL query: " + e.Message, LogLevel.Error);
             return default;
         }
