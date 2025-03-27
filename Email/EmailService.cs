@@ -62,8 +62,6 @@ public class EmailService
                   <a href='https://www.strnadi.cz'>www.strnadi.cz</a>
                   """
         );
-        
-        Logger.Log($"Sended verification email to address '{emailAddress}'");
     }
 
     private void SendPasswordResetMessage(string emailAddress,
@@ -87,7 +85,5 @@ public class EmailService
                    <a href='https://www.strnadi.cz'>www.strnadi.cz</a>
                    """
         );
-        
-        Logger.Log($"Sended password reset email to address '{emailAddress}'");
     }
 }

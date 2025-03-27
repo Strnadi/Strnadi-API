@@ -15,8 +15,10 @@
  */
 using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Repository;
 using Shared.Extensions;
+using Shared.Logging;
 using Shared.Models.Requests.Devices;
 
 namespace Devices;
@@ -49,6 +51,8 @@ public class DevicesController : ControllerBase
             ? await devicesRepo.ChangeEmailAsync(request.UserEmail, request.FcmToken)
             : await devicesRepo.AddAsync(request);
 
+        if (success) Logger.Log($"Device for user '{email}' added successfully");
+        
         return success ? Ok() : Conflict();
     }
 
@@ -73,6 +77,7 @@ public class DevicesController : ControllerBase
             return Conflict("Device doesn't exist");
         
         bool success = await devicesRepo.UpdateAsync(request);
+        if (success) Logger.Log($"Device for user '{email}' updated successfully");
         
         return success ? Ok() : StatusCode(500, "Failed to update device");
     }
@@ -98,6 +103,7 @@ public class DevicesController : ControllerBase
             return Conflict("Device doesn't exist");
 
         bool success = await devicesRepo.DeleteAsync(fcmToken);
+        if (success) Logger.Log($"Device for user '{email}' deleted successfully");
         
         return success ? Ok() : StatusCode(500, "Failed to delete device");
     }

@@ -18,7 +18,9 @@ using Auth.Services;
 using Email;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Shared.Extensions;
+using Shared.Logging;
 using Shared.Models.Requests.Users;
 
 namespace Auth;
@@ -54,6 +56,8 @@ public class AuthController : ControllerBase
         if (!authorized)
             return Unauthorized();
         
+        Logger.Log($"User '{request.Email}' logged in successfully");
+        
         string jwt = jwtService.GenerateToken(request.Email);
         return Ok(jwt);
     }
@@ -77,6 +81,8 @@ public class AuthController : ControllerBase
         string jwt = jwtService.GenerateToken(request.Email);
         emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, jwt, HttpContext);
         
+        Logger.Log($"User '{request.Email}' signed in successfully");
+        
         return Ok(jwt);
     }
 
@@ -97,6 +103,8 @@ public class AuthController : ControllerBase
         if (await usersRepo.IsEmailVerifiedAsync(email))
             return StatusCode(208, "Email is already verified"); // Already reported
 
+        Logger.Log($"Resend verification email to '{email}'");
+        
         string newJwt = jwtService.GenerateToken(email);
         emailService.SendEmailVerificationAsync(email, nickname: null, newJwt, HttpContext);
 
