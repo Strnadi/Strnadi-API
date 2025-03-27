@@ -16,11 +16,13 @@
 using Auth.Models;
 using Auth.Services;
 using Email;
+using Google.Apis.Auth;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Shared.Extensions;
 using Shared.Logging;
+using Shared.Models.Requests.Auth;
 using Shared.Models.Requests.Users;
 
 namespace Auth;
@@ -29,6 +31,18 @@ namespace Auth;
 [Route("/auth")]
 public class AuthController : ControllerBase
 {
+    private readonly IConfiguration _configuration;
+    
+    private string _androidId => _configuration["Google:Android"];
+    private string _iosId => _configuration["Google:Ios"];
+    private string _webId => _configuration["Google:Web"];
+    private string _webSecret => _configuration["Google:WebSecret"];
+
+    public AuthController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+    
     [HttpGet("verify-jwt")]
     public IActionResult VerifyJwt([FromServices] JwtService jwtService)
     {
@@ -60,6 +74,33 @@ public class AuthController : ControllerBase
         
         string jwt = jwtService.GenerateToken(request.Email);
         return Ok(jwt);
+    }
+
+    [HttpPost("login-google")]
+    public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleLoginRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        try
+        {
+            var payload = await GoogleJsonWebSignature.ValidateAsync(req.IdToken,
+                new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = [_androidId, _iosId, _webId, _webSecret]
+                });
+            
+            string email = payload.Email;
+            if (!await repo.ExistsAsync(email))
+                return Conflict("User doesn't exist");
+
+            string jwt = jwtService.GenerateToken(email);
+            return Ok(jwt);
+        }
+        catch (Exception e)
+        {
+            Logger.Log($"Failed to login user via Google: {e.Message}");
+            return Unauthorized("Invalid token");
+        }
     }
     
     [HttpPost("sign-up")]
