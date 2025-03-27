@@ -86,7 +86,8 @@ public class AuthController : ControllerBase
             var payload = await GoogleJsonWebSignature.ValidateAsync(req.IdToken,
                 new GoogleJsonWebSignature.ValidationSettings
                 {
-                    Audience = [_androidId, _iosId, _webId, _webSecret]
+                    // Audience = [_androidId, _iosId, _webId, _webSecret]
+                    Audience = [_webId]
                 });
             
             string email = payload.Email;
