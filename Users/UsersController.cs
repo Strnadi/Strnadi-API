@@ -106,4 +106,20 @@ public class UsersController : ControllerBase
         
         return Ok();
     }
+
+    [HttpGet("exists")]
+    public async Task<IActionResult> Exists([FromQuery] string email,
+        [FromServices] UsersRepository usersRepo)
+    {
+        bool exists = await usersRepo.ExistsAsync(email);
+
+        if (exists)
+        {
+            return Conflict("User already exists");
+        }
+        else
+        {
+            return Ok();
+        }
+    }
 }

@@ -20,6 +20,7 @@ using Microsoft.Extensions.Configuration;
 using Shared.Tools;
 using Shared.Models;
 using Shared.Models.Database;
+using Shared.Models.Requests.Auth;
 using Shared.Models.Requests.Users;
 
 namespace Repository;
@@ -40,6 +41,12 @@ public class UsersRepository : RepositoryBase
     public async Task<bool> AuthorizeAsync(string email, string password) =>
         await ExecuteSafelyAsync(async () =>
         {
+            if (string.IsNullOrWhiteSpace(email) ||
+                string.IsNullOrWhiteSpace(password))
+            {
+                return false;
+            }
+            
             const string sql = "SELECT password FROM users WHERE email = @Email";
 
             if (!await ExistsAsync(email))
@@ -56,17 +63,26 @@ public class UsersRepository : RepositoryBase
             return bcrypt.VerifyPassword(password, oldHashedPassword!);
         });
 
-    public async Task<bool> CreateUserAsync(SignUpRequest request) =>
+    public async Task<bool> CreateUserAsync(SignUpRequest request, bool regularRegister) =>
         await ExecuteSafelyAsync(async () =>
         {
+            if (string.IsNullOrWhiteSpace(request.Email) || (regularRegister && string.IsNullOrWhiteSpace(request.Password)))
+            {
+                return false;
+            }
+                
             const string sql =
                 """
                 INSERT INTO users(nickname, email, password, first_name, last_name, post_code, city, consent) 
                 VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @PostCode, @City, @Consent)
                 """;
-            
-            var bcrypt = new BCryptService();
-            string hashedPassword = bcrypt.HashPassword(request.Password);
+
+            string? hashedPassword = null;
+            if (regularRegister)
+            {
+                var bcrypt = new BCryptService();
+                hashedPassword = bcrypt.HashPassword(request.Password!);
+            }
             
             return await Connection.ExecuteAsync(sql, new
             {

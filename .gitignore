@@ -7,3 +7,4 @@ endpoints
 *.DotSettings.user
 */appsettings.json 
 strnadi-db-script.sql
+*.sh

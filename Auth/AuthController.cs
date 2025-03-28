@@ -16,12 +16,13 @@
 using Auth.Models;
 using Auth.Services;
 using Email;
+using Google.Apis.Auth;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Shared.Extensions;
 using Shared.Logging;
-using Shared.Models.Requests.Users;
+using Shared.Models.Requests.Auth;
 
 namespace Auth;
 
@@ -29,6 +30,18 @@ namespace Auth;
 [Route("/auth")]
 public class AuthController : ControllerBase
 {
+    private readonly IConfiguration _configuration;
+    
+    private string _androidId => _configuration["Auth:Google:Android"];
+    private string _iosId => _configuration["Auth:Google:Ios"];
+    private string _webId => _configuration["Auth:Google:Web"];
+    private string _webSecret => _configuration["Auth:Google:WebSecret"];
+
+    public AuthController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+    
     [HttpGet("verify-jwt")]
     public IActionResult VerifyJwt([FromServices] JwtService jwtService)
     {
@@ -61,6 +74,42 @@ public class AuthController : ControllerBase
         string jwt = jwtService.GenerateToken(request.Email);
         return Ok(jwt);
     }
+
+    [HttpPost("sign-up-google")]
+    public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
+        if (payload is null)
+            return Unauthorized("Invalid ID token");
+        
+        string email = payload.Email;
+        if (await repo.ExistsAsync(email))
+            return Conflict("User already exists");
+        
+        string jwt = jwtService.GenerateToken(email);
+        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
+    }
+    
+    [HttpPost("login-google")]
+    public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
+        if (payload is null)
+            return Unauthorized("Invalid ID token");
+
+        string email = payload.Email;
+        if (!await repo.ExistsAsync(email))
+            return Conflict("User doesn't exist");
+        
+        string jwt = jwtService.GenerateToken(email);
+        Logger.Log($"User '{email}' logged in successfully via google'");
+        
+        return Ok(jwt);
+    }
     
     [HttpPost("sign-up")]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request,
@@ -68,22 +117,28 @@ public class AuthController : ControllerBase
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
     {
+        string? receivedJwt = this.GetJwt();
+        bool regularRegister = receivedJwt is null && request.Password is not null;
+        
         bool exists = await repo.ExistsAsync(request.Email);
 
         if (exists)
             return Conflict("User already exists");
 
-        bool created = await repo.CreateUserAsync(request);
+        bool created = await repo.CreateUserAsync(request, regularRegister);
         
         if (!created)
             return Conflict("Failed to create user");
+
+        string newJwt = jwtService.GenerateToken(request.Email);
         
-        string jwt = jwtService.GenerateToken(request.Email);
-        emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, jwt, HttpContext);
-        
+        if (regularRegister)
+        {
+            emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt, HttpContext);
+        }
         Logger.Log($"User '{request.Email}' signed in successfully");
         
-        return Ok(jwt);
+        return Ok(newJwt);
     }
 
     [HttpGet("{email}/resend-verify-email")]
@@ -109,5 +164,21 @@ public class AuthController : ControllerBase
         emailService.SendEmailVerificationAsync(email, nickname: null, newJwt, HttpContext);
 
         return Ok();
+    }
+
+    private async Task<GoogleJsonWebSignature.Payload?> ValidateGoogleIdTokenAsync(string idToken)
+    {
+        try
+        {
+            return await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = [ _androidId, _iosId, _webId ]
+            });
+        }
+        catch (Exception e)
+        {
+            Logger.Log($"Failed to validate google id token: {e.Message}", LogLevel.Error);
+            return null;
+        }
     }
 }

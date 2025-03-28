@@ -26,7 +26,7 @@ namespace Auth.Services;
 
 public class JwtService
 {
-    private IConfiguration _configuration;
+    private readonly IConfiguration _configuration;
     
     private string _secretKey => _configuration["Jwt:SecretKey"] ?? throw new NullReferenceException("Invalid configuration key passed");
     
