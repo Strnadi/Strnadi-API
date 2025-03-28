@@ -109,7 +109,6 @@ public class UsersController : ControllerBase
 
     [HttpGet("exists")]
     public async Task<IActionResult> Exists([FromQuery] string email,
-        [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
         bool exists = await usersRepo.ExistsAsync(email);
@@ -120,8 +119,7 @@ public class UsersController : ControllerBase
         }
         else
         {
-            string jwt = jwtService.GenerateToken(email);
-            return Ok(jwt);
+            return Ok();
         }
     }
 }

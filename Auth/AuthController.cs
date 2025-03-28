@@ -90,7 +90,7 @@ public class AuthController : ControllerBase
             return Conflict("User already exists");
         
         string jwt = jwtService.GenerateToken(email);
-        return Ok(new { jwt, firstName = payload.Name, lastName = payload.FamilyName});
+        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
     }
     
     [HttpPost("login-google")]
@@ -118,6 +118,9 @@ public class AuthController : ControllerBase
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
     {
+        string? receivedJwt = this.GetJwt();
+        bool regularRegister = receivedJwt is null && request.Password is not null;
+        
         bool exists = await repo.ExistsAsync(request.Email);
 
         if (exists)
@@ -127,13 +130,16 @@ public class AuthController : ControllerBase
         
         if (!created)
             return Conflict("Failed to create user");
+
+        string newJwt = jwtService.GenerateToken(request.Email);
         
-        string jwt = jwtService.GenerateToken(request.Email);
-        emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, jwt, HttpContext);
-        
+        if (regularRegister)
+        {
+            emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt, HttpContext);
+        }
         Logger.Log($"User '{request.Email}' signed in successfully");
         
-        return Ok(jwt);
+        return Ok(newJwt);
     }
 
     [HttpGet("{email}/resend-verify-email")]
