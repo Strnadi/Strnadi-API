@@ -33,10 +33,10 @@ public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
     
-    private string _androidId => _configuration["Google:Android"];
-    private string _iosId => _configuration["Google:Ios"];
-    private string _webId => _configuration["Google:Web"];
-    private string _webSecret => _configuration["Google:WebSecret"];
+    private string _androidId => _configuration["Auth:Google:Android"];
+    private string _iosId => _configuration["Auth:Google:Ios"];
+    private string _webId => _configuration["Auth:Google:Web"];
+    private string _webSecret => _configuration["Auth:Google:WebSecret"];
 
     public AuthController(IConfiguration configuration)
     {
@@ -86,8 +86,7 @@ public class AuthController : ControllerBase
             var payload = await GoogleJsonWebSignature.ValidateAsync(req.IdToken,
                 new GoogleJsonWebSignature.ValidationSettings
                 {
-                    // Audience = [_androidId, _iosId, _webId, _webSecret]
-                    Audience = [_webId]
+                    Audience = [_androidId, _iosId, _webId]
                 });
             
             string email = payload.Email;
