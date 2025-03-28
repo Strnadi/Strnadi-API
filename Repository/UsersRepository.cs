@@ -63,11 +63,10 @@ public class UsersRepository : RepositoryBase
             return bcrypt.VerifyPassword(password, oldHashedPassword!);
         });
 
-    public async Task<bool> CreateUserAsync(SignUpRequest request) =>
+    public async Task<bool> CreateUserAsync(SignUpRequest request, bool regularRegister) =>
         await ExecuteSafelyAsync(async () =>
         {
-            if (string.IsNullOrWhiteSpace(request.Email) ||
-                string.IsNullOrWhiteSpace(request.Password))
+            if (string.IsNullOrWhiteSpace(request.Email) || (regularRegister && string.IsNullOrWhiteSpace(request.Password)))
             {
                 return false;
             }

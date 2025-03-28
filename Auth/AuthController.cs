@@ -23,7 +23,6 @@ using Microsoft.Extensions.Configuration;
 using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Requests.Auth;
-using Shared.Models.Requests.Users;
 
 namespace Auth;
 
@@ -126,7 +125,7 @@ public class AuthController : ControllerBase
         if (exists)
             return Conflict("User already exists");
 
-        bool created = await repo.CreateUserAsync(request);
+        bool created = await repo.CreateUserAsync(request, regularRegister);
         
         if (!created)
             return Conflict("Failed to create user");
