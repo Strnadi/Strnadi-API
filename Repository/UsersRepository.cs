@@ -76,9 +76,13 @@ public class UsersRepository : RepositoryBase
                 INSERT INTO users(nickname, email, password, first_name, last_name, post_code, city, consent) 
                 VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @PostCode, @City, @Consent)
                 """;
-            
-            var bcrypt = new BCryptService();
-            string hashedPassword = bcrypt.HashPassword(request.Password);
+
+            string? hashedPassword = null;
+            if (regularRegister)
+            {
+                var bcrypt = new BCryptService();
+                hashedPassword = bcrypt.HashPassword(request.Password!);
+            }
             
             return await Connection.ExecuteAsync(sql, new
             {
