@@ -40,6 +40,12 @@ public class UsersRepository : RepositoryBase
     public async Task<bool> AuthorizeAsync(string email, string password) =>
         await ExecuteSafelyAsync(async () =>
         {
+            if (string.IsNullOrWhiteSpace(email) ||
+                string.IsNullOrWhiteSpace(password))
+            {
+                return false;
+            }
+            
             const string sql = "SELECT password FROM users WHERE email = @Email";
 
             if (!await ExistsAsync(email))
@@ -59,6 +65,12 @@ public class UsersRepository : RepositoryBase
     public async Task<bool> CreateUserAsync(SignUpRequest request) =>
         await ExecuteSafelyAsync(async () =>
         {
+            if (string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Password))
+            {
+                return false;
+            }
+                
             const string sql =
                 """
                 INSERT INTO users(nickname, email, password, first_name, last_name, post_code, city, consent) 
