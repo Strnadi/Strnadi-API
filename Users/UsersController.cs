@@ -106,4 +106,22 @@ public class UsersController : ControllerBase
         
         return Ok();
     }
+
+    [HttpGet("exists")]
+    public async Task<IActionResult> Exists([FromQuery] string email,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        bool exists = await usersRepo.ExistsAsync(email);
+
+        if (exists)
+        {
+            return Conflict("User already exists");
+        }
+        else
+        {
+            string jwt = jwtService.GenerateToken(email);
+            return Ok(jwt);
+        }
+    }
 }

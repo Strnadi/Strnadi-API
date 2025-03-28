@@ -20,6 +20,7 @@ using Microsoft.Extensions.Configuration;
 using Shared.Tools;
 using Shared.Models;
 using Shared.Models.Database;
+using Shared.Models.Requests.Auth;
 using Shared.Models.Requests.Users;
 
 namespace Repository;

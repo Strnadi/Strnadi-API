@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace Shared.Models.Requests.Users;
+namespace Shared.Models.Requests.Auth;
 
 public class SignUpRequest
 {
@@ -21,7 +21,7 @@ public class SignUpRequest
     
     public string Email { get; set; }
     
-    public string Password { get; set; }
+    public string? Password { get; set; }
     
     public string FirstName { get; set; }
     
