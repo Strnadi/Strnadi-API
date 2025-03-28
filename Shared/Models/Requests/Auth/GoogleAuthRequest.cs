@@ -1,6 +1,6 @@
 namespace Shared.Models.Requests.Auth;
 
-public class GoogleLoginRequest
+public class GoogleAuthRequest
 {
     public string IdToken { get; set; }
 }
