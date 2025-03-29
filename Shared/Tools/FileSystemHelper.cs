@@ -13,6 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using System.Text;
+
 namespace Shared.Tools;
 
 public class FileSystemHelper
@@ -62,7 +65,7 @@ public class FileSystemHelper
 
     private string GetRecordingPhotosDirectoryPath(int recordingId)
     {
-        return GetRecordingsDirectoryPath(recordingId) + "/photos";
+        return GetRecordingsDirectoryPath(recordingId) + "photos";
     }
     
     private void CreateRecordingsDirectoryIfNotExists(int recordingId)
@@ -82,5 +85,39 @@ public class FileSystemHelper
     private string GetRecordingPhotoFilePath(int recordingId, int photoId, string format)
     {
         return GetRecordingPhotosDirectoryPath(recordingId) + $"/{photoId}.{format}";
+    }
+
+    public async Task<string> SaveUserPhotoFileAsync(string email, string base64, string format)
+    {
+        CreateUserPhotosDirectoryIfNotExists();
+
+        string filePath = CreateUserPhotoFilePath(email, format);
+        byte[] decoded = Encoding.UTF8.GetBytes(base64);
+        await File.WriteAllBytesAsync(filePath, decoded);
+        return filePath;
+    }
+
+    private string CreateUserPhotoFilePath(string email, string format)
+    {
+        return $"{GetUserPhotosDirectoryPath()}{email}.{format}";
+    }
+
+    private void CreateUserPhotosDirectoryIfNotExists()
+    {
+        if (!Directory.Exists(GetUserPhotosDirectoryPath())) Directory.CreateDirectory(GetUserPhotosDirectoryPath());
+    }
+    
+    private string GetUserPhotosDirectoryPath()
+    {
+        return "users/";
+    }
+
+    public async Task<string?> ReadUserPhotoFileAsync(string email, string format)
+    { 
+        string filePath = CreateUserPhotoFilePath(email, format);
+        if (!File.Exists(filePath))
+            return null;
+        
+        return await File.ReadAllTextAsync(filePath);
     }
 }

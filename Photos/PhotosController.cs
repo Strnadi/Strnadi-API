@@ -26,8 +26,8 @@ namespace Photos;
 [Route("photos")]
 public class PhotosController : ControllerBase
 {
-    [HttpPost("recording-photo")]
-    public async Task<IActionResult> UploadPhoto([FromBody] UploadRecordingPhotoRequest request,
+    [HttpPost("upload/recording-photo")]
+    public async Task<IActionResult> UploadRecPhoto([FromBody] UploadRecordingPhotoRequest request,
         [FromServices] PhotosRepository repo,
         [FromServices] JwtService jwtService)
     {
@@ -39,7 +39,7 @@ public class PhotosController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
-        bool success = await repo.UploadAsync(request);
+        bool success = await repo.UploadRecPhotoAsync(request);
         if (success) Logger.Log($"Photo for recording {request.RecordingId} has been uploaded");
         
         return success ? Ok() : Conflict("Failed to save recording photo");
