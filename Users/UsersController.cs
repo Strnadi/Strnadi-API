@@ -19,6 +19,7 @@ using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
 using Shared.Logging;
+using Shared.Models.Requests.Photos;
 using Shared.Models.Requests.Users;
 
 namespace Users;
@@ -121,5 +122,50 @@ public class UsersController : ControllerBase
         {
             return Ok();
         }
+    }
+
+    [HttpPost("{email}/uploadProfilePhoto")]
+    public async Task<IActionResult> UploadUserProfilePhoto([FromRoute] string email,
+        [FromBody] UserProfilePhotoModel req,
+        [FromServices] PhotosRepository repo,
+        [FromServices] JwtService jwtService)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+            return Unauthorized();
+        
+        if (email != emailFromJwt)
+            return BadRequest("Invalid email");
+
+        bool success = await repo.UploadUserPhotoAsync(email, req);
+        
+        return success ? Ok() : Conflict("Failed to save user photo");
+    }
+
+    [HttpGet("{email}/getProfilePhoto")]
+    public async Task<IActionResult> GetUserProfilePhoto([FromRoute] string email,
+        [FromServices] PhotosRepository photosRepo,
+        [FromServices] JwtService jwtService)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+            return Unauthorized();
+        
+        if (email != emailFromJwt)
+            return BadRequest("Invalid email");
+
+        UserProfilePhotoModel? model = await photosRepo.GetUserPhotoAsync(email);
+
+        return model is not null ? 
+            Ok(model) : 
+            NotFound("User doesnt have profile photo");
     }
 }
