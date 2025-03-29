@@ -14,6 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.Net;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
@@ -31,8 +32,8 @@ public class LinkGenerator
     public string GenerateVerificationLink(HttpContext context, string email, string jwt)
     {
         string scheme = context.Request.IsHttps ? "https" : "http";
-        
-        string link = $"{scheme}://{context.Request.Host}/users/{email}/verify-email?jwt={jwt}";
+        string host = _configuration["Host"] ?? throw new NullReferenceException("Failed to get Host from configuration");
+        string link = $"{scheme}://{host}/users/{email}/verify-email?jwt={jwt}";
 
         return link;
     }
