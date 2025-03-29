@@ -97,18 +97,18 @@ public class PhotosRepository : RepositoryBase
             if (photo is null)
                 return null;
 
-            string? data = await ReadPhotoFileAsync(email, photo.Format);
+            byte[]? data = await ReadPhotoFileAsync(email, photo.Format);
             if (data is null)
                 return null;
 
-            return new UserProfilePhotoModel()
+            return new UserProfilePhotoModel
             {
                 Format = photo.Format,
-                PhotoBase64 = data,
+                PhotoBase64 = Convert.ToBase64String(data),
             };
         });
 
-    private async Task<string?> ReadPhotoFileAsync(string email, string format)
+    private async Task<byte[]?> ReadPhotoFileAsync(string email, string format)
     {
         var fs = new FileSystemHelper();
         return await fs.ReadUserPhotoFileAsync(email, format);
