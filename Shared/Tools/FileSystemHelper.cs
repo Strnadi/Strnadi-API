@@ -92,7 +92,7 @@ public class FileSystemHelper
         CreateUserPhotosDirectoryIfNotExists();
 
         string filePath = CreateUserPhotoFilePath(email, format);
-        byte[] decoded = Encoding.UTF8.GetBytes(base64);
+        byte[] decoded = Convert.FromBase64String(base64);
         await File.WriteAllBytesAsync(filePath, decoded);
         return filePath;
     }
@@ -112,12 +112,13 @@ public class FileSystemHelper
         return "users/";
     }
 
-    public async Task<string?> ReadUserPhotoFileAsync(string email, string format)
+    public async Task<byte[]?> ReadUserPhotoFileAsync(string email, string format)
     { 
         string filePath = CreateUserPhotoFilePath(email, format);
         if (!File.Exists(filePath))
             return null;
-        
-        return await File.ReadAllTextAsync(filePath);
+
+        byte[] content = await File.ReadAllBytesAsync(filePath);
+        return content;
     }
 }
