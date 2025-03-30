@@ -14,14 +14,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using Auth.Models;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Shared.Tools;
-using Shared.Models;
 using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
-using Shared.Models.Requests.Users;
 
 namespace Repository;
 
@@ -30,7 +27,7 @@ public class UsersRepository : RepositoryBase
     public UsersRepository(IConfiguration configuration) : base(configuration)
     {
     }
-
+    
     public async Task<bool> ExistsAsync(string email) =>
         await ExecuteSafelyAsync(async () =>
         {
@@ -157,5 +154,23 @@ public class UsersRepository : RepositoryBase
             const string sql = "SELECT is_email_verified FROM users WHERE email = @Email";
 
             return await Connection.ExecuteScalarAsync<bool>(sql, new { Email = email });
+        });
+
+    public async Task<bool> UpdateAsync(string email, Dictionary<string, object> updates) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Email", email);
+
+            foreach (var kvp in updates)
+            {
+                updateFields.Add($"{kvp.Key} = @{kvp.Key}");
+                parameters.Add(kvp.Key, kvp.Value);
+            }
+
+            var sql = $"UPDATE users SET {string.Join(", ", updateFields)} WHERE email = @Email";
+
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 }

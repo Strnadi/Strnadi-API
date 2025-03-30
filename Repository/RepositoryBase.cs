@@ -16,7 +16,6 @@
 using System.Data.Common;
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Npgsql;
 using Shared.Logging;
 using LogLevel = Shared.Logging.LogLevel;
@@ -71,5 +70,12 @@ public abstract class RepositoryBase : IDisposable
             Logger.Log("Failed to execute SQL query: " + e.Message, LogLevel.Error);
             return default;
         }
+    }
+
+    protected bool IsUpdatesMapValid<TEntity>(Dictionary<string, object> updates)
+    {
+        var publicProperties = typeof(TEntity).GetProperties();
+
+        return updates.All(kvp => publicProperties.Any(p => p.Name == kvp.Key));
     }
 }
