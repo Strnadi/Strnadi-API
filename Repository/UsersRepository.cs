@@ -173,4 +173,19 @@ public class UsersRepository : RepositoryBase
 
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
+
+    public bool IsUpdatesMapValid(Dictionary<string, object> updates)
+    {
+        if (!base.IsUpdatesMapValid<UserModel>(updates))
+            return false;
+
+        if (updates.ContainsKey(nameof(UserModel.Email)) ||
+            updates.ContainsKey(nameof(UserModel.Password)) ||
+            updates.ContainsKey(nameof(UserModel.Role)) ||
+            updates.ContainsKey(nameof(UserModel.CreationDate)) ||
+            updates.ContainsKey(nameof(UserModel.IsEmailVerified)))
+            return false;
+
+        return true;
+    }
 }
