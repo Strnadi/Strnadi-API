@@ -73,6 +73,9 @@ public class UsersController : ControllerBase
         if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
             return Unauthorized("User does not belong to this email nor is an administrator");
 
+        if (!usersRepo.IsUpdatesMapValid(updates))
+            return BadRequest("You have not permission to update restricted fields");
+        
         bool updated = await usersRepo.UpdateAsync(email, updates);
         
         return updated ? Ok() : StatusCode(409, "Failed to update user");
