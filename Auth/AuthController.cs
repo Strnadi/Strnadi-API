@@ -65,7 +65,7 @@ public class AuthController : ControllerBase
             return Conflict("User doesn't exist");
         
         if (!await repo.IsEmailVerifiedAsync(request.Email))
-            return Forbid("Email address is not verified");
+            return Forbid();
         
         bool authorized = await repo.AuthorizeAsync(request.Email, request.Password);
         
