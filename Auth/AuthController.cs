@@ -63,14 +63,14 @@ public class AuthController : ControllerBase
     {
         if (!await repo.ExistsAsync(request.Email))
             return Conflict("User doesn't exist");
-
-        if (!await repo.IsEmailVerifiedAsync(request.Email))
-            return StatusCode(403, "Cannot login user with not verified email address");
         
         bool authorized = await repo.AuthorizeAsync(request.Email, request.Password);
         
         if (!authorized)
             return Unauthorized();
+
+        if (!await repo.IsEmailVerifiedAsync(request.Email))
+            return StatusCode(403, "Cannot login user with not verified email address");
         
         Logger.Log($"User '{request.Email}' logged in successfully");
         
