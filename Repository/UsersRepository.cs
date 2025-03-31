@@ -188,4 +188,16 @@ public class UsersRepository : RepositoryBase
 
         return true;
     }
+
+    public async Task<bool> DeleteAsync(string email)
+    {
+        if (!await ExistsAsync(email))
+            return false;
+
+        return await ExecuteSafelyAsync(async () =>
+        {
+            const string sql = "DELETE FROM users WHERE email = @Email";
+            return await Connection.ExecuteAsync(sql, new { Email = email }) != 0;
+        });
+    }
 }

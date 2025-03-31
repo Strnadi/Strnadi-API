@@ -81,6 +81,30 @@ public class UsersController : ControllerBase
         return updated ? Ok() : StatusCode(409, "Failed to update user");
     }
 
+    [HttpDelete("{email}")]
+    public async Task<IActionResult> DeleteUser([FromRoute] string email,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+            return Unauthorized();
+        
+        if (!await usersRepo.ExistsAsync(email))
+            return NotFound("User not found");
+        
+        if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
+            return Unauthorized("User does not belong to this email nor is an administrator");
+
+        bool deleted = await usersRepo.DeleteAsync(email);
+        
+        return deleted ? Ok() : StatusCode(404, "Failed to delete user");
+    }
+
     [HttpGet("{email}/verify-email")]
     public async Task<IActionResult> VerifyEmailAsync(string email,
         [FromQuery] string jwt,
