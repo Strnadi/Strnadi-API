@@ -78,6 +78,11 @@ public abstract class RepositoryBase : IDisposable
         var propNames =
             typeof(TEntity).GetProperties().Select(x => Typography.ToUpperFirstLetter(x.Name));
 
+        foreach (var kvp in updates)
+        {
+            Console.WriteLine(kvp.ToString());
+        }
+
         // if updates map contains element that entity doesnt, return false;
         
         return updates.All(kvp => propNames.Any(p => p == kvp.Key));
