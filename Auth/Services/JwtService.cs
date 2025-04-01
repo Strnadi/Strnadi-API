@@ -49,17 +49,20 @@ public class JwtService
         _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
     }
 
-    public string GenerateToken(string subject)
+    public string GenerateToken(string subject) =>
+        GenerateToken([
+            new Claim(JwtRegisteredClaimNames.Sub, subject),
+            new Claim(JwtRegisteredClaimNames.Iss, _issuer),
+            new Claim(JwtRegisteredClaimNames.Aud, _audience),
+        ]);
+
+    private string GenerateToken(Claim[] claims)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity([
-                new Claim(JwtRegisteredClaimNames.Sub, subject),
-                new Claim(JwtRegisteredClaimNames.Iss, _issuer),
-                new Claim(JwtRegisteredClaimNames.Aud, _audience),
-            ]),
+            Subject = new ClaimsIdentity(claims),
             SigningCredentials = new SigningCredentials(_securityKey, security_algorithm),
             Expires = _expiresAt
         };

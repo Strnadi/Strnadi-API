@@ -18,6 +18,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Shared.Logging;
+using Shared.Tools;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace Repository;
@@ -74,8 +75,11 @@ public abstract class RepositoryBase : IDisposable
 
     protected bool IsUpdatesMapValid<TEntity>(Dictionary<string, object> updates)
     {
-        var publicProperties = typeof(TEntity).GetProperties();
+        var propNames =
+            typeof(TEntity).GetProperties().Select(x => Typography.ToUpperFirstLetter(x.Name));
 
-        return updates.All(kvp => publicProperties.Any(p => p.Name == kvp.Key));
+        // if updates map contains element that entity doesnt, return false;
+        
+        return updates.All(kvp => propNames.Any(p => p == kvp.Key));
     }
 }

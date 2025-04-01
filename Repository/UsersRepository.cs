@@ -170,7 +170,7 @@ public class UsersRepository : RepositoryBase
             }
 
             var sql = $"UPDATE users SET {string.Join(", ", updateFields)} WHERE email = @Email";
-
+            
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
