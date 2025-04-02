@@ -113,7 +113,7 @@ public class RecordingsController : ControllerBase
         var filtered = await recordingsRepo.GetFilteredPartsAsync(recordingPartId, verified);
         
         if (filtered is null) 
-            return StatusCode(500, "Failed to get filtered parts");
+            return StatusCode(409, "Failed to get filtered parts");
 
         if (filtered.Length is 0)
             return NoContent();
@@ -137,7 +137,7 @@ public class RecordingsController : ControllerBase
         bool added = await recordingsRepo.UploadFilteredPartAsync(model);
         
         if (added)
-            Logger.Log($"Filtered part for recording part {model.RecordingPartId} has been uploaded");
+            Logger.Log($"Filtered part for recording {model.RecordingId} has been uploaded");
         
         return added ? 
             Ok() :

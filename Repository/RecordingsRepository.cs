@@ -223,14 +223,48 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.QueryAsync<FilteredRecordingPartModel>(sql, new { RecordingPartId = recordingId });
         });
 
-    public async Task<bool> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model) =>
+    public async Task<bool> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model)
+    {
+        int? dialectId = await GetDialectCodeIdAsync(model.DialectCode);
+
+        if (dialectId is null)
+            return false;
+        
+        int filteredPartId = await InsertFilteredPartAsync(model);
+
+        return await InsertDetectedDialectAsync(filteredPartId, dialectId.Value);
+    }
+
+    private async Task<int> InsertFilteredPartAsync(FilteredRecordingPartUploadRequest model) =>
+        await ExecuteSafelyAsync(async () => await Connection.ExecuteScalarAsync<int>(
+            sql: """
+                 INSERT INTO filtered_recording_parts(recording_id, start_date, end_date)
+                 VALUES (@RecordingId, @StartDate, @EndDate)
+                 RETURNING id;
+                 """, new
+            {
+                model.RecordingId,
+                model.StartDate,
+                model.EndDate
+            }));
+
+    private async Task<int?> GetDialectCodeIdAsync(string dialectCode) =>
         await ExecuteSafelyAsync(async () =>
-        {
-            const string sql = """
-                               INSERT INTO filtered_recording_parts(recording_part_id, start_time, end_time)
-                               VALUES (@RecordingPartId, @StartTime, @EndTime)
-                               """;
-            
-            return await Connection.ExecuteAsync(sql, model) != 0;
-        });
+            await Connection.ExecuteScalarAsync<int?>(sql:
+                "SELECT id FROM dialects WHERE dialect_code = @DialectCode", new
+                {
+                    DialectCode = dialectCode
+                }));
+
+    private async Task<bool> InsertDetectedDialectAsync(int filteredPartId, int dialectId) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync(sql:
+                """
+                INSERT INTO detected_dialects(filtered_recording_part_id, user_guess_dialect_id) 
+                VALUES (@FilteredPartId, @UserGuessDialectId)","
+                """, new
+                {
+                    FilteredPartId = filteredPartId,
+                    UserGuessDialectId = dialectId
+                }) != 0);
 }

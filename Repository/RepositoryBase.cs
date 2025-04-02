@@ -67,8 +67,6 @@ public abstract class RepositoryBase : IDisposable
         }
         catch (Exception e)
         {
-            string methodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "UnknownMethod"; 
-            Logger.Log($"Execution of {GetType().Name}.{methodName} failed. ", LogLevel.Error);
             Logger.Log("Failed to execute SQL query: " + e.Message, LogLevel.Error);
             return default;
         }

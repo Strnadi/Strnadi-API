@@ -110,14 +110,11 @@ public class AuthController : ControllerBase
         if (!authorized)
             return Unauthorized();
 
-        if (!await repo.IsEmailVerifiedAsync(email))
-            return StatusCode(403, "Cannot login user with not verified email address");
-
-        Logger.Log($"User '{email}' logged in successfully");
-
         string jwt = await repo.IsEmailVerifiedAsync(email)
             ? jwtService.GenerateRegularToken(email)
             : jwtService.GenerateLimitedToken(email);
+
+        Logger.Log($"User '{email}' logged in successfully");
 
         return Ok(jwt);
     }
