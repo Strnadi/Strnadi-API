@@ -122,6 +122,8 @@ public class JwtService
 
     private bool Validate(string token)
     {
+        Logger.Log("Validated JWT token: " + token);
+        
         var tokenHandler = new JwtSecurityTokenHandler();
 
         var validationParameters = new TokenValidationParameters
@@ -153,21 +155,36 @@ public class JwtService
         }
     }
 
-    private Claim[] GetClaims(string token)
+    private Claim[]? GetClaims(string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        JwtSecurityToken? decodedToken = tokenHandler.ReadJwtToken(token);
-        
-        return decodedToken.Claims.ToArray();
+
+        try
+        {
+            JwtSecurityToken? decodedToken = tokenHandler.ReadJwtToken(token);
+            return decodedToken.Claims.ToArray();
+        }
+        catch (SecurityTokenException ex)
+        {
+            Logger.Log($"Failed to validate JWT token: {ex.Message}");
+            return null;
+        }
     }
 
     private TokenPermissions GetPermissions(string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var decodedToken = tokenHandler.ReadJwtToken(token);
-        
-        var permission = decodedToken.Claims.Where(c => c.Type == permission_claim).Select(c => c.Value).FirstOrDefault();
-        return permission is null ? 0 : Enum.Parse<TokenPermissions>(permission);
+        try
+        {
+            var decodedToken = tokenHandler.ReadJwtToken(token);
+            var permission = decodedToken.Claims.Where(c => c.Type == permission_claim).Select(c => c.Value)
+                .FirstOrDefault();
+            return permission is null ? 0 : Enum.Parse<TokenPermissions>(permission);
+        }
+        catch (SecurityTokenException ex)
+        {
+            Logger.Log($"Failed to validate JWT token: {ex.Message}");
+            return 0;
+        }
     }
-
 }

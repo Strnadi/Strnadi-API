@@ -75,7 +75,7 @@ public class RecordingsController : ControllerBase
         int? recordingId = await recordingsRepo.UploadAsync(email!, request);
         
         if (recordingId is null)
-            return StatusCode(500, "Failed to upload recording");
+            return StatusCode(409, "Failed to upload recording");
         
         Logger.Log($"Recording {recordingId} has been uploaded");
 
