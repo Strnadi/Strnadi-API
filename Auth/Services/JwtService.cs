@@ -42,6 +42,8 @@ public class JwtService
     private const string security_algorithm = SecurityAlgorithms.HmacSha256;
 
     private readonly SecurityKey _securityKey;
+
+    private const string permission_claim = "permissions";
     
     public JwtService(IConfiguration configuration)
     {
@@ -49,11 +51,20 @@ public class JwtService
         _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
     }
 
-    public string GenerateToken(string subject) =>
+    public string GenerateRegularToken(string subject) =>
         GenerateToken([
             new Claim(JwtRegisteredClaimNames.Sub, subject),
             new Claim(JwtRegisteredClaimNames.Iss, _issuer),
             new Claim(JwtRegisteredClaimNames.Aud, _audience),
+            new Claim(permission_claim, TokenPermissions.Regular.ToString())
+        ]);
+
+    public string GenerateLimitedToken(string subject) =>
+        GenerateToken([
+            new Claim(JwtRegisteredClaimNames.Sub, subject),
+            new Claim(JwtRegisteredClaimNames.Iss, _issuer),
+            new Claim(JwtRegisteredClaimNames.Aud, _audience),
+            new Claim(permission_claim, TokenPermissions.Limited.ToString())
         ]);
 
     private string GenerateToken(Claim[] claims)
@@ -71,9 +82,18 @@ public class JwtService
         return tokenHandler.WriteToken(token);
     }
     
-    public bool TryValidateToken(string? token, out string? email)
+    public bool TryValidateLimitedToken(string? jwt, out string? email)
     {
-        return TryValidateToken(token, out email, GetEmail);
+        return TryValidateToken(jwt, out email, GetEmail);
+    }
+    
+    public bool TryValidateRegularToken(string? token, out string? email)
+    {
+        bool validated = TryValidateToken(token, out email, GetEmail);
+
+        if (!validated) return false;
+
+        return GetPermissions(email!) == TokenPermissions.Regular;
     }
     
     private bool TryValidateToken<T>(string? token, out T? value, Func<string, T?> extractor)
@@ -87,20 +107,14 @@ public class JwtService
         if (Validate(token))
         {
             value = extractor(token);
-
-            if (value is null)
-            {
-                return false;
-            }
-
-            return true;
+            return value is not null;
         }
 
         value = default;
         return false;
     }
 
-    private string? GetEmail(string token)
+    public string? GetEmail(string token)
     {
         string? emailStr = GetClaims(token).FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
         return emailStr;
@@ -146,4 +160,14 @@ public class JwtService
         
         return decodedToken.Claims.ToArray();
     }
+
+    private TokenPermissions GetPermissions(string token)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var decodedToken = tokenHandler.ReadJwtToken(token);
+        
+        var permission = decodedToken.Claims.Where(c => c.Type == permission_claim).Select(c => c.Value).FirstOrDefault();
+        return permission is null ? 0 : Enum.Parse<TokenPermissions>(permission);
+    }
+
 }
