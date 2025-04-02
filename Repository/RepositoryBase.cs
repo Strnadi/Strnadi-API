@@ -96,6 +96,8 @@ public abstract class RepositoryBase : IDisposable
         foreach (var key in keys)
         {
             string preparedKey = Typography.ToUpperFirstLetter(key);
+            if (preparedKey == key) continue;
+            
             updates[preparedKey] = ((JsonElement)updates[key]).ToString();
             updates.Remove(key);
         }
