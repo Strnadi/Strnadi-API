@@ -58,7 +58,7 @@ public class UsersController : ControllerBase
 
     [HttpPatch("{email}")]
     public async Task<IActionResult> Update(string email, 
-        [FromBody] Dictionary<string, object> updates,
+        [FromBody] UpdateUserModel model,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
@@ -72,11 +72,8 @@ public class UsersController : ControllerBase
         
         if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
             return Unauthorized("User does not belong to this email nor is an administrator");
-
-        if (!usersRepo.IsUpdatesMapValid(updates))
-            return BadRequest("You have not permission to update restricted fields");
         
-        bool updated = await usersRepo.UpdateAsync(email, updates);
+        bool updated = await usersRepo.UpdateAsync(email, model);
         
         return updated ? Ok() : StatusCode(409, "Failed to update user");
     }

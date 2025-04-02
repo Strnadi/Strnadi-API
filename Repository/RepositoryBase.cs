@@ -73,33 +73,4 @@ public abstract class RepositoryBase : IDisposable
             return default;
         }
     }
-
-    protected bool IsUpdatesMapValid<TEntity>(Dictionary<string, object> updates)
-    {
-        PrepareUpdatesMap(updates);
-        var propNames = typeof(TEntity).GetProperties().Select(x => x.Name);
-
-        foreach (var kvp in updates)
-        {
-            Console.WriteLine(kvp.ToString());
-        }
-
-        // if updates map contains element that entity doesnt, return false;
-        
-        return updates.All(kvp => propNames.Any(p => p == kvp.Key));
-    }
-
-    private void PrepareUpdatesMap(Dictionary<string, object> updates)
-    {
-        var keys = updates.Keys.ToList();
-
-        foreach (var key in keys)
-        {
-            string preparedKey = Typography.ToUpperFirstLetter(key);
-            if (preparedKey == key) continue;
-            
-            updates[preparedKey] = ((JsonElement)updates[key]).ToString();
-            updates.Remove(key);
-        }
-    }
 }

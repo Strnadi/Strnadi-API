@@ -14,11 +14,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Shared.Tools;
 using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
+using Shared.Models.Requests.Users;
 
 namespace Repository;
 
@@ -156,38 +159,24 @@ public class UsersRepository : RepositoryBase
             return await Connection.ExecuteScalarAsync<bool>(sql, new { Email = email });
         });
 
-    public async Task<bool> UpdateAsync(string email, Dictionary<string, object> updates) =>
+    public async Task<bool> UpdateAsync(string email, UpdateUserModel model) =>
         await ExecuteSafelyAsync(async () =>
         {
             var updateFields = new List<string>();
             var parameters = new DynamicParameters();
             parameters.Add("Email", email);
 
-            foreach (var kvp in updates)
+            foreach (var prop in model.GetType().GetProperties().Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
             {
-                updateFields.Add($"{kvp.Key} = @{kvp.Key}");
-                parameters.Add(kvp.Key, kvp.Value);
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(model));
             }
 
             var sql = $"UPDATE users SET {string.Join(", ", updateFields)} WHERE email = @Email";
             
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
-
-    public bool IsUpdatesMapValid(Dictionary<string, object> updates)
-    {
-        if (!base.IsUpdatesMapValid<UserModel>(updates))
-            return false;
-
-        if (updates.ContainsKey(nameof(UserModel.Email)) ||
-            updates.ContainsKey(nameof(UserModel.Password)) ||
-            updates.ContainsKey(nameof(UserModel.Role)) ||
-            updates.ContainsKey(nameof(UserModel.CreationDate)) ||
-            updates.ContainsKey(nameof(UserModel.IsEmailVerified)))
-            return false;
-
-        return true;
-    }
 
     public async Task<bool> DeleteAsync(string email)
     {
