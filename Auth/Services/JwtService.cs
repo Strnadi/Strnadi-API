@@ -180,7 +180,7 @@ public class JwtService
         try
         {
             var decodedToken = tokenHandler.ReadJwtToken(token);
-            var permission = decodedToken.Claims.Where(c => c.Type == permission_claim)
+            var permission = decodedToken.Claims.Where(c => c.Type == JwtRegisteredClaimNames.Name)
                 .Select(c => c.Value)
                 .FirstOrDefault();
             return permission is null ? 0 : Enum.Parse<TokenPermissions>(permission);
