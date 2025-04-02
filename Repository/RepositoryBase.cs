@@ -15,10 +15,11 @@
  */
 using System.Data.Common;
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Npgsql;
 using Shared.Logging;
+using Shared.Tools;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace Repository;

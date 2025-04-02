@@ -17,6 +17,7 @@ using Auth.Services;
 using Email;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.HttpSys;
 using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Requests.Photos;
@@ -53,6 +54,52 @@ public class UsersController : ControllerBase
             return StatusCode(500, "Failed to get user");
 
         return Ok(user);
+    }
+
+    [HttpPatch("{email}")]
+    public async Task<IActionResult> Update(string email, 
+        [FromBody] UpdateUserModel model,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+            return Unauthorized();
+        
+        if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
+            return Unauthorized("User does not belong to this email nor is an administrator");
+        
+        bool updated = await usersRepo.UpdateAsync(email, model);
+        
+        return updated ? Ok() : StatusCode(409, "Failed to update user");
+    }
+
+    [HttpDelete("{email}")]
+    public async Task<IActionResult> DeleteUser([FromRoute] string email,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+            return Unauthorized();
+        
+        if (!await usersRepo.ExistsAsync(email))
+            return NotFound("User not found");
+        
+        if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
+            return Unauthorized("User does not belong to this email nor is an administrator");
+
+        bool deleted = await usersRepo.DeleteAsync(email);
+        
+        return deleted ? Ok() : StatusCode(404, "Failed to delete user");
     }
 
     [HttpGet("{email}/verify-email")]

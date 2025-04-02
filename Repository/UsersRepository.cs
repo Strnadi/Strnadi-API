@@ -14,11 +14,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using Auth.Models;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Shared.Tools;
-using Shared.Models;
 using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
 using Shared.Models.Requests.Users;
@@ -30,7 +30,7 @@ public class UsersRepository : RepositoryBase
     public UsersRepository(IConfiguration configuration) : base(configuration)
     {
     }
-
+    
     public async Task<bool> ExistsAsync(string email) =>
         await ExecuteSafelyAsync(async () =>
         {
@@ -158,4 +158,35 @@ public class UsersRepository : RepositoryBase
 
             return await Connection.ExecuteScalarAsync<bool>(sql, new { Email = email });
         });
+
+    public async Task<bool> UpdateAsync(string email, UpdateUserModel model) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Email", email);
+
+            foreach (var prop in model.GetType().GetProperties().Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
+            {
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(model));
+            }
+
+            var sql = $"UPDATE users SET {string.Join(", ", updateFields)} WHERE email = @Email";
+            
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+
+    public async Task<bool> DeleteAsync(string email)
+    {
+        if (!await ExistsAsync(email))
+            return false;
+
+        return await ExecuteSafelyAsync(async () =>
+        {
+            const string sql = "DELETE FROM users WHERE email = @Email";
+            return await Connection.ExecuteAsync(sql, new { Email = email }) != 0;
+        });
+    }
 }

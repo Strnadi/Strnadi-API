@@ -68,6 +68,9 @@ public class AuthController : ControllerBase
         
         if (!authorized)
             return Unauthorized();
+
+        if (!await repo.IsEmailVerifiedAsync(request.Email))
+            return StatusCode(403, "Cannot login user with not verified email address");
         
         Logger.Log($"User '{request.Email}' logged in successfully");
         
