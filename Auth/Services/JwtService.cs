@@ -116,7 +116,7 @@ public class JwtService
 
     public string? GetEmail(string token)
     {
-        string? emailStr = GetClaims(token).FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+        string? emailStr = GetClaims(token)!.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
         return emailStr;
     }
 
@@ -155,19 +155,19 @@ public class JwtService
         }
     }
 
-    private Claim[]? GetClaims(string token)
+    private Claim[] GetClaims(string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
 
         try
         {
-            JwtSecurityToken? decodedToken = tokenHandler.ReadJwtToken(token);
+            var decodedToken = tokenHandler.ReadJwtToken(token);
             return decodedToken.Claims.ToArray();
         }
         catch (SecurityTokenException ex)
         {
             Logger.Log($"Failed to validate JWT token: {ex.Message}");
-            return null;
+            throw;
         }
     }
 
@@ -177,7 +177,8 @@ public class JwtService
         try
         {
             var decodedToken = tokenHandler.ReadJwtToken(token);
-            var permission = decodedToken.Claims.Where(c => c.Type == permission_claim).Select(c => c.Value)
+            var permission = decodedToken.Claims.Where(c => c.Type == permission_claim)
+                .Select(c => c.Value)
                 .FirstOrDefault();
             return permission is null ? 0 : Enum.Parse<TokenPermissions>(permission);
         }
