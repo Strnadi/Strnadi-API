@@ -39,7 +39,7 @@ public class UsersController : ControllerBase
         if (jwt is null) 
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         //
         // if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
@@ -67,7 +67,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
         if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
@@ -88,7 +88,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
         if (!await usersRepo.ExistsAsync(email))
@@ -109,7 +109,7 @@ public class UsersController : ControllerBase
         [FromServices] LinkGenerator linkGenerator,
         [FromServices] UsersRepository usersRepo)
     { 
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         if (email != emailFromJwt)
@@ -136,7 +136,7 @@ public class UsersController : ControllerBase
         if (jwt is null) 
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         if (email != emailFromJwt)
@@ -182,7 +182,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
         if (email != emailFromJwt)
@@ -203,7 +203,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
         if (email != emailFromJwt)

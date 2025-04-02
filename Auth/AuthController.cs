@@ -43,39 +43,20 @@ public class AuthController : ControllerBase
     }
     
     [HttpGet("verify-jwt")]
-    public IActionResult VerifyJwt([FromServices] JwtService jwtService)
+    public async Task<IActionResult> VerifyJwt([FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
 
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
-        if (!jwtService.TryValidateToken(jwt, out string? email))
-            return Unauthorized();
 
-        return Ok();
-    }
+        string? email = jwtService.GetEmail(jwt);
+        
+        if (email is null)
+            return BadRequest("No email provided");
 
-    [HttpPost("login")]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
-        [FromServices] JwtService jwtService,
-        [FromServices] UsersRepository repo)
-    {
-        if (!await repo.ExistsAsync(request.Email))
-            return Conflict("User doesn't exist");
-        
-        bool authorized = await repo.AuthorizeAsync(request.Email, request.Password);
-        
-        if (!authorized)
-            return Unauthorized();
-
-        if (!await repo.IsEmailVerifiedAsync(request.Email))
-            return StatusCode(403, "Cannot login user with not verified email address");
-        
-        Logger.Log($"User '{request.Email}' logged in successfully");
-        
-        string jwt = jwtService.GenerateToken(request.Email);
-        return Ok(jwt);
+        return await usersRepo.IsEmailVerifiedAsync(email) ? Ok() : StatusCode(403);
     }
 
     [HttpPost("sign-up-google")]
@@ -91,7 +72,7 @@ public class AuthController : ControllerBase
         if (await repo.ExistsAsync(email))
             return Conflict("User already exists");
         
-        string jwt = jwtService.GenerateToken(email);
+        string jwt = jwtService.GenerateRegularToken(email);
         return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
     }
     
@@ -108,12 +89,39 @@ public class AuthController : ControllerBase
         if (!await repo.ExistsAsync(email))
             return Conflict("User doesn't exist");
         
-        string jwt = jwtService.GenerateToken(email);
+        string jwt = jwtService.GenerateRegularToken(email);
         Logger.Log($"User '{email}' logged in successfully via google'");
         
         return Ok(jwt);
     }
-    
+
+    [HttpPost("login")]
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        string email = request.Email;
+
+        if (!await repo.ExistsAsync(email))
+            return Conflict("User doesn't exist");
+
+        bool authorized = await repo.AuthorizeAsync(email, request.Password);
+
+        if (!authorized)
+            return Unauthorized();
+
+        if (!await repo.IsEmailVerifiedAsync(email))
+            return StatusCode(403, "Cannot login user with not verified email address");
+
+        Logger.Log($"User '{email}' logged in successfully");
+
+        string jwt = await repo.IsEmailVerifiedAsync(email)
+            ? jwtService.GenerateRegularToken(email)
+            : jwtService.GenerateLimitedToken(email);
+
+        return Ok(jwt);
+    }
+
     [HttpPost("sign-up")]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request,
         [FromServices] EmailService emailService,
@@ -133,7 +141,7 @@ public class AuthController : ControllerBase
         if (!created)
             return Conflict("Failed to create user");
 
-        string newJwt = jwtService.GenerateToken(request.Email);
+        string newJwt = jwtService.GenerateLimitedToken(request.Email);
         
         if (regularRegister)
         {
@@ -152,7 +160,7 @@ public class AuthController : ControllerBase
     {
         string? jwt = this.GetJwt();
 
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateLimitedToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         if (email != emailFromJwt)
@@ -163,7 +171,7 @@ public class AuthController : ControllerBase
 
         Logger.Log($"Resend verification email to '{email}'");
         
-        string newJwt = jwtService.GenerateToken(email);
+        string newJwt = jwtService.GenerateRegularToken(email);
         emailService.SendEmailVerificationAsync(email, nickname: null, newJwt, HttpContext);
 
         return Ok();

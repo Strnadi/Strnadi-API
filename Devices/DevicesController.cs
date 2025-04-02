@@ -38,7 +38,7 @@ public class DevicesController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? email)) 
+        if (!jwtService.TryValidateRegularToken(jwt, out string? email)) 
             return Unauthorized();
         
         if (request.UserEmail != email)
@@ -67,7 +67,7 @@ public class DevicesController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? email))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? email))
             return Unauthorized();
         
         if (!await usersRepo.ExistsAsync(email!))
@@ -93,7 +93,7 @@ public class DevicesController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? email))
+        if (!jwtService.TryValidateRegularToken(jwt, out string? email))
             return Unauthorized();
         
         if (!await usersRepo.ExistsAsync(email!))
