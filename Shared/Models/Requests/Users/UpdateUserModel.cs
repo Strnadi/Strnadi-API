@@ -17,5 +17,5 @@ public class UpdateUserModel
     public string? City { get; set; }
 
     [Column("post_code")]
-    public string? PostCode { get; set; }
+    public int? PostCode { get; set; }
 }
