@@ -15,6 +15,7 @@
  */
 using System.Data.Common;
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Shared.Logging;
@@ -75,8 +76,8 @@ public abstract class RepositoryBase : IDisposable
 
     protected bool IsUpdatesMapValid<TEntity>(Dictionary<string, object> updates)
     {
-        var propNames =
-            typeof(TEntity).GetProperties().Select(x => Typography.ToUpperFirstLetter(x.Name));
+        PrepareUpdatesMap(updates);
+        var propNames = typeof(TEntity).GetProperties().Select(x => x.Name);
 
         foreach (var kvp in updates)
         {
@@ -86,5 +87,17 @@ public abstract class RepositoryBase : IDisposable
         // if updates map contains element that entity doesnt, return false;
         
         return updates.All(kvp => propNames.Any(p => p == kvp.Key));
+    }
+
+    private void PrepareUpdatesMap(Dictionary<string, object> updates)
+    {
+        var keys = updates.Keys.ToList();
+
+        foreach (var key in keys)
+        {
+            string preparedKey = Typography.ToUpperFirstLetter(key);
+            updates[preparedKey] = ((JsonElement)updates[key]).ToString();
+            updates.Remove(key);
+        }
     }
 }

@@ -22,11 +22,11 @@ public static class Logger
         Console.Write($"[{DateTime.Now}] ");
         Console.Write("[");
         Console.ForegroundColor = GetConsoleColor(level); 
-        Console.Write($"{level} ");
+        Console.Write($"{level}");
         Console.ResetColor();
         Console.Write("]");
         Console.ForegroundColor = GetConsoleColor(level);
-        Console.WriteLine($"{message}"); 
+        Console.WriteLine($" {message}"); 
         Console.ResetColor();
     }
 
