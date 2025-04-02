@@ -54,13 +54,13 @@ public class JwtService
     public string GenerateRegularToken(string subject) =>
         GenerateToken([
             new Claim(JwtRegisteredClaimNames.Sub, subject),
-            new Claim(permission_claim, TokenPermissions.Regular.ToString())
+            new Claim(JwtRegisteredClaimNames.Name, TokenPermissions.Regular.ToString())
         ]);
 
     public string GenerateLimitedToken(string subject) =>
         GenerateToken([
             new Claim(JwtRegisteredClaimNames.Sub, subject),
-            new Claim(permission_claim, TokenPermissions.Limited.ToString())
+            new Claim(JwtRegisteredClaimNames.Name, TokenPermissions.Limited.ToString())
         ]);
 
     private string GenerateToken(Claim[] claims)
