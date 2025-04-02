@@ -109,14 +109,11 @@ public class AuthController : ControllerBase
 
         if (!authorized)
             return Unauthorized();
-
-        string jwt = await repo.IsEmailVerifiedAsync(email)
-            ? jwtService.GenerateRegularToken(email)
-            : jwtService.GenerateLimitedToken(email);
-
+        
         Logger.Log($"User '{email}' logged in successfully");
-
-        return Ok(jwt);
+        return await repo.IsEmailVerifiedAsync(email) ?
+            Ok(jwtService.GenerateRegularToken(email)) : 
+            StatusCode(403, jwtService.GenerateLimitedToken(email));
     }
 
     [HttpPost("sign-up")]
