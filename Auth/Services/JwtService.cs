@@ -26,7 +26,7 @@ namespace Auth.Services;
 
 public class JwtService
 {
-    private IConfiguration _configuration;
+    private readonly IConfiguration _configuration;
     
     private string _secretKey => _configuration["Jwt:SecretKey"] ?? throw new NullReferenceException("Invalid configuration key passed");
     
@@ -49,17 +49,17 @@ public class JwtService
         _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
     }
 
-    public string GenerateToken(string subject)
+    public string GenerateToken(string subject) => GenerateToken([new Claim(JwtRegisteredClaimNames.Sub, subject)]);
+
+    private string GenerateToken(Claim[] claims)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity([
-                new Claim(JwtRegisteredClaimNames.Sub, subject),
-                new Claim(JwtRegisteredClaimNames.Iss, _issuer),
-                new Claim(JwtRegisteredClaimNames.Aud, _audience),
-            ]),
+            Subject = new ClaimsIdentity(claims),
+            Issuer = _issuer,
+            Audience = _audience,
             SigningCredentials = new SigningCredentials(_securityKey, security_algorithm),
             Expires = _expiresAt
         };
@@ -97,7 +97,7 @@ public class JwtService
         return false;
     }
 
-    private string? GetEmail(string token)
+    public string? GetEmail(string token)
     {
         string? emailStr = GetClaims(token).FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
         return emailStr;
@@ -105,9 +105,7 @@ public class JwtService
 
     private bool Validate(string token)
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
-
-        var validationParameters = new TokenValidationParameters
+        var tokenHandler = new JwtSecurityTokenHandler();var validationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = _securityKey,

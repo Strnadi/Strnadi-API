@@ -13,7 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using System.Text;
 using Auth.Services;
+using Microsoft.AspNetCore.Http;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
@@ -118,10 +121,12 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpPost("filtered/upload")]
-    public async Task<IActionResult> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model,
+    public async Task<IActionResult> UploadFilteredPartAsync([FromBody] FilteredRecordingPartUploadRequest model,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
     {
+        Console.WriteLine(await GetRequestStringAsync());
+        
         string? jwt = this.GetJwt();
         
         if (jwt is null)
@@ -136,4 +141,26 @@ public class RecordingsController : ControllerBase
             Ok() :
             Conflict();
     }
+    
+    private async Task<string> GetRequestStringAsync()
+    {
+        var request = HttpContext.Request;
+        request.EnableBuffering();
+
+        var body = string.Empty;
+        if (request.Body.CanSeek)
+        {
+            request.Body.Seek(0, SeekOrigin.Begin);
+            using (var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true))
+            {
+                body = await reader.ReadToEndAsync();
+                request.Body.Seek(0, SeekOrigin.Begin);
+            }
+        }
+
+        var headers = string.Join(Environment.NewLine, request.Headers.Select(h => $"{h.Key}: {h.Value}"));
+        var requestString = $"{request.Method} {request.Path}{request.QueryString}{Environment.NewLine}{headers}{Environment.NewLine}{body}";
+
+        return requestString;
+    } 
 }
