@@ -42,26 +42,18 @@ public class JwtService
     private const string security_algorithm = SecurityAlgorithms.HmacSha256;
 
     private readonly SecurityKey _securityKey;
-
-    private const string permission_claim = "permissions";
     
     public JwtService(IConfiguration configuration)
     {
         _configuration = configuration;
-        _securityKey = new SymmetricSecurityKey(Convert.FromBase64String(_secretKey));
-        _securityKey.KeyId = Guid.NewGuid().ToString();
+        _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
     }
 
-    public string GenerateRegularToken(string subject) =>
+    public string GenerateToken(string subject) =>
         GenerateToken([
             new Claim(JwtRegisteredClaimNames.Sub, subject),
-            new Claim(permission_claim, TokenPermissions.Regular.ToString())
-        ]);
-
-    public string GenerateLimitedToken(string subject) =>
-        GenerateToken([
-            new Claim(JwtRegisteredClaimNames.Sub, subject),
-            new Claim(permission_claim, TokenPermissions.Limited.ToString())
+            new Claim(JwtRegisteredClaimNames.Iss, _issuer),
+            new Claim(JwtRegisteredClaimNames.Aud, _audience),
         ]);
 
     private string GenerateToken(Claim[] claims)
@@ -72,31 +64,16 @@ public class JwtService
         {
             Subject = new ClaimsIdentity(claims),
             SigningCredentials = new SigningCredentials(_securityKey, security_algorithm),
-            Expires = _expiresAt,
-            Issuer = _issuer,
-            Audience = _audience,
-            AdditionalHeaderClaims =
-            {
-                { "kid", _securityKey.KeyId }
-            }
+            Expires = _expiresAt
         };
 
         SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
     
-    public bool TryValidateLimitedToken(string? jwt, out string? email)
+    public bool TryValidateToken(string? token, out string? email)
     {
-        return TryValidateToken(jwt, out email, GetEmail);
-    }
-    
-    public bool TryValidateRegularToken(string? token, out string? email)
-    {
-        bool validated = TryValidateToken(token, out email, GetEmail);
-
-        if (!validated) return false;
-
-        return GetPermissions(email!) == TokenPermissions.Regular;
+        return TryValidateToken(token, out email, GetEmail);
     }
     
     private bool TryValidateToken<T>(string? token, out T? value, Func<string, T?> extractor)
@@ -110,7 +87,13 @@ public class JwtService
         if (Validate(token))
         {
             value = extractor(token);
-            return value is not null;
+
+            if (value is null)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         value = default;
@@ -119,17 +102,13 @@ public class JwtService
 
     public string? GetEmail(string token)
     {
-        string? emailStr = GetClaims(token)!.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+        string? emailStr = GetClaims(token).FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
         return emailStr;
     }
 
     private bool Validate(string token)
     {
-        Logger.Log("Validated JWT token: " + token);
-        
-        var tokenHandler = new JwtSecurityTokenHandler();
-
-        var validationParameters = new TokenValidationParameters
+        var tokenHandler = new JwtSecurityTokenHandler();var validationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = _securityKey,
@@ -161,34 +140,8 @@ public class JwtService
     private Claim[] GetClaims(string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-
-        try
-        {
-            var decodedToken = tokenHandler.ReadJwtToken(token);
-            return decodedToken.Claims.ToArray();
-        }
-        catch (SecurityTokenException ex)
-        {
-            Logger.Log($"Failed to validate JWT token: {ex.Message}");
-            throw;
-        }
-    }
-
-    private TokenPermissions GetPermissions(string token)
-    {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        try
-        {
-            var decodedToken = tokenHandler.ReadJwtToken(token);
-            var permission = decodedToken.Claims.Where(c => c.Type == JwtRegisteredClaimNames.Name)
-                .Select(c => c.Value)
-                .FirstOrDefault();
-            return permission is null ? 0 : Enum.Parse<TokenPermissions>(permission);
-        }
-        catch (SecurityTokenException ex)
-        {
-            Logger.Log($"Failed to validate JWT token: {ex.Message}");
-            return 0;
-        }
+        JwtSecurityToken? decodedToken = tokenHandler.ReadJwtToken(token);
+        
+        return decodedToken.Claims.ToArray();
     }
 }

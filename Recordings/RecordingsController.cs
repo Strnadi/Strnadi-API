@@ -69,7 +69,7 @@ public class RecordingsController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateRegularToken(jwt, out string? email))
+        if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
         int? recordingId = await recordingsRepo.UploadAsync(email!, request);
@@ -92,7 +92,7 @@ public class RecordingsController : ControllerBase
         if (jwt is null) 
             return BadRequest("No JWT provided");
 
-        if (!jwtService.TryValidateRegularToken(jwt, out _))
+        if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
         
         int? recordingPartId = await recordingsRepo.UploadPartAsync(request);
@@ -131,7 +131,7 @@ public class RecordingsController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateRegularToken(jwt, out string? email))
+        if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
         bool added = await recordingsRepo.UploadFilteredPartAsync(model);
