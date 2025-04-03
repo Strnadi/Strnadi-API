@@ -49,7 +49,6 @@ public class JwtService
     {
         _configuration = configuration;
         _securityKey = new SymmetricSecurityKey(Convert.FromBase64String(_secretKey));
-        _securityKey.KeyId = Guid.NewGuid().ToString();
     }
 
     public string GenerateRegularToken(string subject) =>
@@ -75,10 +74,9 @@ public class JwtService
             Expires = _expiresAt,
             Issuer = _issuer,
             Audience = _audience,
-            AdditionalHeaderClaims =
-            {
-                { "kid", _securityKey.KeyId }
-            }
+            AdditionalHeaderClaims = _securityKey.KeyId != null
+                ? new Dictionary<string, object> { { "kid", _securityKey.KeyId } }
+                : null,
         };
 
         SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
@@ -180,7 +178,7 @@ public class JwtService
         try
         {
             var decodedToken = tokenHandler.ReadJwtToken(token);
-            var permission = decodedToken.Claims.Where(c => c.Type == JwtRegisteredClaimNames.Name)
+            var permission = decodedToken.Claims.Where(c => c.Type == permission_claim)
                 .Select(c => c.Value)
                 .FirstOrDefault();
             return permission is null ? 0 : Enum.Parse<TokenPermissions>(permission);
