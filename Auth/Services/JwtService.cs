@@ -49,6 +49,7 @@ public class JwtService
     {
         _configuration = configuration;
         _securityKey = new SymmetricSecurityKey(Convert.FromBase64String(_secretKey));
+        _securityKey.KeyId = Guid.NewGuid().ToString();
     }
 
     public string GenerateRegularToken(string subject) =>
