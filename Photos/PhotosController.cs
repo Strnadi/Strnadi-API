@@ -36,7 +36,7 @@ public class PhotosController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
 
-        if (!jwtService.TryValidateRegularToken(jwt, out string? email))
+        if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
         bool success = await repo.UploadRecPhotoAsync(request);

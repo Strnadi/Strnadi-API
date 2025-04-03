@@ -72,7 +72,7 @@ public class AuthController : ControllerBase
         if (await repo.ExistsAsync(email))
             return Conflict("User already exists");
         
-        string jwt = jwtService.GenerateRegularToken(email);
+        string jwt = jwtService.GenerateToken(email);
         return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
     }
     
@@ -89,7 +89,7 @@ public class AuthController : ControllerBase
         if (!await repo.ExistsAsync(email))
             return Conflict("User doesn't exist");
         
-        string jwt = jwtService.GenerateRegularToken(email);
+        string jwt = jwtService.GenerateToken(email);
         Logger.Log($"User '{email}' logged in successfully via google'");
         
         return Ok(jwt);
@@ -111,9 +111,10 @@ public class AuthController : ControllerBase
             return Unauthorized();
         
         Logger.Log($"User '{email}' logged in successfully");
-        return await repo.IsEmailVerifiedAsync(email) ?
-            Ok(jwtService.GenerateRegularToken(email)) : 
-            StatusCode(403, jwtService.GenerateLimitedToken(email));
+        // return await repo.IsEmailVerifiedAsync(email) ?
+        //     Ok(jwtService.GenerateRegularToken(email)) : 
+        //     StatusCode(403, jwtService.GenerateLimitedToken(email));
+        return Ok(jwtService.GenerateToken(email));
     }
 
     [HttpPost("sign-up")]
@@ -135,7 +136,7 @@ public class AuthController : ControllerBase
         if (!created)
             return Conflict("Failed to create user");
 
-        string newJwt = jwtService.GenerateLimitedToken(request.Email);
+        string newJwt = jwtService.GenerateToken(request.Email);
         
         if (regularRegister)
         {
@@ -154,7 +155,7 @@ public class AuthController : ControllerBase
     {
         string? jwt = this.GetJwt();
 
-        if (!jwtService.TryValidateLimitedToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         if (email != emailFromJwt)
@@ -165,7 +166,7 @@ public class AuthController : ControllerBase
 
         Logger.Log($"Resend verification email to '{email}'");
         
-        string newJwt = jwtService.GenerateRegularToken(email);
+        string newJwt = jwtService.GenerateToken(email);
         emailService.SendEmailVerificationAsync(email, nickname: null, newJwt, HttpContext);
 
         return Ok();
