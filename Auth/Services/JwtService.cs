@@ -49,18 +49,19 @@ public class JwtService
     {
         _configuration = configuration;
         _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
+        _securityKey.KeyId = Guid.NewGuid().ToString();
     }
 
     public string GenerateRegularToken(string subject) =>
         GenerateToken([
             new Claim(JwtRegisteredClaimNames.Sub, subject),
-            new Claim(JwtRegisteredClaimNames.Name, TokenPermissions.Regular.ToString())
+            new Claim(permission_claim, TokenPermissions.Regular.ToString())
         ]);
 
     public string GenerateLimitedToken(string subject) =>
         GenerateToken([
             new Claim(JwtRegisteredClaimNames.Sub, subject),
-            new Claim(JwtRegisteredClaimNames.Name, TokenPermissions.Limited.ToString())
+            new Claim(permission_claim, TokenPermissions.Limited.ToString())
         ]);
 
     private string GenerateToken(Claim[] claims)
@@ -69,16 +70,11 @@ public class JwtService
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(claims.Concat([
-                new Claim(JwtRegisteredClaimNames.Iss, _issuer),
-                new Claim(JwtRegisteredClaimNames.Aud, _audience),
-            ])),
+            Subject = new ClaimsIdentity(claims),
             SigningCredentials = new SigningCredentials(_securityKey, security_algorithm),
             Expires = _expiresAt,
-            AdditionalHeaderClaims = new Dictionary<string, object>()
-            {
-                { "kid", "f47ac10b-58cc-4372-a567-0e02b2c3d479" }
-            }
+            Issuer = _issuer,
+            Audience = _audience
         };
 
         SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
