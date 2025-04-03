@@ -48,8 +48,7 @@ public class JwtService
     public JwtService(IConfiguration configuration)
     {
         _configuration = configuration;
-        _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-        _securityKey.KeyId = Guid.NewGuid().ToString();
+        _securityKey = new SymmetricSecurityKey(Convert.FromBase64String(_secretKey));
     }
 
     public string GenerateRegularToken(string subject) =>
@@ -74,7 +73,11 @@ public class JwtService
             SigningCredentials = new SigningCredentials(_securityKey, security_algorithm),
             Expires = _expiresAt,
             Issuer = _issuer,
-            Audience = _audience
+            Audience = _audience,
+            AdditionalHeaderClaims =
+            {
+                { "kid", _securityKey.KeyId }
+            }
         };
 
         SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
