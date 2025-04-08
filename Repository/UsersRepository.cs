@@ -174,6 +174,7 @@ public class UsersRepository : RepositoryBase
             }
 
             var sql = $"UPDATE users SET {string.Join(", ", updateFields)} WHERE email = @Email";
+            Console.WriteLine(sql);
             
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });

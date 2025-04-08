@@ -210,18 +210,15 @@ public class RecordingsRepository : RepositoryBase
         });
     
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetVerifiedFilteredPartsAsync(int recordingId) =>
-        await ExecuteSafelyAsync(async () =>
-        {
-            const string sql = """
-                                  SELECT *
-                                  FROM filtered_recording_parts
-                                  WHERE 
-                                      recording_part_id = @RecordingPartId
-                                      AND state IN (1, 2)
-                               """;
-            
-            return await Connection.QueryAsync<FilteredRecordingPartModel>(sql, new { RecordingPartId = recordingId });
-        });
+        await ExecuteSafelyAsync(async () => 
+            await Connection.QueryAsync<FilteredRecordingPartModel>(
+            """
+                SELECT *
+                FROM filtered_recording_parts
+                WHERE 
+                    recording_part_id = @RecordingPartId
+                    AND state IN (1, 2)
+            """, new { RecordingPartId = recordingId }));
 
     public async Task<bool> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model)
     {
