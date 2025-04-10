@@ -138,10 +138,9 @@ public class AuthController : ControllerBase
 
         string newJwt = jwtService.GenerateToken(request.Email);
         
-        if (regularRegister)
-        {
-            emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt, HttpContext);
-        }
+        if (regularRegister) emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt, HttpContext);
+        else repo.VerifyEmailAsync(request.Email);
+
         Logger.Log($"User '{request.Email}' signed in successfully");
         
         return Ok(newJwt);
