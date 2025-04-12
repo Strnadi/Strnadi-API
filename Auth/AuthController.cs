@@ -138,8 +138,10 @@ public class AuthController : ControllerBase
 
         string newJwt = jwtService.GenerateToken(request.Email);
         
-        if (regularRegister) emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt, HttpContext);
-        else repo.VerifyEmailAsync(request.Email);
+        if 
+            (regularRegister) emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt, HttpContext);
+        else 
+            repo.VerifyEmailAsync(request.Email);
 
         Logger.Log($"User '{request.Email}' signed in successfully");
         
@@ -167,6 +169,22 @@ public class AuthController : ControllerBase
         
         string newJwt = jwtService.GenerateToken(email);
         emailService.SendEmailVerificationAsync(email, nickname: null, newJwt, HttpContext);
+
+        return Ok();
+    }
+
+    [HttpGet("{email}/reset-password")]
+    public async Task<IActionResult> ResetPasswordAsync([FromRoute] string email,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] JwtService jwtService,
+        [FromServices] EmailService emailService)
+    {
+        if (!await usersRepo.ExistsAsync(email))
+            return NotFound("User not found");
+        
+        string jwt = jwtService.GenerateToken(email);
+
+        emailService.SendPasswordResetMessage(email, nickname: null, jwt);
 
         return Ok();
     }

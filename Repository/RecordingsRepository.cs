@@ -198,16 +198,12 @@ public class RecordingsRepository : RepositoryBase
             : await GetAllFilteredPartsAsync(recordingPartId))?.ToArray();
 
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetAllFilteredPartsAsync(int recordingId) =>
-        await ExecuteSafelyAsync(async () =>
-        {
-            const string sql = """
-                                  SELECT * 
-                                  FROM filtered_recording_parts 
-                                  WHERE recording_part_id = @RecordingPartId
-                               """;
-
-            return await Connection.QueryAsync<FilteredRecordingPartModel>(sql, new { RecordingPartId = recordingId });
-        });
+        await ExecuteSafelyAsync(async () => await Connection.QueryAsync<FilteredRecordingPartModel>(sql:
+            """
+            SELECT * 
+            FROM filtered_recording_parts 
+            WHERE recording_part_id = @RecordingPartId
+            """, new { RecordingPartId = recordingId }));
     
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetVerifiedFilteredPartsAsync(int recordingId) =>
         await ExecuteSafelyAsync(async () => 
@@ -233,12 +229,12 @@ public class RecordingsRepository : RepositoryBase
     }
 
     private async Task<int> InsertFilteredPartAsync(FilteredRecordingPartUploadRequest model) =>
-        await ExecuteSafelyAsync(async () => await Connection.ExecuteScalarAsync<int>(
-            sql: """
-                 INSERT INTO filtered_recording_parts(recording_id, start_date, end_date)
-                 VALUES (@RecordingId, @StartDate, @EndDate)
-                 RETURNING id;
-                 """, new
+        await ExecuteSafelyAsync(async () => await Connection.ExecuteScalarAsync<int>(sql: 
+            """
+            INSERT INTO filtered_recording_parts(recording_id, start_date, end_date)
+            VALUES (@RecordingId, @StartDate, @EndDate)
+            RETURNING id;
+            """, new
             {
                 model.RecordingId,
                 model.StartDate,

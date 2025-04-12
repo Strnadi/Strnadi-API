@@ -40,11 +40,11 @@ public class LinkGenerator
 
     public string GenerateEmailVerificationRedirectionLink(bool success)
     {
-        return $"https://new.strnadi.cz/ucet/email-{(success ? "" : "ne")}verifikovan";
+        return $"https://strnadi.cz/ucet/email-{(success ? "" : "ne")}verifikovan";
     }
 
     public string GeneratePasswordResetLink(string jwt)
     {
-        return $"https://registration.strnadi.cz/forgotten-password?jwt={jwt}";
+        return $"https://strnadi.cz/ucet/reset-hesla?token={jwt}";
     }
 }

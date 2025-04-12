@@ -124,6 +124,8 @@ public class UsersController : ControllerBase
         
         return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(verified));
     }
+    
+    
 
     [HttpPatch("{email}/change-password")]
     public async Task<IActionResult> ChangePasswordAsync(string email,
