@@ -31,11 +31,10 @@ public class LinkGenerator
         _configuration = configuration;
     }
 
-    public string GenerateVerificationLink(HttpContext context, string email, string jwt)
+    public string GenerateVerificationLink(string email, string jwt)
     {
-        string scheme = context.Request.IsHttps ? "https" : "http";
         string host = _configuration["Host"] ?? throw new NullReferenceException("Failed to get Host from configuration");
-        string link = $"{scheme}://{host}/users/{email}/verify-email?jwt={jwt}";
+        string link = $"{host}/users/{email}/verify-email?jwt={jwt}";
 
         return link;
     }
