@@ -62,6 +62,31 @@ public class RecordingsController : ControllerBase
         return Ok(recording);
     }
 
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteRecordingAsync([FromRoute] int id,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (!await recordingsRepo.ExistsAsync(id))
+            return NotFound("Recording not found");
+        
+        if (!await recordingsRepo.IsOwnerAsync(id, email!) || !await usersRepo.IsAdminAsync(email!))
+            return Unauthorized();
+
+        bool deleted = await recordingsRepo.DeleteAsync(id);
+        
+        return deleted ? Ok() : Conflict();
+    }
+
     [HttpPost("upload")]
     public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadRequest request,
         [FromServices] JwtService jwtService,

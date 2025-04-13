@@ -260,4 +260,20 @@ public class RecordingsRepository : RepositoryBase
                     FilteredPartId = filteredPartId,
                     UserGuessDialectId = dialectId
                 }) != 0);
+
+    public async Task<bool> ExistsAsync(int id) =>
+        await GetAsync(id, false, false) is not null;
+    
+    public async Task<bool> IsOwnerAsync(int id, string email)
+    {
+        if (!await ExistsAsync(id))
+            return false;
+
+        return (await GetAsync(id, false, false))!.UserEmail == email;
+    }
+
+    public async Task<bool> DeleteAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync(sql:
+                "DELETE FROM recordings WHERE id = @Id", new { Id = id })) != 0;
 }
