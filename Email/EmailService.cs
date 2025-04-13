@@ -30,12 +30,6 @@ public class EmailService
     public void SendEmailVerificationAsync(string emailAddress,
         string? nickname,
         string jwt,
-        HttpContext httpContext) =>
-        Task.Run(() => SendEmailVerification(emailAddress, nickname, jwt, httpContext));
-
-    private void SendEmailVerification(string emailAddress,
-        string? nickname,
-        string jwt,
         HttpContext httpContext)
     {
         LinkGenerator linkGenerator = new LinkGenerator(_configuration);
@@ -62,7 +56,7 @@ public class EmailService
         );
     }
 
-    private void SendPasswordResetMessage(string emailAddress,
+    public void SendPasswordResetMessage(string emailAddress,
         string? nickname,
         string jwt)
     {
@@ -70,7 +64,7 @@ public class EmailService
         EmailSender emailSender = new EmailSender(_configuration);
         
         string link = linkGenerator.GeneratePasswordResetLink(jwt);
-
+        
         emailSender.SendMessage(
             emailAddress,
             subject: "Nářečí českých strnadů – zapomenuté heslo",

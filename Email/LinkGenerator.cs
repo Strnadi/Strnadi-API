@@ -24,6 +24,8 @@ public class LinkGenerator
 {
     private readonly IConfiguration _configuration;
 
+    private string _webRootPath => _configuration["Web"];
+
     public LinkGenerator(IConfiguration configuration)
     {
         _configuration = configuration;
@@ -40,11 +42,11 @@ public class LinkGenerator
 
     public string GenerateEmailVerificationRedirectionLink(bool success)
     {
-        return $"https://new.strnadi.cz/ucet/email-{(success ? "" : "ne")}verifikovan";
+        return $"{_webRootPath}/ucet/email-{(success ? "" : "ne")}verifikovan";
     }
 
     public string GeneratePasswordResetLink(string jwt)
     {
-        return $"https://registration.strnadi.cz/forgotten-password?jwt={jwt}";
+        return $"{_webRootPath}/ucet/reset-hesla?token={jwt}";
     }
 }

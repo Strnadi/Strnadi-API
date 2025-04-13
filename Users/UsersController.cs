@@ -39,7 +39,7 @@ public class UsersController : ControllerBase
         if (jwt is null) 
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         //
         // if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
@@ -67,7 +67,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
         if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
@@ -88,7 +88,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
         if (!await usersRepo.ExistsAsync(email))
@@ -109,7 +109,7 @@ public class UsersController : ControllerBase
         [FromServices] LinkGenerator linkGenerator,
         [FromServices] UsersRepository usersRepo)
     { 
-        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         if (email != emailFromJwt)
@@ -124,6 +124,8 @@ public class UsersController : ControllerBase
         
         return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(verified));
     }
+    
+    
 
     [HttpPatch("{email}/change-password")]
     public async Task<IActionResult> ChangePasswordAsync(string email,
@@ -136,7 +138,7 @@ public class UsersController : ControllerBase
         if (jwt is null) 
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         if (email != emailFromJwt)
@@ -171,7 +173,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpPost("{email}/uploadProfilePhoto")]
+    [HttpPost("{email}/upload-profile-photo")]
     public async Task<IActionResult> UploadUserProfilePhoto([FromRoute] string email,
         [FromBody] UserProfilePhotoModel req,
         [FromServices] PhotosRepository repo,
@@ -182,7 +184,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
         if (email != emailFromJwt)
@@ -193,7 +195,7 @@ public class UsersController : ControllerBase
         return success ? Ok() : Conflict("Failed to save user photo");
     }
 
-    [HttpGet("{email}/getProfilePhoto")]
+    [HttpGet("{email}/get-profile-photo")]
     public async Task<IActionResult> GetUserProfilePhoto([FromRoute] string email,
         [FromServices] PhotosRepository photosRepo,
         [FromServices] JwtService jwtService)
@@ -203,7 +205,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateRegularToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
         
         if (email != emailFromJwt)

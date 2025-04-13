@@ -72,7 +72,7 @@ public class AuthController : ControllerBase
         if (await repo.ExistsAsync(email))
             return Conflict("User already exists");
         
-        string jwt = jwtService.GenerateRegularToken(email);
+        string jwt = jwtService.GenerateToken(email);
         return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
     }
     
@@ -89,7 +89,7 @@ public class AuthController : ControllerBase
         if (!await repo.ExistsAsync(email))
             return Conflict("User doesn't exist");
         
-        string jwt = jwtService.GenerateRegularToken(email);
+        string jwt = jwtService.GenerateToken(email);
         Logger.Log($"User '{email}' logged in successfully via google'");
         
         return Ok(jwt);
@@ -109,17 +109,12 @@ public class AuthController : ControllerBase
 
         if (!authorized)
             return Unauthorized();
-
-        if (!await repo.IsEmailVerifiedAsync(email))
-            return StatusCode(403, "Cannot login user with not verified email address");
-
+        
         Logger.Log($"User '{email}' logged in successfully");
-
-        string jwt = await repo.IsEmailVerifiedAsync(email)
-            ? jwtService.GenerateRegularToken(email)
-            : jwtService.GenerateLimitedToken(email);
-
-        return Ok(jwt);
+        // return await repo.IsEmailVerifiedAsync(email) ?
+        //     Ok(jwtService.GenerateRegularToken(email)) : 
+        //     StatusCode(403, jwtService.GenerateLimitedToken(email));
+        return Ok(jwtService.GenerateToken(email));
     }
 
     [HttpPost("sign-up")]
@@ -141,12 +136,13 @@ public class AuthController : ControllerBase
         if (!created)
             return Conflict("Failed to create user");
 
-        string newJwt = jwtService.GenerateLimitedToken(request.Email);
+        string newJwt = jwtService.GenerateToken(request.Email);
         
-        if (regularRegister)
-        {
-            emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt, HttpContext);
-        }
+        if 
+            (regularRegister) emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt, HttpContext);
+        else 
+            repo.VerifyEmailAsync(request.Email);
+
         Logger.Log($"User '{request.Email}' signed in successfully");
         
         return Ok(newJwt);
@@ -160,7 +156,7 @@ public class AuthController : ControllerBase
     {
         string? jwt = this.GetJwt();
 
-        if (!jwtService.TryValidateLimitedToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         if (email != emailFromJwt)
@@ -171,8 +167,24 @@ public class AuthController : ControllerBase
 
         Logger.Log($"Resend verification email to '{email}'");
         
-        string newJwt = jwtService.GenerateRegularToken(email);
+        string newJwt = jwtService.GenerateToken(email);
         emailService.SendEmailVerificationAsync(email, nickname: null, newJwt, HttpContext);
+
+        return Ok();
+    }
+
+    [HttpGet("{email}/reset-password")]
+    public async Task<IActionResult> ResetPasswordAsync([FromRoute] string email,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] JwtService jwtService,
+        [FromServices] EmailService emailService)
+    {
+        if (!await usersRepo.ExistsAsync(email))
+            return NotFound("User not found");
+        
+        string jwt = jwtService.GenerateToken(email);
+
+        emailService.SendPasswordResetMessage(email, nickname: null, jwt);
 
         return Ok();
     }

@@ -55,7 +55,7 @@ public abstract class RepositoryBase : IDisposable
         }
         catch (Exception e)
         {
-            Logger.Log("Failed to execute SQL query: " + e.Message, LogLevel.Error);
+            Logger.Log("Failed to perform repository action: " + e.Message, LogLevel.Error);
         }
     }
     
@@ -67,9 +67,7 @@ public abstract class RepositoryBase : IDisposable
         }
         catch (Exception e)
         {
-            string methodName = new StackTrace().GetFrame(1)?.GetMethod()?.Name ?? "UnknownMethod"; 
-            Logger.Log($"Execution of {GetType().Name}.{methodName} failed. ", LogLevel.Error);
-            Logger.Log("Failed to execute SQL query: " + e.Message, LogLevel.Error);
+            Logger.Log($"Failed to perform repository action: {e}", LogLevel.Error);
             return default;
         }
     }

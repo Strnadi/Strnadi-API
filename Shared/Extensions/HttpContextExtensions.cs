@@ -29,8 +29,7 @@ public static class HttpContextExtensions
         
         return bearerToken.StartsWith("Bearer ",
             StringComparison.OrdinalIgnoreCase)
-            ? bearerToken.Substring("Bearer ".Length)
-                .Trim()
+            ? bearerToken["Bearer ".Length..].Trim()
             : null;
     }
 }

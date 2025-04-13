@@ -42,31 +42,32 @@ public class EmailSender
         _configuration = configuration;
     }
 
-    internal void SendMessage(string emailAddress, string subject, string body)
-    {
-        try
+    internal void SendMessage(string emailAddress, string subject, string body) =>
+        Task.Run(() =>
         {
-            using SmtpClient smtpClient = new(_smtpServerDomain);
-            
+            try
+            {
+                using SmtpClient smtpClient = new(_smtpServerDomain);
+
                 smtpClient.Port = _smtpPort;
                 smtpClient.Credentials = new NetworkCredential(_smtpEmail, _smtpPassword);
                 smtpClient.EnableSsl = _smtpEnableSsl;
 
-            using MailMessage message = new();
-                
+                using MailMessage message = new();
+
                 message.From = new MailAddress(_smtpEmail);
                 message.Subject = subject;
                 message.Body = body;
                 message.IsBodyHtml = true;
 
-            message.To.Add(emailAddress);
-            smtpClient.Send(message);
-            
-            Logger.Log($"Verification email sent to '{emailAddress}'");
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Exception thrown while sending email to '{emailAddress}': {ex.Message}'", LogLevel.Error);
-        }
-    }
+                message.To.Add(emailAddress);
+                smtpClient.Send(message);
+
+                Logger.Log($"Verification email sent to '{emailAddress}'");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Exception thrown while sending email to '{emailAddress}': {ex.Message}'", LogLevel.Error);
+            }
+        });
 }

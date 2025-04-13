@@ -17,9 +17,11 @@ namespace Shared.Models.Requests.Recordings;
 
 public class FilteredRecordingPartUploadRequest
 {
-    public int RecordingPartId { get; set; }
+    public int RecordingId { get; set; }
     
-    public DateTime StartTime { get; set; }
+    public DateTime StartDate { get; set; }
     
-    public DateTime EndTime { get; set; }
+    public DateTime EndDate { get; set; }
+
+    public string DialectCode { get; set; }
 }
