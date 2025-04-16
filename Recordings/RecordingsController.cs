@@ -109,6 +109,7 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpPost("upload-part")]
+    [RequestSizeLimit(2147483648)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
