@@ -174,6 +174,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("{email}/upload-profile-photo")]
+    [RequestSizeLimit(130023424)]
     public async Task<IActionResult> UploadUserProfilePhoto([FromRoute] string email,
         [FromBody] UserProfilePhotoModel req,
         [FromServices] PhotosRepository repo,

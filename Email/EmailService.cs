@@ -29,13 +29,12 @@ public class EmailService
 
     public void SendEmailVerificationAsync(string emailAddress,
         string? nickname,
-        string jwt,
-        HttpContext httpContext)
+        string jwt)
     {
         LinkGenerator linkGenerator = new LinkGenerator(_configuration);
         EmailSender emailSender = new EmailSender(_configuration);
         
-        string link = linkGenerator.GenerateVerificationLink(httpContext, emailAddress, jwt);
+        string link = linkGenerator.GenerateVerificationLink(emailAddress, jwt);
         
         emailSender.SendMessage(
             emailAddress,
