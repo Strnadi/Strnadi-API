@@ -63,11 +63,11 @@ public class EmailSender
                 message.To.Add(emailAddress);
                 smtpClient.Send(message);
 
-                Logger.Log($"Verification email sent to '{emailAddress}'");
+                Logger.Log($"Email {subject} sent to '{emailAddress}'");
             }
             catch (Exception ex)
             {
-                Logger.Log($"Exception thrown while sending email to '{emailAddress}': {ex.Message}'", LogLevel.Error);
+                Logger.Log($"Exception thrown while sending email '{subject}' to '{emailAddress}': {ex.Message}'", LogLevel.Error); 
             }
         });
 }

@@ -14,15 +14,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System.Text;
 using Auth.Services;
-using Microsoft.AspNetCore.Http;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
 using Shared.Logging;
-using Shared.Models.Database.Recordings;
-using Shared.Models.Requests;
 using Shared.Models.Requests.Recordings;
 
 namespace Recordings;
@@ -111,7 +107,7 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpPost("upload-part")]
-    [RequestSizeLimit(2147483648)]
+    [RequestSizeLimit(int.MaxValue)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
@@ -133,66 +129,4 @@ public class RecordingsController : ControllerBase
         
         return Ok(recordingPartId);
     }
-
-    [HttpGet("filtered")]
-    public async Task<IActionResult> GetFilteredPartsAsync([FromQuery] int recordingPartId,
-        [FromServices] RecordingsRepository recordingsRepo,
-        [FromQuery] bool verified = false)
-    {
-        var filtered = await recordingsRepo.GetFilteredPartsAsync(recordingPartId, verified);
-        
-        if (filtered is null) 
-            return StatusCode(409, "Failed to get filtered parts");
-
-        if (filtered.Length is 0)
-            return NoContent();
-
-        return Ok(filtered);
-    }
-
-    [HttpPost("filtered/upload")]
-    public async Task<IActionResult> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model,
-        [FromServices] JwtService jwtService,
-        [FromServices] RecordingsRepository recordingsRepo)
-    {
-        Console.WriteLine(await GetRequestStringAsync());
-        
-        string? jwt = this.GetJwt();
-        
-        if (jwt is null)
-            return BadRequest("No JWT provided");
-        
-        if (!jwtService.TryValidateToken(jwt, out string? email))
-            return Unauthorized();
-
-        bool added = await recordingsRepo.UploadFilteredPartAsync(model);
-        
-        if (added)
-            Logger.Log($"Filtered part for recording {model.RecordingId} has been uploaded");
-        
-        return added ? 
-            Ok() :
-            Conflict();
-    }
-    private async Task<string> GetRequestStringAsync()
-    {
-        var request = HttpContext.Request;
-        request.EnableBuffering();
-
-        var body = string.Empty;
-        if (request.Body.CanSeek)
-        {
-            request.Body.Seek(0, SeekOrigin.Begin);
-            using (var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true))
-            {
-                body = await reader.ReadToEndAsync();
-                request.Body.Seek(0, SeekOrigin.Begin);
-            }
-        }
-
-        var headers = string.Join(Environment.NewLine, request.Headers.Select(h => $"{h.Key}: {h.Value}"));
-        var requestString = $"{request.Method} {request.Path}{request.QueryString}{Environment.NewLine}{headers}{Environment.NewLine}{body}";
-
-        return requestString;
-    } 
 }

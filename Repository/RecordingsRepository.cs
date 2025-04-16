@@ -254,7 +254,7 @@ public class RecordingsRepository : RepositoryBase
             await Connection.ExecuteAsync(sql:
                 """
                 INSERT INTO detected_dialects(filtered_recording_part_id, user_guess_dialect_id) 
-                VALUES (@FilteredPartId, @UserGuessDialectId)","
+                VALUES (@FilteredPartId, @UserGuessDialectId)
                 """, new
                 {
                     FilteredPartId = filteredPartId,
