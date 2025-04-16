@@ -14,9 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System.Text;
 using Auth.Services;
-using Microsoft.AspNetCore.Http;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
@@ -109,7 +107,7 @@ public class RecordingsController : ControllerBase
     }
 
     [HttpPost("upload-part")]
-    [RequestSizeLimit(2147483648)]
+    [RequestSizeLimit(int.MaxValue)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)

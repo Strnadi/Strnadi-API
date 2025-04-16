@@ -8,7 +8,7 @@ using Shared.Models.Requests.Recordings;
 namespace Recordings;
 
 [ApiController]
-[Route("filtered")]
+[Route("/recordings/filtered")]
 public class FilteredRecordingsController : ControllerBase
 {
     [HttpGet]

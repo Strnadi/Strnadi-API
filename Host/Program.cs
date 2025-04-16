@@ -20,6 +20,7 @@ using Email;
 using Photos;
 using Recordings;
 using Repository;
+using Shared.Logging;
 using Users;
 using Utils;
 
