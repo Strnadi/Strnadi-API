@@ -27,6 +27,7 @@ namespace Photos;
 public class PhotosController : ControllerBase
 {
     [HttpPost("upload/recording-photo")]
+    [RequestSizeLimit(130023424)]
     public async Task<IActionResult> UploadRecPhoto([FromBody] UploadRecordingPhotoRequest request,
         [FromServices] PhotosRepository repo,
         [FromServices] JwtService jwtService)
