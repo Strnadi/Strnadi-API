@@ -14,6 +14,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.Text;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Shared.Extensions;
@@ -21,4 +23,26 @@ namespace Shared.Extensions;
 public static class ControllerExtensions
 {
     public static string? GetJwt(this ControllerBase controller) => controller.HttpContext.GetJwt();
+    
+    public static async Task<string> GetRequestStringAsync(this ControllerBase controller)
+    {
+        var request = controller.HttpContext.Request;
+        request.EnableBuffering();
+
+        var body = string.Empty;
+        if (request.Body.CanSeek)
+        {
+            request.Body.Seek(0, SeekOrigin.Begin);
+            using (var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true))
+            {
+                body = await reader.ReadToEndAsync();
+                request.Body.Seek(0, SeekOrigin.Begin);
+            }
+        }
+
+        var headers = string.Join(Environment.NewLine, request.Headers.Select(h => $"{h.Key}: {h.Value}"));
+        var requestString = $"{request.Method} {request.Path}{request.QueryString}{Environment.NewLine}{headers}{Environment.NewLine}{body}";
+
+        return requestString;
+    } 
 }
