@@ -19,7 +19,6 @@ using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
 using Shared.Logging;
-using Shared.Models.Database;
 using Shared.Models.Requests.Recordings;
 
 namespace Recordings;
@@ -30,7 +29,6 @@ public class RecordingsController : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetRecordingsAsync([FromServices] RecordingsRepository repo,
-        [FromServices] UsersRepository usersRepo,
         [FromQuery] int? userId = null,
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
@@ -77,7 +75,7 @@ public class RecordingsController : ControllerBase
         if (!await recordingsRepo.ExistsAsync(id))
             return NotFound("Recording not found");
         
-        var user = await usersRepo.GetUserByEmailAsync(email);
+        var user = await usersRepo.GetUserByEmailAsync(email!);
         if (user is null)
             return Unauthorized("User does not exist");
         
@@ -139,5 +137,32 @@ public class RecordingsController : ControllerBase
         Logger.Log($"Recording part {recordingPartId} has been uploaded");
         
         return Ok(recordingPartId);
+    }
+
+    [HttpPatch("{recordingId:int}/edit")]
+    public async Task<IActionResult> EditAsync([FromRoute] int recordingId,
+        [FromBody] UpdateRecordingRequest request,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email)) 
+            return Unauthorized();
+        
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return Unauthorized("User does not exist");
+        
+        if (user.Email != email || !await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User does not belong to this email or is not an admin");
+
+        bool updated = await recordingsRepo.UpdateAsync(recordingId, request);
+        
+        return updated ? Ok() : Conflict();
     }
 }

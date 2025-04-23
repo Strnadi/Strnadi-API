@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Auth.Models;
+
 using Auth.Services;
 using Email;
 using Google.Apis.Auth;
@@ -32,10 +32,10 @@ public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
     
-    private string _androidId => _configuration["Auth:Google:Android"];
-    private string _iosId => _configuration["Auth:Google:Ios"];
-    private string _webId => _configuration["Auth:Google:Web"];
-    private string _webSecret => _configuration["Auth:Google:WebSecret"];
+    private string _androidId => _configuration["Auth:Google:Android"] ?? throw new NullReferenceException();
+    private string _iosId => _configuration["Auth:Google:Ios"] ?? throw new NullReferenceException();
+    private string _webId => _configuration["Auth:Google:Web"] ?? throw new NullReferenceException();
+    private string _webSecret => _configuration["Auth:Google:WebSecret"] ?? throw new NullReferenceException();
 
     public AuthController(IConfiguration configuration)
     {

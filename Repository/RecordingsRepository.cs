@@ -13,6 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Shared.Models.Database.Recordings;
@@ -277,4 +280,23 @@ public class RecordingsRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteAsync(sql:
                 "DELETE FROM recordings WHERE id = @Id", new { Id = id })) != 0;
+
+    public async Task<bool> UpdateAsync(int recordingId, UpdateRecordingRequest request) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", recordingId);
+
+            foreach (var prop in request.GetType().GetProperties().Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
+            {
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(recordingId));
+            }
+
+            var sql = $"UPDATE recordings SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
 }
