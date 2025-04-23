@@ -36,13 +36,13 @@ public class DevicesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
-                               INSERT INTO devices(user_email, fcm_token, device_platform, device_model)
-                               VALUES(@UserEmail, @FcmToken, @DevicePlatform, @DeviceModel)
+                               INSERT INTO devices(user_id, fcm_token, device_platform, device_model)
+                               VALUES(@UserId, @FcmToken, @DevicePlatform, @DeviceModel)
                                """;
 
             return await Connection.ExecuteAsync(sql, new
             {
-                request.UserEmail,
+                request.UserId,
                 request.FcmToken,
                 request.DevicePlatform,
                 request.DeviceModel
@@ -75,7 +75,7 @@ public class DevicesRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, new { FcmToken = fcmToken }) != 0;
         });
 
-    public async Task<bool> ChangeEmailAsync(string newUserEmail, string oldFcmToken) =>
+    public async Task<bool> ChangeUserAsync(int newUserId, string oldFcmToken) =>
         await ExecuteSafelyAsync(async () =>
         {
             if (!await ExistsAsync(oldFcmToken))
@@ -86,7 +86,7 @@ public class DevicesRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql,
                        new
                        {
-                           NewUserEmail = newUserEmail,
+                           NewUserEmail = newUserId,
                            OldFcmToken = oldFcmToken
                        }) != 0;
         });

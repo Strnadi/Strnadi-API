@@ -37,19 +37,19 @@ public class PhotosRepository : RepositoryBase
             return await UpdateRecPhotoFilePathAsync(id, path);
         });
 
-    public async Task<bool> UploadUserPhotoAsync(string email, UserProfilePhotoModel req)
+    public async Task<bool> UploadUserPhotoAsync(int userId, UserProfilePhotoModel req)
         => await ExecuteSafelyAsync(async () =>
         {
-            int id = await InsertUserPhotoAsync(email, req);
-            string path = await SaveUserPhotoAsync(email, req.PhotoBase64, req.Format);
-            return await UpdateUserPhotoFilePathAsync(email, path);
+            int id = await InsertUserPhotoAsync(userId, req);
+            string path = await SaveUserPhotoAsync(userId, req.PhotoBase64, req.Format);
+            return await UpdateUserPhotoFilePathAsync(userId, path);
         });
 
-    private async Task<bool> UpdateUserPhotoFilePathAsync(string email, string path)
+    private async Task<bool> UpdateUserPhotoFilePathAsync(int userId, string path)
         => await ExecuteSafelyAsync(async () =>
         {
-            const string sql = "UPDATE photos SET file_path=@FilePath WHERE user_email=@UserEmail";
-            return await Connection.ExecuteAsync(sql, new { UserEmail = email, FilePath = path }) != 0;
+            const string sql = "UPDATE photos SET file_path=@FilePath WHERE user_id = @UserId";
+            return await Connection.ExecuteAsync(sql, new { UserId = userId, FilePath = path }) != 0;
         });
 
     private async Task<bool> UpdateRecPhotoFilePathAsync(int id, string path) => 
@@ -70,11 +70,11 @@ public class PhotosRepository : RepositoryBase
         });
     });
 
-    private async Task<int> InsertUserPhotoAsync(string email, UserProfilePhotoModel req)
+    private async Task<int> InsertUserPhotoAsync(int userId, UserProfilePhotoModel req)
     {
-        const string sql = "INSERT INTO photos(user_email, format) VALUES (@UserEmail, @Format) RETURNING id;";
+        const string sql = "INSERT INTO photos(user_id, format) VALUES (@UserId, @Format) RETURNING id;";
         
-        return await Connection.ExecuteScalarAsync<int>(sql, new { UserEmail = email, req.Format });
+        return await Connection.ExecuteScalarAsync<int>(sql, new { UserId = userId, req.Format });
     }
     
     private async Task<string> SaveRecordingPhotoAsync(int recordingId, int photoId, string base64, string format)
@@ -83,21 +83,21 @@ public class PhotosRepository : RepositoryBase
         return await fs.SaveRecordingPhotoFileAsync(recordingId, photoId, base64, format);
     }
 
-    private async Task<string> SaveUserPhotoAsync(string email, string base64, string format)
+    private async Task<string> SaveUserPhotoAsync(int userId, string base64, string format)
     {
         var fs = new FileSystemHelper();
-        return await fs.SaveUserPhotoFileAsync(email, base64, format);
+        return await fs.SaveUserPhotoFileAsync(userId, base64, format);
     }
 
-    public async Task<UserProfilePhotoModel?> GetUserPhotoAsync(string email) =>
+    public async Task<UserProfilePhotoModel?> GetUserPhotoAsync(int userId) =>
         await ExecuteSafelyAsync(async () =>
         {   
-            const string sql = "SELECT * FROM photos WHERE user_email=@Email";
-            PhotoModel? photo = await Connection.QuerySingleOrDefaultAsync<PhotoModel>(sql, new { Email = email });
+            const string sql = "SELECT * FROM photos WHERE user_id=@UserId";
+            PhotoModel? photo = await Connection.QuerySingleOrDefaultAsync<PhotoModel>(sql, new { UserId = userId });
             if (photo is null)
                 return null;
 
-            byte[]? data = await ReadPhotoFileAsync(email, photo.Format);
+            byte[]? data = await ReadPhotoFileAsync(userId, photo.Format);
             if (data is null)
                 return null;
 
@@ -108,9 +108,9 @@ public class PhotosRepository : RepositoryBase
             };
         });
 
-    private async Task<byte[]?> ReadPhotoFileAsync(string email, string format)
+    private async Task<byte[]?> ReadPhotoFileAsync(int userId, string format)
     {
         var fs = new FileSystemHelper();
-        return await fs.ReadUserPhotoFileAsync(email, format);
+        return await fs.ReadUserPhotoFileAsync(userId, format);
     }
 }

@@ -40,15 +40,12 @@ public class DevicesController : ControllerBase
         
         if (!jwtService.TryValidateToken(jwt, out string? email)) 
             return Unauthorized();
-        
-        if (request.UserEmail != email)
-            return BadRequest("Invalid email");
 
         if (!await usersRepo.ExistsAsync(email))
             return Conflict("User doesn't exist");
 
         var success = await devicesRepo.ExistsAsync(request.FcmToken)
-            ? await devicesRepo.ChangeEmailAsync(request.UserEmail, request.FcmToken)
+            ? await devicesRepo.ChangeUserAsync(request.UserId, request.FcmToken)
             : await devicesRepo.AddAsync(request);
 
         if (success) Logger.Log($"Device for user '{email}' added successfully");
