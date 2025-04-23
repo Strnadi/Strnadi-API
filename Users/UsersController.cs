@@ -35,46 +35,46 @@ public class UsersController : ControllerBase
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        
-        if (jwt is null) 
+
+        if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         var user = await usersRepo.GetUserByIdAsync(userId);
-        if (user is null) 
+        if (user is null)
             return Unauthorized("User not found");
-        
+
         if (user.Email != emailFromJwt || !await usersRepo.IsAdminAsync(emailFromJwt!))
             return BadRequest("User does not belong to this email or is not an admin");
-        
+
         return Ok(user);
     }
 
     [HttpPatch("{userId:int}")]
-    public async Task<IActionResult> Update([FromRoute] int userId, 
+    public async Task<IActionResult> Update([FromRoute] int userId,
         [FromBody] UpdateUserModel model,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
-        
+
         var user = await usersRepo.GetUserByIdAsync(userId);
-        if (user is null) 
+        if (user is null)
             return Unauthorized("User not found");
-        
+
         if (user.Email != emailFromJwt || !await usersRepo.IsAdminAsync(emailFromJwt!))
             return BadRequest("User does not belong to this email or is not an admin");
-        
+
         bool updated = await usersRepo.UpdateAsync(user.Email, model);
-        
+
         return updated ? Ok() : StatusCode(409, "Failed to update user");
     }
 
@@ -84,22 +84,22 @@ public class UsersController : ControllerBase
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
-        
+
         var user = await usersRepo.GetUserByIdAsync(userId);
-        if (user is null) 
+        if (user is null)
             return Unauthorized("User not found");
-        
+
         if (user.Email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
             return Unauthorized("User does not belong to this email nor is an administrator");
 
         bool deleted = await usersRepo.DeleteAsync(user.Email);
-        
+
         return deleted ? Ok() : StatusCode(404, "Failed to delete user");
     }
 
@@ -109,24 +109,24 @@ public class UsersController : ControllerBase
         [FromServices] JwtService jwtService,
         [FromServices] LinkGenerator linkGenerator,
         [FromServices] UsersRepository usersRepo)
-    { 
+    {
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         var user = await usersRepo.GetUserByIdAsync(userId);
         if (user!.Email != emailFromJwt)
             return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(false));
-            
+
         if (!await usersRepo.ExistsAsync(user.Email))
             return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(false));
-        
+
         bool verified = await usersRepo.VerifyEmailAsync(userId);
-        
+
         Logger.Log($"Email verified: '{user.Email}'");
-        
+
         return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(verified));
     }
-    
+
     [HttpPatch("{userId:int}/change-password")]
     public async Task<IActionResult> ChangePasswordAsync(int userId,
         [FromBody] ChangePasswordRequest request,
@@ -134,30 +134,30 @@ public class UsersController : ControllerBase
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        
-        if (jwt is null) 
+
+        if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         var user = await usersRepo.GetUserByIdAsync(userId);
         if (user is null)
             return Unauthorized("User not found");
-        
+
         if (user.Email != emailFromJwt)
             return BadRequest("Invalid email");
-            
+
         if (!await usersRepo.ExistsAsync(user.Email))
             return NotFound("User not found");
 
         bool changed = await usersRepo.ChangePasswordAsync(user.Email, request.NewPassword);
-        
+
         if (!changed)
             return StatusCode(500, "Failed to change password");
 
         Logger.Log($"Password changed for email: '{user.Email}'");
-        
+
         return Ok();
     }
 
@@ -168,7 +168,7 @@ public class UsersController : ControllerBase
         var user = await usersRepo.GetUserByIdAsync(userId);
         if (user is null)
             return NotFound("User not found");
-        
+
         bool exists = await usersRepo.ExistsAsync(user.Email);
 
         if (exists)
@@ -189,15 +189,15 @@ public class UsersController : ControllerBase
         [FromServices] JwtService jwtService)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
         bool success = await repo.UploadUserPhotoAsync(userId, req);
-        
+
         return success ? Ok() : Conflict("Failed to save user photo");
     }
 
@@ -207,17 +207,15 @@ public class UsersController : ControllerBase
         [FromServices] JwtService jwtService)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
-        
+
         UserProfilePhotoModel? model = await photosRepo.GetUserPhotoAsync(userId);
 
-        return model is not null ? 
-            Ok(model) : 
-            NotFound("User doesnt have profile photo");
+        return model is not null ? Ok(model) : NotFound("User doesnt have profile photo");
     }
 }

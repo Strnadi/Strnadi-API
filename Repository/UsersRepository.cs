@@ -123,12 +123,15 @@ public class UsersRepository : RepositoryBase
             return user;
         });
 
-    public async Task<bool> VerifyEmailAsync(int userId) =>
+    public async Task<bool> VerifyEmailAsync(string email) =>
         await ExecuteSafelyAsync(async () =>
-        {
-            const string sql = "UPDATE users SET is_email_verified = true WHERE user_id = @UserId";
-            return await Connection.ExecuteAsync(sql, new { UserId = userId }) != 0;
-        });
+            await Connection.ExecuteAsync("UPDATE users SET is_email_verified = true WHERE user_email = @UserEmail",
+                new { UserEmail = email }) != 0);
+
+    public async Task<bool> VerifyEmailAsync(int userId) =>
+        await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteAsync("UPDATE users SET is_email_verified = true WHERE user_id = @UserId", 
+                new { UserId = userId }) != 0);
 
     public async Task<bool> IsAdminAsync(int userId) =>
         await ExecuteSafelyAsync(async () =>
