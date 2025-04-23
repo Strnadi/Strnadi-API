@@ -29,6 +29,25 @@ namespace Users;
 [Route("users")]
 public class UsersController : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> GetId([FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return Unauthorized("User not found");
+
+        return Ok(user.Id);
+    }
+    
     [HttpGet("{userId:int}")]
     public async Task<IActionResult> Get([FromRoute] int userId,
         [FromServices] JwtService jwtService,
