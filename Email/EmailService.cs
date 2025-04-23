@@ -27,17 +27,17 @@ public class EmailService
         _configuration = configuration;
     }
 
-    public void SendEmailVerificationAsync(string emailAddress,
+    public void SendEmailVerificationAsync(string email, int userId,
         string? nickname,
         string jwt)
     {
         LinkGenerator linkGenerator = new LinkGenerator(_configuration);
         EmailSender emailSender = new EmailSender(_configuration);
         
-        string link = linkGenerator.GenerateVerificationLink(emailAddress, jwt);
+        string link = linkGenerator.GenerateVerificationLink(userId, jwt);
         
         emailSender.SendMessage(
-            emailAddress,
+            email,
             subject: "Nářečí českých strnadů – potvrzení nového uživatele",
             body: $"""
                   <p style='font-size:1rem'>

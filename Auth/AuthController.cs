@@ -135,13 +135,14 @@ public class AuthController : ControllerBase
 
         string newJwt = jwtService.GenerateToken(request.Email);
         
+        var user = await repo.GetUserByEmailAsync(request.Email);
+            
         if (regularRegister) 
-            emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt);
+            emailService.SendEmailVerificationAsync(user!.Email, user.Id, nickname: request.Nickname, newJwt);
         else 
             await repo.VerifyEmailAsync(request.Email);
 
         Logger.Log($"User '{request.Email}' signed in successfully");
-        
         return Ok(newJwt);
     }
 
@@ -169,7 +170,7 @@ public class AuthController : ControllerBase
         Logger.Log($"Resend verification email to '{user.Email}'");
         
         string newJwt = jwtService.GenerateToken(user.Email);
-        emailService.SendEmailVerificationAsync(user.Email, nickname: null, newJwt);
+        emailService.SendEmailVerificationAsync(user.Email, user.Id, nickname: null, newJwt);
 
         return Ok();
     }
