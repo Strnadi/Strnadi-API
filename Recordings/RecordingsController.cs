@@ -77,7 +77,7 @@ public class RecordingsController : ControllerBase
         if (!await recordingsRepo.ExistsAsync(id))
             return NotFound("Recording not found");
         
-        var user = await usersRepo.GetUserByEmailAsync(email!);
+        var user = await usersRepo.GetUserByEmailAsync(email);
         if (user is null)
             return Unauthorized("User does not exist");
         

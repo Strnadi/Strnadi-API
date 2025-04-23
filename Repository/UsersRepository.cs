@@ -100,7 +100,7 @@ public class UsersRepository : RepositoryBase
     public async Task<UserModel?> GetUserByIdAsync(int userId) =>
         await ExecuteSafelyAsync(async () =>
         {
-            const string sql = "SELECT * FROM users WHERE user_id = @UserId;";
+            const string sql = "SELECT * FROM users WHERE id = @UserId;";
             var user = await Connection.QuerySingleOrDefaultAsync<UserModel>(sql, new { UserId = userId });
 
             if (user is null)
@@ -113,8 +113,8 @@ public class UsersRepository : RepositoryBase
     public async Task<UserModel?> GetUserByEmailAsync(string email) =>
         await ExecuteSafelyAsync(async () =>
         {
-            const string sql = "SELECT * FROM users WHERE email = @Email";
-            var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { Email = email });
+            const string sql = "SELECT * FROM users WHERE email = @UserEmail";
+            var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { UserEmail = email });
 
             if (user is null)
                 return null;
@@ -123,13 +123,29 @@ public class UsersRepository : RepositoryBase
             return user;
         });
 
-    public async Task<bool> VerifyEmailAsync(string email) =>
+    public async Task<bool> VerifyEmailAsync(int userId) =>
         await ExecuteSafelyAsync(async () =>
         {
-            const string sql = "UPDATE users SET is_email_verified = true WHERE email = @Email";
-            return await Connection.ExecuteAsync(sql, new { Email = email }) != 0;
+            const string sql = "UPDATE users SET is_email_verified = true WHERE user_id = @UserId";
+            return await Connection.ExecuteAsync(sql, new { UserId = userId }) != 0;
         });
 
+    public async Task<bool> IsAdminAsync(int userId) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            const string sql =
+                """
+                SELECT CASE 
+                    WHEN role = 'admin' 
+                        THEN TRUE
+                        ELSE FALSE
+                FROM users
+                WHERE id = @UserId
+                """;
+            
+            return await Connection.ExecuteScalarAsync<bool>(sql, new { UserId = userId });
+        });
+    
     public async Task<bool> IsAdminAsync(string email) =>
         await ExecuteSafelyAsync(async () =>
         {

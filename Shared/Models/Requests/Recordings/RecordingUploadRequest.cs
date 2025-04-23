@@ -19,7 +19,7 @@ public class RecordingUploadRequest
 {
     public DateTime CreatedAt { get; set; }
 
-    public short EstimatedBirdsCount { get; set; }
+    public ushort EstimatedBirdsCount { get; set; }
 
     public string Device { get; set; }
 
