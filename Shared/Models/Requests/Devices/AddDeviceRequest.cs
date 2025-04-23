@@ -17,7 +17,7 @@ namespace Shared.Models.Requests.Devices;
 
 public class AddDeviceRequest
 {
-    public string UserEmail { get; set; }
+    public int UserId { get; set; }
     
     public string FcmToken { get; set; }
 

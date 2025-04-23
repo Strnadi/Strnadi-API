@@ -97,7 +97,20 @@ public class UsersRepository : RepositoryBase
             }) != 0;
         });
 
-    public async Task<UserModel?> GetUserByEmail(string email) =>
+    public async Task<UserModel?> GetUserByIdAsync(int userId) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            const string sql = "SELECT * FROM users WHERE user_id = @UserId;";
+            var user = await Connection.QuerySingleOrDefaultAsync<UserModel>(sql, new { UserId = userId });
+
+            if (user is null)
+                return null;
+
+            user.Password = null;
+            return user;
+        });
+    
+    public async Task<UserModel?> GetUserByEmailAsync(string email) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE email = @Email";

@@ -41,14 +41,14 @@ public class UsersController : ControllerBase
         
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
-        //
-        // if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
-        //     return BadRequest("User does not belong to this email or is not an admin");
+        
+        if (email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
+            return BadRequest("User does not belong to this email or is not an admin");
         
         if (!await usersRepo.ExistsAsync(email))
             return Conflict("User not found");
        
-        var user = await usersRepo.GetUserByEmail(email);
+        var user = await usersRepo.GetUserByEmailAsync(email);
         
         if (user is null)
             return StatusCode(500, "Failed to get user");
@@ -173,9 +173,9 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpPost("{email}/upload-profile-photo")]
+    [HttpPost("{userId:int}/upload-profile-photo")]
     [RequestSizeLimit(130023424)]
-    public async Task<IActionResult> UploadUserProfilePhoto([FromRoute] string email,
+    public async Task<IActionResult> UploadUserProfilePhoto([FromRoute] int userId,
         [FromBody] UserProfilePhotoModel req,
         [FromServices] PhotosRepository repo,
         [FromServices] JwtService jwtService)
@@ -187,17 +187,14 @@ public class UsersController : ControllerBase
         
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
-        
-        if (email != emailFromJwt)
-            return BadRequest("Invalid email");
 
-        bool success = await repo.UploadUserPhotoAsync(email, req);
+        bool success = await repo.UploadUserPhotoAsync(userId, req);
         
         return success ? Ok() : Conflict("Failed to save user photo");
     }
 
-    [HttpGet("{email}/get-profile-photo")]
-    public async Task<IActionResult> GetUserProfilePhoto([FromRoute] string email,
+    [HttpGet("{userId:int}/get-profile-photo")]
+    public async Task<IActionResult> GetUserProfilePhoto([FromRoute] int userId,
         [FromServices] PhotosRepository photosRepo,
         [FromServices] JwtService jwtService)
     {
@@ -206,13 +203,10 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
         
-        if (email != emailFromJwt)
-            return BadRequest("Invalid email");
-
-        UserProfilePhotoModel? model = await photosRepo.GetUserPhotoAsync(email);
+        UserProfilePhotoModel? model = await photosRepo.GetUserPhotoAsync(userId);
 
         return model is not null ? 
             Ok(model) : 

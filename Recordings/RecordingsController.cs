@@ -19,6 +19,7 @@ using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
 using Shared.Logging;
+using Shared.Models.Database;
 using Shared.Models.Requests.Recordings;
 
 namespace Recordings;
@@ -29,12 +30,13 @@ public class RecordingsController : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetRecordingsAsync([FromServices] RecordingsRepository repo,
-        [FromQuery] string? email = null,
+        [FromServices] UsersRepository usersRepo,
+        [FromQuery] int? userId = null,
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
     {
-        var recordings = await repo.GetAsync(email, parts, sound);
-
+        var recordings = await repo.GetAsync(userId, parts, sound);
+        
         if (recordings is null)
             return StatusCode(500, "Failed to get recordings");
 
@@ -75,7 +77,11 @@ public class RecordingsController : ControllerBase
         if (!await recordingsRepo.ExistsAsync(id))
             return NotFound("Recording not found");
         
-        if (!await recordingsRepo.IsOwnerAsync(id, email!) || !await usersRepo.IsAdminAsync(email!))
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return Unauthorized("User does not exist");
+        
+        if (!await recordingsRepo.IsOwnerAsync(id, user.Id) || !await usersRepo.IsAdminAsync(email!))
             return Unauthorized();
 
         bool deleted = await recordingsRepo.DeleteAsync(id);
@@ -86,7 +92,8 @@ public class RecordingsController : ControllerBase
     [HttpPost("upload")]
     public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadRequest request,
         [FromServices] JwtService jwtService,
-        [FromServices] RecordingsRepository recordingsRepo)
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
 
@@ -95,8 +102,12 @@ public class RecordingsController : ControllerBase
         
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
+
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return Unauthorized("User does not exist");
         
-        int? recordingId = await recordingsRepo.UploadAsync(email!, request);
+        int? recordingId = await recordingsRepo.UploadAsync(user.Id, request);
         
         if (recordingId is null)
             return StatusCode(409, "Failed to upload recording");
