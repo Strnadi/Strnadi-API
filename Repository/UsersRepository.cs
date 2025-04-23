@@ -142,6 +142,7 @@ public class UsersRepository : RepositoryBase
                     WHEN role = 'admin' 
                         THEN TRUE
                         ELSE FALSE
+                END
                 FROM users
                 WHERE id = @UserId
                 """;
@@ -158,6 +159,7 @@ public class UsersRepository : RepositoryBase
                     WHEN role = 'admin' 
                         THEN TRUE
                         ELSE FALSE
+                END
                 FROM users
                 WHERE email = @Email
                 """;
