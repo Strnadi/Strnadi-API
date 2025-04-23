@@ -158,7 +158,7 @@ public class RecordingsController : ControllerBase
         if (user is null)
             return Unauthorized("User does not exist");
         
-        if (user.Email != email || !await usersRepo.IsAdminAsync(email))
+        if (user.Email != email && !await usersRepo.IsAdminAsync(email))
             return Unauthorized("User does not belong to this email or is not an admin");
 
         bool updated = await recordingsRepo.UpdateAsync(recordingId, request);
