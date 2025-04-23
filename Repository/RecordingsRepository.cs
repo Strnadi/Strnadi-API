@@ -292,7 +292,7 @@ public class RecordingsRepository : RepositoryBase
             {
                 string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
                 updateFields.Add($"{columnName} = @{prop.Name}");
-                parameters.Add(prop.Name, prop.GetValue(recordingId));
+                parameters.Add(prop.Name, prop.GetValue(request));
             }
 
             var sql = $"UPDATE recordings SET {string.Join(", ", updateFields)} WHERE id = @Id";
