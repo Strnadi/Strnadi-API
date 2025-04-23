@@ -111,9 +111,6 @@ public class AuthController : ControllerBase
             return Unauthorized();
         
         Logger.Log($"User '{email}' logged in successfully");
-        // return await repo.IsEmailVerifiedAsync(email) ?
-        //     Ok(jwtService.GenerateRegularToken(email)) : 
-        //     StatusCode(403, jwtService.GenerateLimitedToken(email));
         return Ok(jwtService.GenerateToken(email));
     }
 
@@ -148,8 +145,8 @@ public class AuthController : ControllerBase
         return Ok(newJwt);
     }
 
-    [HttpGet("{email}/resend-verify-email")]
-    public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] string email,
+    [HttpGet("{userId:int}/resend-verify-email")]
+    public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] int userId,
         [FromServices] JwtService jwtService,
         [FromServices] EmailService emailService,
         [FromServices] UsersRepository usersRepo)
@@ -158,17 +155,21 @@ public class AuthController : ControllerBase
 
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
+        
+        var user = await usersRepo.GetUserByIdAsync(userId);
+        if (user is null)
+            return Unauthorized("User not found");
 
-        if (email != emailFromJwt)
+        if (user.Email != emailFromJwt)
             return BadRequest("Invalid email");
 
-        if (await usersRepo.IsEmailVerifiedAsync(email))
+        if (await usersRepo.IsEmailVerifiedAsync(user.Email))
             return StatusCode(208, "Email is already verified"); // Already reported
 
-        Logger.Log($"Resend verification email to '{email}'");
+        Logger.Log($"Resend verification email to '{user.Email}'");
         
-        string newJwt = jwtService.GenerateToken(email);
-        emailService.SendEmailVerificationAsync(email, nickname: null, newJwt);
+        string newJwt = jwtService.GenerateToken(user.Email);
+        emailService.SendEmailVerificationAsync(user.Email, nickname: null, newJwt);
 
         return Ok();
     }
