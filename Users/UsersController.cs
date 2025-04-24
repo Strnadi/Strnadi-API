@@ -30,6 +30,26 @@ namespace Users;
 public class UsersController : ControllerBase
 {
     [HttpGet]
+    public async Task<IActionResult> Get([FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email!))
+            return Unauthorized("User is not an administrator");
+
+        var users = await usersRepo.GetUsers();
+
+        return users is not null ? Ok(users) : StatusCode(500);
+    }
+
+    [HttpGet("get-id")]
     public async Task<IActionResult> GetId([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
@@ -49,7 +69,7 @@ public class UsersController : ControllerBase
     }
     
     [HttpGet("{userId:int}")]
-    public async Task<IActionResult> Get([FromRoute] int userId,
+    public async Task<IActionResult> GetById([FromRoute] int userId,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {

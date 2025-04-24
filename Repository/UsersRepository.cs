@@ -224,4 +224,13 @@ public class UsersRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, new { Email = email }) != 0;
         });
     }
+
+    public async Task<UserModel[]?> GetUsers() =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            var users = (await Connection.QueryAsync<UserModel>("SELECT * FROM users")).ToArray();
+            foreach (var user in users)
+                user.Password = null;
+            return users;
+        });
 }
