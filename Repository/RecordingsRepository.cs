@@ -276,10 +276,13 @@ public class RecordingsRepository : RepositoryBase
         return (await GetAsync(id, false, false))!.UserId == userId;
     }
 
-    public async Task<bool> DeleteAsync(int id) =>
+    public async Task<bool> DeleteAsync(int id, bool final) =>
         await ExecuteSafelyAsync(async () =>
-            await Connection.ExecuteAsync(sql:
-                "DELETE FROM recordings WHERE id = @Id", new { Id = id })) != 0;
+            await Connection.ExecuteAsync(
+                sql: final
+                    ? "DELETE FROM recordings WHERE id = @Id"
+                    : "UPDATE recordings SET deleted = true WHERE id = @Id", 
+                new { Id = id }) != 0);
 
     public async Task<bool> UpdateAsync(int recordingId, UpdateRecordingRequest request) =>
         await ExecuteSafelyAsync(async () =>

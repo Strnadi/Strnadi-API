@@ -62,7 +62,8 @@ public class RecordingsController : ControllerBase
     public async Task<IActionResult> DeleteRecordingAsync([FromRoute] int id,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
-        [FromServices] RecordingsRepository recordingsRepo)
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromQuery] bool final = false)
     {
         string? jwt = this.GetJwt();
 
@@ -80,9 +81,12 @@ public class RecordingsController : ControllerBase
             return Unauthorized("User does not exist");
         
         if (!await recordingsRepo.IsOwnerAsync(id, user.Id) || !await usersRepo.IsAdminAsync(email!))
-            return Unauthorized();
+            return Unauthorized("You do not have permission to delete this recording");
+        
+        if (final && !await usersRepo.IsAdminAsync(email!))
+            return Unauthorized("You do not have permission to delete this recording");
 
-        bool deleted = await recordingsRepo.DeleteAsync(id);
+        bool deleted = await recordingsRepo.DeleteAsync(id, final);
         
         return deleted ? Ok() : Conflict();
     }
@@ -139,8 +143,8 @@ public class RecordingsController : ControllerBase
         return Ok(recordingPartId);
     }
 
-    [HttpPatch("{recordingId:int}/edit")]
-    public async Task<IActionResult> EditAsync([FromRoute] int recordingId,
+    [HttpPatch("{id:int}/edit")]
+    public async Task<IActionResult> EditAsync([FromRoute] int id,
         [FromBody] UpdateRecordingRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
@@ -158,10 +162,10 @@ public class RecordingsController : ControllerBase
         if (user is null)
             return Unauthorized("User does not exist");
         
-        if (user.Email != email && !await usersRepo.IsAdminAsync(email))
+        if (user.Email != email && !await usersRepo.IsAdminAsync(email!))
             return Unauthorized("User does not belong to this email or is not an admin");
 
-        bool updated = await recordingsRepo.UpdateAsync(recordingId, request);
+        bool updated = await recordingsRepo.UpdateAsync(id, request);
         
         return updated ? Ok() : Conflict();
     }
