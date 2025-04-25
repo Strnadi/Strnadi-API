@@ -33,7 +33,7 @@ public class RecordingsController : ControllerBase
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
     {
-        var recordings = await repo.GetAsync(userId, parts, sound);
+        var recordings = (await repo.GetAsync(userId, parts, sound))?.Where(r => !r.Deleted).ToArray();
         
         if (recordings is null)
             return StatusCode(500, "Failed to get recordings");

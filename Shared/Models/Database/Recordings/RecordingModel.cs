@@ -34,5 +34,7 @@ public class RecordingModel
 
     public string? NotePost { get; set; }
     
+    public bool Deleted { get; set; }
+    
     public IEnumerable<RecordingPartModel>? Parts { get; set; }
 }
