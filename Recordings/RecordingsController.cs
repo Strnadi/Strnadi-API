@@ -44,6 +44,40 @@ public class RecordingsController : ControllerBase
         return Ok(recordings);
     }
 
+    [HttpGet("deleted")]
+    public async Task<IActionResult> GetDeletedAsync([FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromQuery] int? userId = null,
+        [FromQuery] bool parts = false,
+        [FromQuery] bool sound = false)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return BadRequest("Invalid email");
+        
+        if (!user.IsAdmin)
+            return Unauthorized("User is not an admin");
+
+        var recordings = await recordingsRepo.GetAsync(userId, parts, sound);
+        
+        if (recordings is null)
+            return StatusCode(500, "Failed to get recordings");
+
+        if (recordings.Length is 0)
+            return NoContent();
+        
+        return Ok(recordings);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetRecordingAsync(int id,
         [FromServices] RecordingsRepository repo,
@@ -52,7 +86,7 @@ public class RecordingsController : ControllerBase
     {
         var recording = await repo.GetAsync(id, parts, sound);
         
-        if (recording is null)
+        if (recording is null || recording.Deleted)
             return NoContent();
         
         return Ok(recording);
