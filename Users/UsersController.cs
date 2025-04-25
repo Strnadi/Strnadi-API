@@ -109,7 +109,7 @@ public class UsersController : ControllerBase
         if (user is null)
             return Unauthorized("User not found");
 
-        if (user.Email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
+        if (user.Email != emailFromJwt && !user.IsAdmin)
             return BadRequest("User does not belong to this email or is not an admin");
 
         bool updated = await usersRepo.UpdateAsync(user.Email, model);
@@ -134,7 +134,7 @@ public class UsersController : ControllerBase
         if (user is null)
             return Unauthorized("User not found");
 
-        if (user.Email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
+        if (user.Email != emailFromJwt && !user.IsAdmin)
             return Unauthorized("User does not belong to this email nor is an administrator");
 
         bool deleted = await usersRepo.DeleteAsync(user.Email);

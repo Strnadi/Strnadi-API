@@ -80,11 +80,11 @@ public class RecordingsController : ControllerBase
         if (user is null)
             return Unauthorized("User does not exist");
         
-        if (!await recordingsRepo.IsOwnerAsync(id, user.Id) || !await usersRepo.IsAdminAsync(email!))
-            return Unauthorized("You do not have permission to delete this recording");
+        if (!await recordingsRepo.IsOwnerAsync(id, user.Id) && !user.IsAdmin)
+            return Unauthorized("You are not owner or admin to delete this recording");
         
-        if (final && !await usersRepo.IsAdminAsync(email!))
-            return Unauthorized("You do not have permission to delete this recording");
+        if (final && !user.IsAdmin)
+            return Unauthorized("You cannot finally delete this recording if you are not admin");
 
         bool deleted = await recordingsRepo.DeleteAsync(id, final);
         
@@ -162,7 +162,7 @@ public class RecordingsController : ControllerBase
         if (user is null)
             return Unauthorized("User does not exist");
         
-        if (user.Email != email && !await usersRepo.IsAdminAsync(email!))
+        if (user.Email != email && !user.IsAdmin)
             return Unauthorized("User does not belong to this email or is not an admin");
 
         bool updated = await recordingsRepo.UpdateAsync(id, request);
