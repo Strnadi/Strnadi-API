@@ -13,6 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Shared.Models.Database.Recordings;
@@ -30,10 +33,10 @@ public class RecordingsRepository : RepositoryBase
         _fileSystemHelper = new FileSystemHelper();
     }
 
-    public async Task<RecordingModel[]?> GetAsync(string? email, bool parts, bool sound)
+    public async Task<RecordingModel[]?> GetAsync(int? userId, bool parts, bool sound)
     {
-        RecordingModel[]? recordings = (email is not null
-            ? await GetByEmailAsync(email)
+        RecordingModel[]? recordings = (userId is not null
+            ? await GetByEmailAsync(userId.Value)
             : await GetAllAsync())?.ToArray();
 
         if (recordings is null)
@@ -46,15 +49,15 @@ public class RecordingsRepository : RepositoryBase
         return recordings;
     }
 
-    private async Task<IEnumerable<RecordingModel>?> GetByEmailAsync(string email) =>
+    private async Task<IEnumerable<RecordingModel>?> GetByEmailAsync(int userId) =>
         await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
         {
             const string sql = """
                                SELECT * 
                                FROM recordings
-                               WHERE user_email = @Email
+                               WHERE user_id = @UserId
                                """;
-            return await Connection.QueryAsync<RecordingModel>(sql, new { Email = email });
+            return await Connection.QueryAsync<RecordingModel>(sql, new { UserId = userId });
         });
 
     private async Task<IEnumerable<RecordingModel>?> GetAllAsync() =>
@@ -88,7 +91,7 @@ public class RecordingsRepository : RepositoryBase
     public async Task<IEnumerable<RecordingPartModel>?> GetPartsAsync(int recordingId, bool sound) =>
         await ExecuteSafelyAsync<IEnumerable<RecordingPartModel>?>(async () =>
         {
-            var parts = await GetPartsUnsafeAsync(recordingId);
+            var parts = await GetPartsAsync(recordingId);
 
             if (parts is null)
                 return null;
@@ -112,24 +115,24 @@ public class RecordingsRepository : RepositoryBase
             return partsArray;
         });
 
-    private async Task<IEnumerable<RecordingPartModel>?> GetPartsUnsafeAsync(int recordingId) =>
+    private async Task<IEnumerable<RecordingPartModel>?> GetPartsAsync(int recordingId) =>
         await ExecuteSafelyAsync<IEnumerable<RecordingPartModel>?>(async () =>
         {
             const string sql = "SELECT * FROM recording_parts WHERE recording_id = @RecordingId";
             return await Connection.QueryAsync<RecordingPartModel>(sql, new { RecordingId = recordingId });
         });
-
-    public async Task<int?> UploadAsync(string email, RecordingUploadRequest request) =>
+    
+    public async Task<int?> UploadAsync(int userId, RecordingUploadRequest request) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
-                               INSERT INTO recordings(user_email, created_at, estimated_birds_count, device, by_app, note, name)
-                               VALUES (@UserEmail, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name) 
+                               INSERT INTO recordings(user_id, created_at, estimated_birds_count, device, by_app, note, name)
+                               VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name) 
                                RETURNING id
                                """;
             return await Connection.ExecuteScalarAsync<int?>(sql, new
             {
-                UserEmail = email,
+                UserId = userId,
                 request.CreatedAt,
                 request.EstimatedBirdsCount,
                 request.Device,
@@ -195,7 +198,8 @@ public class RecordingsRepository : RepositoryBase
     public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int recordingPartId, bool verified) =>
         (verified
             ? await GetVerifiedFilteredPartsAsync(recordingPartId)
-            : await GetAllFilteredPartsAsync(recordingPartId))?.ToArray();
+            : await GetAllFilteredPartsAsync(recordingPartId)
+        )?.ToArray();
 
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetAllFilteredPartsAsync(int recordingId) =>
         await ExecuteSafelyAsync(async () => await Connection.QueryAsync<FilteredRecordingPartModel>(sql:
@@ -264,16 +268,38 @@ public class RecordingsRepository : RepositoryBase
     public async Task<bool> ExistsAsync(int id) =>
         await GetAsync(id, false, false) is not null;
     
-    public async Task<bool> IsOwnerAsync(int id, string email)
+    public async Task<bool> IsOwnerAsync(int id, int userId)
     {
         if (!await ExistsAsync(id))
             return false;
 
-        return (await GetAsync(id, false, false))!.UserEmail == email;
+        return (await GetAsync(id, false, false))!.UserId == userId;
     }
 
-    public async Task<bool> DeleteAsync(int id) =>
+    public async Task<bool> DeleteAsync(int id, bool final) =>
         await ExecuteSafelyAsync(async () =>
-            await Connection.ExecuteAsync(sql:
-                "DELETE FROM recordings WHERE id = @Id", new { Id = id })) != 0;
+            await Connection.ExecuteAsync(
+                sql: final
+                    ? "DELETE FROM recordings WHERE id = @Id"
+                    : "UPDATE recordings SET deleted = true WHERE id = @Id", 
+                new { Id = id }) != 0);
+
+    public async Task<bool> UpdateAsync(int recordingId, UpdateRecordingRequest request) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", recordingId);
+
+            foreach (var prop in request.GetType().GetProperties().Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
+            {
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(request));
+            }
+
+            var sql = $"UPDATE recordings SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
 }

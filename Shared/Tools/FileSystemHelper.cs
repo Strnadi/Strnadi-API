@@ -87,19 +87,19 @@ public class FileSystemHelper
         return GetRecordingPhotosDirectoryPath(recordingId) + $"/{photoId}.{format}";
     }
 
-    public async Task<string> SaveUserPhotoFileAsync(string email, string base64, string format)
+    public async Task<string> SaveUserPhotoFileAsync(int userId, string base64, string format)
     {
         CreateUserPhotosDirectoryIfNotExists();
 
-        string filePath = CreateUserPhotoFilePath(email, format);
+        string filePath = CreateUserPhotoFilePath(userId, format);
         byte[] decoded = Convert.FromBase64String(base64);
         await File.WriteAllBytesAsync(filePath, decoded);
         return filePath;
     }
 
-    private string CreateUserPhotoFilePath(string email, string format)
+    private string CreateUserPhotoFilePath(int userId, string format)
     {
-        return $"{GetUserPhotosDirectoryPath()}{email}.{format}";
+        return $"{GetUserPhotosDirectoryPath()}u_{userId}.{format}";
     }
 
     private void CreateUserPhotosDirectoryIfNotExists()
@@ -112,9 +112,9 @@ public class FileSystemHelper
         return "users/";
     }
 
-    public async Task<byte[]?> ReadUserPhotoFileAsync(string email, string format)
+    public async Task<byte[]?> ReadUserPhotoFileAsync(int userId, string format)
     { 
-        string filePath = CreateUserPhotoFilePath(email, format);
+        string filePath = CreateUserPhotoFilePath(userId, format);
         if (!File.Exists(filePath))
             return null;
 

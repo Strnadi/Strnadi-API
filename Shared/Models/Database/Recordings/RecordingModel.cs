@@ -20,7 +20,7 @@ public class RecordingModel
 {
     public int Id { get; set; }
     
-    public string UserEmail { get; set; }
+    public int UserId { get; set; }
     
     public string Name { get; set; }
     
@@ -33,6 +33,8 @@ public class RecordingModel
     public string? Note { get; set; }
 
     public string? NotePost { get; set; }
+    
+    public bool Deleted { get; set; }
     
     public IEnumerable<RecordingPartModel>? Parts { get; set; }
 }

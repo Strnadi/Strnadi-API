@@ -31,10 +31,10 @@ public class LinkGenerator
         _configuration = configuration;
     }
 
-    public string GenerateVerificationLink(string email, string jwt)
+    public string GenerateVerificationLink(int userId, string jwt)
     {
         string host = _configuration["Host"] ?? throw new NullReferenceException("Failed to get Host from configuration");
-        string link = $"{host}/users/{email}/verify-email?jwt={jwt}";
+        string link = $"{host}/users/{userId}/verify-email?jwt={jwt}";
 
         return link;
     }

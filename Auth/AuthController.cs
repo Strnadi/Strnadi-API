@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Auth.Models;
+
 using Auth.Services;
 using Email;
 using Google.Apis.Auth;
@@ -32,10 +32,10 @@ public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
     
-    private string _androidId => _configuration["Auth:Google:Android"];
-    private string _iosId => _configuration["Auth:Google:Ios"];
-    private string _webId => _configuration["Auth:Google:Web"];
-    private string _webSecret => _configuration["Auth:Google:WebSecret"];
+    private string _androidId => _configuration["Auth:Google:Android"] ?? throw new NullReferenceException();
+    private string _iosId => _configuration["Auth:Google:Ios"] ?? throw new NullReferenceException();
+    private string _webId => _configuration["Auth:Google:Web"] ?? throw new NullReferenceException();
+    private string _webSecret => _configuration["Auth:Google:WebSecret"] ?? throw new NullReferenceException();
 
     public AuthController(IConfiguration configuration)
     {
@@ -111,9 +111,6 @@ public class AuthController : ControllerBase
             return Unauthorized();
         
         Logger.Log($"User '{email}' logged in successfully");
-        // return await repo.IsEmailVerifiedAsync(email) ?
-        //     Ok(jwtService.GenerateRegularToken(email)) : 
-        //     StatusCode(403, jwtService.GenerateLimitedToken(email));
         return Ok(jwtService.GenerateToken(email));
     }
 
@@ -138,18 +135,19 @@ public class AuthController : ControllerBase
 
         string newJwt = jwtService.GenerateToken(request.Email);
         
+        var user = await repo.GetUserByEmailAsync(request.Email);
+            
         if (regularRegister) 
-            emailService.SendEmailVerificationAsync(request.Email, nickname: request.Nickname, newJwt);
+            emailService.SendEmailVerificationAsync(user!.Email, user.Id, nickname: request.Nickname, newJwt);
         else 
             await repo.VerifyEmailAsync(request.Email);
 
         Logger.Log($"User '{request.Email}' signed in successfully");
-        
         return Ok(newJwt);
     }
 
-    [HttpGet("{email}/resend-verify-email")]
-    public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] string email,
+    [HttpGet("{userId:int}/resend-verify-email")]
+    public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] int userId,
         [FromServices] JwtService jwtService,
         [FromServices] EmailService emailService,
         [FromServices] UsersRepository usersRepo)
@@ -158,17 +156,21 @@ public class AuthController : ControllerBase
 
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
+        
+        var user = await usersRepo.GetUserByIdAsync(userId);
+        if (user is null)
+            return Unauthorized("User not found");
 
-        if (email != emailFromJwt)
+        if (user.Email != emailFromJwt)
             return BadRequest("Invalid email");
 
-        if (await usersRepo.IsEmailVerifiedAsync(email))
+        if (await usersRepo.IsEmailVerifiedAsync(user.Email))
             return StatusCode(208, "Email is already verified"); // Already reported
 
-        Logger.Log($"Resend verification email to '{email}'");
+        Logger.Log($"Resend verification email to '{user.Email}'");
         
-        string newJwt = jwtService.GenerateToken(email);
-        emailService.SendEmailVerificationAsync(email, nickname: null, newJwt);
+        string newJwt = jwtService.GenerateToken(user.Email);
+        emailService.SendEmailVerificationAsync(user.Email, user.Id, nickname: null, newJwt);
 
         return Ok();
     }

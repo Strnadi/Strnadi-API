@@ -29,12 +29,46 @@ public class RecordingsController : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetRecordingsAsync([FromServices] RecordingsRepository repo,
-        [FromQuery] string? email = null,
+        [FromQuery] int? userId = null,
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
     {
-        var recordings = await repo.GetAsync(email, parts, sound);
+        var recordings = (await repo.GetAsync(userId, parts, sound))?.Where(r => !r.Deleted).ToArray();
+        
+        if (recordings is null)
+            return StatusCode(500, "Failed to get recordings");
 
+        if (recordings.Length is 0)
+            return NoContent();
+        
+        return Ok(recordings);
+    }
+
+    [HttpGet("deleted")]
+    public async Task<IActionResult> GetDeletedAsync([FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromQuery] int? userId = null,
+        [FromQuery] bool parts = false,
+        [FromQuery] bool sound = false)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return BadRequest("Invalid email");
+        
+        if (!user.IsAdmin)
+            return Unauthorized("User is not an admin");
+
+        var recordings = await recordingsRepo.GetAsync(userId, parts, sound);
+        
         if (recordings is null)
             return StatusCode(500, "Failed to get recordings");
 
@@ -52,7 +86,7 @@ public class RecordingsController : ControllerBase
     {
         var recording = await repo.GetAsync(id, parts, sound);
         
-        if (recording is null)
+        if (recording is null || recording.Deleted)
             return NoContent();
         
         return Ok(recording);
@@ -62,7 +96,8 @@ public class RecordingsController : ControllerBase
     public async Task<IActionResult> DeleteRecordingAsync([FromRoute] int id,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
-        [FromServices] RecordingsRepository recordingsRepo)
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromQuery] bool final = false)
     {
         string? jwt = this.GetJwt();
 
@@ -75,10 +110,17 @@ public class RecordingsController : ControllerBase
         if (!await recordingsRepo.ExistsAsync(id))
             return NotFound("Recording not found");
         
-        if (!await recordingsRepo.IsOwnerAsync(id, email!) || !await usersRepo.IsAdminAsync(email!))
-            return Unauthorized();
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return Unauthorized("User does not exist");
+        
+        if (!await recordingsRepo.IsOwnerAsync(id, user.Id) && !user.IsAdmin)
+            return Unauthorized("You are not owner or admin to delete this recording");
+        
+        if (final && !user.IsAdmin)
+            return Unauthorized("You cannot finally delete this recording if you are not admin");
 
-        bool deleted = await recordingsRepo.DeleteAsync(id);
+        bool deleted = await recordingsRepo.DeleteAsync(id, final);
         
         return deleted ? Ok() : Conflict();
     }
@@ -86,7 +128,8 @@ public class RecordingsController : ControllerBase
     [HttpPost("upload")]
     public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadRequest request,
         [FromServices] JwtService jwtService,
-        [FromServices] RecordingsRepository recordingsRepo)
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
 
@@ -95,8 +138,12 @@ public class RecordingsController : ControllerBase
         
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
+
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return Unauthorized("User does not exist");
         
-        int? recordingId = await recordingsRepo.UploadAsync(email!, request);
+        int? recordingId = await recordingsRepo.UploadAsync(user.Id, request);
         
         if (recordingId is null)
             return StatusCode(409, "Failed to upload recording");
@@ -128,5 +175,32 @@ public class RecordingsController : ControllerBase
         Logger.Log($"Recording part {recordingPartId} has been uploaded");
         
         return Ok(recordingPartId);
+    }
+
+    [HttpPatch("{id:int}/edit")]
+    public async Task<IActionResult> EditAsync([FromRoute] int id,
+        [FromBody] UpdateRecordingRequest request,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email)) 
+            return Unauthorized();
+        
+        var user = await usersRepo.GetUserByEmailAsync(email!);
+        if (user is null)
+            return Unauthorized("User does not exist");
+        
+        if (user.Email != email && !user.IsAdmin)
+            return Unauthorized("User does not belong to this email or is not an admin");
+
+        bool updated = await recordingsRepo.UpdateAsync(id, request);
+        
+        return updated ? Ok() : Conflict();
     }
 }
