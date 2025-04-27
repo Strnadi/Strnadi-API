@@ -85,6 +85,9 @@ public class UsersController : ControllerBase
         if (user is null)
             return Unauthorized("User not found");
 
+        if (!await usersRepo.IsAdminAsync(emailFromJwt!))
+            user.Email = null!;
+
         return Ok(user);
     }
 
