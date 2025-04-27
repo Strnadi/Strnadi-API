@@ -24,12 +24,12 @@ public class DetectedDialectModel
     public int UserGuessDialectId { get; set; }
 
     [NotMapped] 
-    public string UserGuessDialect { get; set; }
+    public string? UserGuessDialect { get; set; }
 
     public int ConfirmedDialectId { get; set; }
     
     [NotMapped]
-    public string ConfirmedDialect { get; set; }
+    public string? ConfirmedDialect { get; set; }
     
     public int FilteredRecordingPartId { get; set; }
 }

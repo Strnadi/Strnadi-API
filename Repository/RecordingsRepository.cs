@@ -215,8 +215,8 @@ public class RecordingsRepository : RepositoryBase
             var partDialects = await GetDetectedDialects(part.Id) ?? [];
             foreach (var dialect in partDialects)
             {
-                dialect.UserGuessDialect = dialects.First(d => d.Id == dialect.UserGuessDialectId).DialectCode;
-                dialect.ConfirmedDialect = dialects.First(d => d.Id == dialect.ConfirmedDialectId).DialectCode;
+                dialect.UserGuessDialect = dialects.FirstOrDefault(d => d.Id == dialect.UserGuessDialectId)?.DialectCode;
+                dialect.ConfirmedDialect = dialects.FirstOrDefault(d => d.Id == dialect.ConfirmedDialectId)?.DialectCode;
             }
         }
         
