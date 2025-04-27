@@ -185,20 +185,20 @@ public class RecordingsRepository : RepositoryBase
         await UpdateFilePathAsync(recordingPartId, filePath);
     }
 
-    private async Task UpdateFilePathAsync(int recordingPartId,
+    private async Task UpdateFilePathAsync(int recordingId, 
         string filePath) =>
         await ExecuteSafelyAsync(async () => await Connection.ExecuteAsync(
             "UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id",
             new
             {
                 FilePath = filePath,
-                Id = recordingPartId
+                Id = recordingId
             }));
 
-    public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int recordingPartId, bool verified) =>
+    public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int recordingId, bool verified) =>
         (verified
-            ? await GetVerifiedFilteredPartsAsync(recordingPartId)
-            : await GetAllFilteredPartsAsync(recordingPartId)
+            ? await GetVerifiedFilteredPartsAsync(recordingId)
+            : await GetAllFilteredPartsAsync(recordingId)
         )?.ToArray();
 
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetAllFilteredPartsAsync(int recordingId) =>

@@ -11,12 +11,12 @@ namespace Recordings;
 [Route("/recordings/filtered")]
 public class FilteredRecordingsController : ControllerBase
 {
-    [HttpGet]
-    public async Task<IActionResult> GetFilteredPartsAsync([FromQuery] int recordingPartId,
+    [HttpGet("{recordingId:int}")]
+    public async Task<IActionResult> GetFilteredPartsAsync([FromRoute] int recordingId,
         [FromServices] RecordingsRepository recordingsRepo,
         [FromQuery] bool verified = false)
     {
-        var filtered = await recordingsRepo.GetFilteredPartsAsync(recordingPartId, verified);
+        var filtered = await recordingsRepo.GetFilteredPartsAsync(recordingId, verified);
         
         if (filtered is null) 
             return StatusCode(409, "Failed to get filtered parts");
