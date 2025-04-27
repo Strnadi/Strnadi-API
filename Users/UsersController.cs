@@ -85,9 +85,6 @@ public class UsersController : ControllerBase
         if (user is null)
             return Unauthorized("User not found");
 
-        if (user.Email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
-            return BadRequest("User does not belong to this email or is not an admin");
-
         return Ok(user);
     }
 
