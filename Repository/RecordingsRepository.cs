@@ -206,8 +206,8 @@ public class RecordingsRepository : RepositoryBase
             """
             SELECT * 
             FROM filtered_recording_parts 
-            WHERE recording_part_id = @RecordingPartId
-            """, new { RecordingPartId = recordingId }));
+            WHERE recording_id = @RecordingId
+            """, new { RecordingId = recordingId }));
     
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetVerifiedFilteredPartsAsync(int recordingId) =>
         await ExecuteSafelyAsync(async () => 
@@ -216,7 +216,7 @@ public class RecordingsRepository : RepositoryBase
                 SELECT *
                 FROM filtered_recording_parts
                 WHERE 
-                    recording_part_id = @RecordingPartId
+                    recording_id = @RecordingPartId
                     AND state IN (1, 2)
             """, new { RecordingPartId = recordingId }));
 
