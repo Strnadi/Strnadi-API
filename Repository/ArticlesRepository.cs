@@ -128,4 +128,15 @@ public class ArticlesRepository : RepositoryBase
         await FileSystemHelper.SaveArticleFileAsync(id, fileName, base64);
         return true;
     }
+
+    public async Task<bool> DeleteArticleAsync(int id)
+    {
+        if (!await ExistsAsync(id))
+            return false;
+        
+        await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteAsync("DELETE FROM articles WHERE id = @Id", new { Id = id }));
+        
+        return true;
+    }
 }

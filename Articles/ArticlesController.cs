@@ -120,4 +120,22 @@ public class ArticlesController : ControllerBase
         
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
+
+    [HttpDelete("/articles/{id:int}")]
+    public async Task<IActionResult> Delete([FromRoute] int id,
+        [FromServices] JwtService jwtService,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+
+        bool success = await articlesRepo.DeleteArticleAsync(id);
+        
+        return success ? Ok() : StatusCode(500, "Failed to save article");
+    }
 }
