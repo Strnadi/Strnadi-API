@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Shared.Extensions;
 using Shared.Logging;
+using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
 
 namespace Auth;
@@ -75,7 +76,7 @@ public class AuthController : ControllerBase
         string jwt = jwtService.GenerateToken(email);
         return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
     }
-    
+
     [HttpPost("login-google")]
     public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
@@ -88,7 +89,14 @@ public class AuthController : ControllerBase
         string email = payload.Email;
         if (!await repo.ExistsAsync(email))
             return Conflict("User doesn't exist");
-        
+
+        UserModel user = (await repo.GetUserByEmailAsync(email))!;
+
+        if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+        {
+            user.IsEmailVerified = true;
+        }
+
         string jwt = jwtService.GenerateToken(email);
         Logger.Log($"User '{email}' logged in successfully via google'");
         
@@ -181,12 +189,13 @@ public class AuthController : ControllerBase
         [FromServices] JwtService jwtService,
         [FromServices] EmailService emailService)
     {
-        if (!await usersRepo.ExistsAsync(email))
+        var user = await usersRepo.GetUserByEmailAsync(email);
+        if (user is null)
             return NotFound("User not found");
         
         string jwt = jwtService.GenerateToken(email);
 
-        emailService.SendPasswordResetMessage(email, nickname: null, jwt);
+        emailService.SendPasswordResetMessage(email, user.Id, nickname: null, jwt);
 
         return Ok();
     }

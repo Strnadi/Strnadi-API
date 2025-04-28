@@ -121,4 +121,15 @@ public class FileSystemHelper
         byte[] content = await File.ReadAllBytesAsync(filePath);
         return content;
     }
+
+    public async Task<byte[]> ReadArticleFileAsync(int id, string fileName)
+    {
+        string filePath = CreateArticleAttachmentPath(id, fileName);
+        return await File.ReadAllBytesAsync(filePath);
+    }
+
+    public string CreateArticleAttachmentPath(int id, string fileName)
+    {
+        return $"articles/{id}/{fileName}";
+    }
 }

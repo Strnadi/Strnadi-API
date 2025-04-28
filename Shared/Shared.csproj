@@ -28,6 +28,7 @@
       <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
       <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="6.0.0-preview.4.21253.5" />
       <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+      <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.3.0" />
       <PackageReference Include="Microsoft.Extensions.Primitives" Version="10.0.0-preview.1.25080.5" />
       <PackageReference Include="Npgsql" Version="9.0.3" />
     </ItemGroup>

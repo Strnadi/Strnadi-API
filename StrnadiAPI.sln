@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Photos", "Photos\Photos.csproj", "{110AE704-003D-46D5-8E67-884D5CFE1A6C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Articles", "Articles\Articles.csproj", "{C0447E9C-C85A-423F-BDBE-E9CF2ABADF83}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,5 +68,9 @@ Global
 		{110AE704-003D-46D5-8E67-884D5CFE1A6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{110AE704-003D-46D5-8E67-884D5CFE1A6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{110AE704-003D-46D5-8E67-884D5CFE1A6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0447E9C-C85A-423F-BDBE-E9CF2ABADF83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0447E9C-C85A-423F-BDBE-E9CF2ABADF83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0447E9C-C85A-423F-BDBE-E9CF2ABADF83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0447E9C-C85A-423F-BDBE-E9CF2ABADF83}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

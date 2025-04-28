@@ -5,13 +5,16 @@ services:
     container_name: strnadi-host
     networks:
       - strnadi-network
-    build: 
-      dockerfile: /home/stasik/Strnadi-API/Host/Dockerfile
+    build:
+      dockerfile: /home/adm-strnad/StrnadiPROD/Strnadi-API/Host/Dockerfile
     ports:
-      - "12001:8080"
+      - "8080:8080"
     depends_on:
       - strnadi-db
-    
+    volumes:
+      - /home/adm-strnad/StrnadiPROD/Strnadi-rec:/app/recordings
+      - /home/adm-strnad/StrnadiPROD/Strnadi-art:/app/articles
+  
   strnadi-db:
     image: postgres
     container_name: strnadi-db
@@ -22,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - /home/stasik/strnadi-db:/var/lib/postgresql/data
+      - /home/adm-strnad/StrnadiPROD/strnadi-db:/var/lib/postgresql/data
 
 networks:
   strnadi-network:
