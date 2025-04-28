@@ -1,4 +1,4 @@
-namespace Shared.Models.Requests;
+namespace Shared.Models.Requests.Articles;
 
 public class ArticleUploadRequest
 {

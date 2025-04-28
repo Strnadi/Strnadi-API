@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Shared.Models.Database.Articles;
 using Shared.Models.Requests;
+using Shared.Models.Requests.Articles;
 using Shared.Tools;
 
 namespace Repository;
@@ -84,4 +87,36 @@ public class ArticlesRepository : RepositoryBase
                 INSERT INTO article_attachments(article_id, file_name)
                 VALUES (@ArticleId, @FileName)
                 """, new { ArticleId = articleId, FileName = fileName })) != 0;
+
+    private async Task<bool> ExistsAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteScalarAsync<int>("SELECT * FROM articles WHERE id = @Id", new { Id = id }) != 0);
+
+    public async Task<bool> UpdateArticle(int id, ArticleUpdateRequest req)
+    {
+        if (!await ExistsAsync(id))
+            return false;
+
+        return await ExecuteSafelyAsync(async () =>
+        {
+
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            
+            parameters.Add("Id", id); 
+            
+            foreach (var prop in req.GetType().GetProperties()
+                         .Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
+            {
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(req));
+            }
+
+            var sql = $"UPDATE articles SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            Console.WriteLine(sql);
+
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+    }
 }
