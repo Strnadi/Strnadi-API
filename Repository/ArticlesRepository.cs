@@ -134,9 +134,18 @@ public class ArticlesRepository : RepositoryBase
         if (!await ExistsAsync(id))
             return false;
         
-        await ExecuteSafelyAsync(async () => 
-            await Connection.ExecuteAsync("DELETE FROM articles WHERE id = @Id", new { Id = id }));
+        return await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteAsync("DELETE FROM articles WHERE id = @Id", new { Id = id }) != 0);
+    }
+
+    public async Task<bool> DeleteArticleAttachmentAsync(int id, string fileName)
+    {
+        if (!await ExistsAsync(id))
+            return false;
+
+        FileSystemHelper.DeleteArticleAttachment(id, fileName);
         
-        return true;
+        return await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteAsync("DELETE FROM article_attachments WHERE article_id = @Id", new { Id = id }) != 0); 
     }
 }
