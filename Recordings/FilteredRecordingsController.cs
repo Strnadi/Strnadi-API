@@ -42,7 +42,7 @@ public class FilteredRecordingsController : ControllerBase
         return Ok(filtered);
     }
 
-    [HttpPost("upload")]
+    [HttpPost]
     public async Task<IActionResult> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
