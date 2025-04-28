@@ -119,4 +119,13 @@ public class ArticlesRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
     }
+
+    public async Task<bool> UpdateArticleAttachment(int id, string fileName, string base64)
+    {
+        if (!await ExistsAsync(id))
+            return false;
+        
+        await FileSystemHelper.SaveArticleFileAsync(id, fileName, base64);
+        return true;
+    }
 }

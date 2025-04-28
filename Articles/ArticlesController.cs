@@ -1,9 +1,7 @@
 ﻿using Auth.Services;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
-using Shared.Models.Requests;
 using Shared.Models.Requests.Articles;
 using Shared.Tools;
 
@@ -99,6 +97,26 @@ public class ArticlesController : ControllerBase
             return Unauthorized();
 
         bool success = await articlesRepo.UpdateArticle(id, req);
+        
+        return success ? Ok() : StatusCode(500, "Failed to save article");
+    }
+
+    [HttpPatch("/articles/{id:int}/{fileName}")]
+    public async Task<IActionResult> Patch([FromRoute] int id,
+        [FromRoute] string fileName,
+        [FromBody] string base64,
+        [FromServices] JwtService jwtService,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+
+        bool success = await articlesRepo.UpdateArticleAttachment(id, fileName, base64);
         
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
