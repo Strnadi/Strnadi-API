@@ -196,12 +196,9 @@ public class RecordingsRepository : RepositoryBase
                 Id = recordingId
             }));
 
-    public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int recordingId, bool verified)
+    public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int? recordingId, bool verified)
     {
-        var filteredParts = (verified
-                ? await GetVerifiedFilteredPartsAsync(recordingId)
-                : await GetAllFilteredPartsAsync(recordingId)
-            )?.ToArray();
+        var filteredParts = (await GetFilteredPartsRawAsync(recordingId, verified))?.ToArray();
 
         if (filteredParts is null)
             return null;
@@ -218,29 +215,22 @@ public class RecordingsRepository : RepositoryBase
                 dialect.UserGuessDialect = dialects.FirstOrDefault(d => d.Id == dialect.UserGuessDialectId)?.DialectCode;
                 dialect.ConfirmedDialect = dialects.FirstOrDefault(d => d.Id == dialect.ConfirmedDialectId)?.DialectCode;
             }
+            part.DetectedDialects.AddRange(partDialects);
         }
         
         return filteredParts;
     }
 
-    private async Task<IEnumerable<FilteredRecordingPartModel>?> GetAllFilteredPartsAsync(int recordingId) =>
-        await ExecuteSafelyAsync(async () => await Connection.QueryAsync<FilteredRecordingPartModel>(sql:
-            """
-            SELECT * 
-            FROM filtered_recording_parts 
-            WHERE recording_id = @RecordingId
-            """, new { RecordingId = recordingId }));
-
-    private async Task<IEnumerable<FilteredRecordingPartModel>?> GetVerifiedFilteredPartsAsync(int recordingId) =>
+    private async Task<IEnumerable<FilteredRecordingPartModel>?> GetFilteredPartsRawAsync(int? recordingId, bool verified) =>
         await ExecuteSafelyAsync(async () =>
             await Connection.QueryAsync<FilteredRecordingPartModel>(
-                """
+                $@"
                     SELECT *
                     FROM filtered_recording_parts
-                    WHERE 
-                        recording_id = @RecordingId
-                        AND state IN (1, 2)
-                """, new { RecordingId = recordingId }));
+                    {(verified || recordingId is not null ? "WHERE" : "")} 
+                        {(recordingId is not null ? "recording_id = @RecordingId" : "")}
+                        {(verified ? "AND state IN (1, 2)" : "")}
+                ", new { RecordingId = recordingId }));
 
     private async Task<DialectModel[]?> GetDialects() =>
         await ExecuteSafelyAsync(async () =>
