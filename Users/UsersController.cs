@@ -75,12 +75,13 @@ public class UsersController : ControllerBase
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        UserModel user;
+        UserModel? user;
         if (jwt is null)
         {
             user = await usersRepo.GetUserByIdAsync(userId);
             if (user is null)
                 return Conflict("User not found");
+            
             user.Email = null;
 
             return Ok(user);
@@ -93,7 +94,7 @@ public class UsersController : ControllerBase
         if (user is null)
             return Conflict("User not found");
 
-        if (!await usersRepo.IsAdminAsync(emailFromJwt!))
+        if (!await usersRepo.IsAdminAsync(emailFromJwt!) || user.Email != emailFromJwt)
             user.Email = null!;
 
         return Ok(user);
