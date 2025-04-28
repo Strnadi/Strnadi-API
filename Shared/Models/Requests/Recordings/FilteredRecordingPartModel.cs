@@ -35,4 +35,9 @@ public class FilteredRecordingPartModel
     
     [NotMapped]
     public List<DetectedDialectModel> DetectedDialects { get; set; }
+
+    public FilteredRecordingPartModel()
+    {
+        DetectedDialects = [];
+    }
 }
