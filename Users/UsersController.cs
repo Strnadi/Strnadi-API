@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
 using Auth.Services;
 using Email;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Server.HttpSys;
 using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Database;

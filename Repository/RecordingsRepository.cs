@@ -327,4 +327,11 @@ public class RecordingsRepository : RepositoryBase
             
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
+
+    public async Task<byte[]> GetPartAsync(int recId, int partId)
+    {
+        FileSystemHelper fileHelper = new();
+        byte[] content = await fileHelper.ReadRecordingFileAsync(recId, partId);
+        return content;
+    }
 }

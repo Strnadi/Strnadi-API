@@ -35,10 +35,10 @@ public class FileSystemHelper
         return path;
     }
     
-    public byte[] ReadRecordingFile(int recordingId, int recordingPartId)
+    public async Task<byte[]> ReadRecordingFileAsync(int recordingId, int recordingPartId)
     {
         string path = GetRecordingPartFilePath(recordingId, recordingPartId);
-        return File.ReadAllBytes(path);
+        return await File.ReadAllBytesAsync(path);
     }
     
     public async Task<string> SaveRecordingPhotoFileAsync(int recordingId, int photoId, string base64, string format)

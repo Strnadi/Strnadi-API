@@ -29,8 +29,6 @@ public class FilteredRecordingPartModel
 
     public short State { get; set; }
 
-    public string? DialectCode { get; set; }
-
     public int RecordingId { get; set; }
     
     [NotMapped]
