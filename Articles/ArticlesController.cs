@@ -40,10 +40,9 @@ public class ArticlesController : ControllerBase
         [FromRoute] int id,
         [FromRoute] string fileName)
     {
-        var fileHelper = new FileSystemHelper();
         var article = await articlesRepo.GetAsync(id, fileName);
 
-        return File(article, fileHelper.CreateArticleAttachmentPath(id, fileName));
+        return File(article, FileSystemHelper.CreateArticleAttachmentPath(id, fileName));
     }
 
     [HttpPost]
@@ -56,11 +55,31 @@ public class ArticlesController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out string? email))
+        if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
 
         int? id = await articlesRepo.SaveArticleAsync(req);
 
         return id is not null ? Ok(id) : StatusCode(500, "Failed to save article");
+    }
+
+    [HttpPost("/articles/{id:int}/{fileName}")]
+    public async Task<IActionResult> Post([FromRoute] int id,
+        [FromRoute] string fileName,
+        [FromBody] string base64,
+        [FromServices] JwtService jwtService,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+        
+        bool success = await articlesRepo.SaveArticleAttachmentAsync(id, fileName, base64);
+        
+        return success ? Ok() : StatusCode(500, "Failed to save article");
     }
 }

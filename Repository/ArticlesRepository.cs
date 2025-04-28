@@ -57,9 +57,7 @@ public class ArticlesRepository : RepositoryBase
 
     public async Task<byte[]> GetAsync(int id, string fileName)
     {
-        var fileHelper = new FileSystemHelper();
-
-        byte[] content = await fileHelper.ReadArticleFileAsync(id, fileName);
+        byte[] content = await FileSystemHelper.ReadArticleFileAsync(id, fileName);
 
         return content;
     }
@@ -73,4 +71,17 @@ public class ArticlesRepository : RepositoryBase
                 RETURNING id
                 """, new { req.Name, req.Description }));
 
+    public async Task<bool> SaveArticleAttachmentAsync(int articleId, string fileName, string base64)
+    {
+        await FileSystemHelper.SaveArticleFileAsync(articleId, fileName, base64);
+        return await InsertAttachmentAsync(articleId, fileName);
+    }
+
+    private async Task<bool> InsertAttachmentAsync(int articleId, string fileName) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync(
+                """
+                INSERT INTO article_attachments(article_id, file_name)
+                VALUES (@ArticleId, @FileName)
+                """, new { ArticleId = articleId, FileName = fileName })) != 0;
 }

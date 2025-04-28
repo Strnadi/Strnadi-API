@@ -82,7 +82,7 @@ public class UsersController : ControllerBase
             if (user is null)
                 return Conflict("User not found");
             
-            user.Email = null;
+            user.Email = null!;
 
             return Ok(user);
         }

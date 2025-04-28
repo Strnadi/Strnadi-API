@@ -79,14 +79,12 @@ public class PhotosRepository : RepositoryBase
     
     private async Task<string> SaveRecordingPhotoAsync(int recordingId, int photoId, string base64, string format)
     {
-        var fs = new FileSystemHelper();
-        return await fs.SaveRecordingPhotoFileAsync(recordingId, photoId, base64, format);
+        return await FileSystemHelper.SaveRecordingPhotoFileAsync(recordingId, photoId, base64, format);
     }
 
     private async Task<string> SaveUserPhotoAsync(int userId, string base64, string format)
     {
-        var fs = new FileSystemHelper();
-        return await fs.SaveUserPhotoFileAsync(userId, base64, format);
+        return await FileSystemHelper.SaveUserPhotoFileAsync(userId, base64, format);
     }
 
     public async Task<UserProfilePhotoModel?> GetUserPhotoAsync(int userId) =>
@@ -110,7 +108,6 @@ public class PhotosRepository : RepositoryBase
 
     private async Task<byte[]?> ReadPhotoFileAsync(int userId, string format)
     {
-        var fs = new FileSystemHelper();
-        return await fs.ReadUserPhotoFileAsync(userId, format);
+        return await FileSystemHelper.ReadUserPhotoFileAsync(userId, format);
     }
 }

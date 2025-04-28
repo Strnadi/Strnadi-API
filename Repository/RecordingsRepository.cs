@@ -27,11 +27,8 @@ namespace Repository;
 
 public class RecordingsRepository : RepositoryBase
 {
-    private readonly FileSystemHelper _fileSystemHelper;
-
     public RecordingsRepository(IConfiguration configuration) : base(configuration)
     {
-        _fileSystemHelper = new FileSystemHelper();
     }
 
     public async Task<RecordingModel[]?> GetAsync(int? userId, bool parts, bool sound)
@@ -181,7 +178,7 @@ public class RecordingsRepository : RepositoryBase
     private async Task SaveSoundFileAsync(int recordingId, int recordingPartId, string base64)
     {
         byte[] binary = Convert.FromBase64String(base64);
-        string filePath = await _fileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, binary);
+        string filePath = await FileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, binary);
 
         await UpdateFilePathAsync(recordingPartId, filePath);
     }
@@ -330,8 +327,7 @@ public class RecordingsRepository : RepositoryBase
 
     public async Task<byte[]> GetPartAsync(int recId, int partId)
     {
-        FileSystemHelper fileHelper = new();
-        byte[] content = await fileHelper.ReadRecordingFileAsync(recId, partId);
+        byte[] content = await FileSystemHelper.ReadRecordingFileAsync(recId, partId);
         return content;
     }
 }
