@@ -44,8 +44,8 @@ public class LinkGenerator
         return $"{_webRootPath}/ucet/email-{(success ? "" : "ne")}verifikovan";
     }
 
-    public string GeneratePasswordResetLink(string jwt)
+    public string GeneratePasswordResetLink(int userId, string jwt)
     {
-        return $"{_webRootPath}/ucet/reset-hesla?token={jwt}";
+        return $"{_webRootPath}/ucet/reset-hesla?token={jwt}&userId={userId}";
     }
 }

@@ -18,14 +18,14 @@ using System.Text;
 
 namespace Shared.Tools;
 
-public class FileSystemHelper
+public static class FileSystemHelper
 {
-    private readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}recordings/";
+    private static readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}recordings/";
     
     private const string recording_file_extension = "wav";
     
     /// <returns>Path of the generated file</returns>
-    public async Task<string> SaveRecordingFileAsync(int recordingId, int recordingPartId, byte[] data)
+    public static async Task<string> SaveRecordingFileAsync(int recordingId, int recordingPartId, byte[] data)
     {
         CreateRecordingsDirectoryIfNotExists(recordingId);
         
@@ -35,13 +35,13 @@ public class FileSystemHelper
         return path;
     }
     
-    public byte[] ReadRecordingFile(int recordingId, int recordingPartId)
+    public static async Task<byte[]> ReadRecordingFileAsync(int recordingId, int recordingPartId)
     {
         string path = GetRecordingPartFilePath(recordingId, recordingPartId);
-        return File.ReadAllBytes(path);
+        return await File.ReadAllBytesAsync(path);
     }
     
-    public async Task<string> SaveRecordingPhotoFileAsync(int recordingId, int photoId, string base64, string format)
+    public static async Task<string> SaveRecordingPhotoFileAsync(int recordingId, int photoId, string base64, string format)
     {
         CreateRecordingPhotosDirectoryIfNotExists(recordingId);
 
@@ -53,41 +53,41 @@ public class FileSystemHelper
         return path;
     }
 
-    private string GetRecordingsDirectoryPath(int recordingId)
+    private static string GetRecordingsDirectoryPath(int recordingId)
     {
         return _pathToRecordingsDirectory + $"{recordingId}/";
     }
 
-    private string GetRecordingPartFilePath(int recordingId, int recordingPartId)
+    private static string GetRecordingPartFilePath(int recordingId, int recordingPartId)
     {
         return $"{GetRecordingsDirectoryPath(recordingId)}/{recordingId}_{recordingPartId}.{recording_file_extension}";
     }
 
-    private string GetRecordingPhotosDirectoryPath(int recordingId)
+    private static string GetRecordingPhotosDirectoryPath(int recordingId)
     {
         return GetRecordingsDirectoryPath(recordingId) + "photos";
     }
     
-    private void CreateRecordingsDirectoryIfNotExists(int recordingId)
+    private static void CreateRecordingsDirectoryIfNotExists(int recordingId)
     {
         string path = GetRecordingsDirectoryPath(recordingId);
 
         if (!Directory.Exists(path)) Directory.CreateDirectory(path);
     }
 
-    private void CreateRecordingPhotosDirectoryIfNotExists(int recordingId)
+    private static void CreateRecordingPhotosDirectoryIfNotExists(int recordingId)
     {
         string path = GetRecordingPhotosDirectoryPath(recordingId);
 
         if (!Directory.Exists(path)) Directory.CreateDirectory(path);
     }
 
-    private string GetRecordingPhotoFilePath(int recordingId, int photoId, string format)
+    private static string GetRecordingPhotoFilePath(int recordingId, int photoId, string format)
     {
         return GetRecordingPhotosDirectoryPath(recordingId) + $"/{photoId}.{format}";
     }
 
-    public async Task<string> SaveUserPhotoFileAsync(int userId, string base64, string format)
+    public static async Task<string> SaveUserPhotoFileAsync(int userId, string base64, string format)
     {
         CreateUserPhotosDirectoryIfNotExists();
 
@@ -97,22 +97,22 @@ public class FileSystemHelper
         return filePath;
     }
 
-    private string CreateUserPhotoFilePath(int userId, string format)
+    private static string CreateUserPhotoFilePath(int userId, string format)
     {
         return $"{GetUserPhotosDirectoryPath()}u_{userId}.{format}";
     }
 
-    private void CreateUserPhotosDirectoryIfNotExists()
+    private static void CreateUserPhotosDirectoryIfNotExists()
     {
         if (!Directory.Exists(GetUserPhotosDirectoryPath())) Directory.CreateDirectory(GetUserPhotosDirectoryPath());
     }
     
-    private string GetUserPhotosDirectoryPath()
+    private static string GetUserPhotosDirectoryPath()
     {
         return "users/";
     }
 
-    public async Task<byte[]?> ReadUserPhotoFileAsync(int userId, string format)
+    public static async Task<byte[]?> ReadUserPhotoFileAsync(int userId, string format)
     { 
         string filePath = CreateUserPhotoFilePath(userId, format);
         if (!File.Exists(filePath))
@@ -120,5 +120,35 @@ public class FileSystemHelper
 
         byte[] content = await File.ReadAllBytesAsync(filePath);
         return content;
+    }
+
+    public static async Task<byte[]> ReadArticleFileAsync(int id, string fileName)
+    {
+        string filePath = CreateArticleAttachmentPath(id, fileName);
+        return await File.ReadAllBytesAsync(filePath);
+    }
+
+    public static string CreateArticleAttachmentPath(int id, string fileName)
+    {
+        return $"articles/{id}/{fileName}";
+    }
+
+    public static bool ExistsArticleAttachment(int id, string fileName)
+    {
+        string filePath = CreateArticleAttachmentPath(id, fileName);
+        return File.Exists(filePath);
+    }
+
+    public static async Task SaveArticleFileAsync(int articleId, string fileName, string base64)
+    {
+        string path = CreateArticleAttachmentPath(articleId, fileName);
+        byte[] content = Convert.FromBase64String(base64);
+        await File.WriteAllBytesAsync(path, content);
+    }
+
+    public static void DeleteArticleAttachment(int id, string fileName)
+    {
+        string path = CreateArticleAttachmentPath(id, fileName);
+        File.Delete(path);
     }
 }

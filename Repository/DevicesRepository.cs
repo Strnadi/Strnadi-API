@@ -81,12 +81,12 @@ public class DevicesRepository : RepositoryBase
             if (!await ExistsAsync(oldFcmToken))
                 return false;
             
-            const string sql = "UPDATE devices SET user_email = @NewUserEmail WHERE fcm_token = @OldFcmToken;";
+            const string sql = "UPDATE devices SET user_id = @NewUserId WHERE fcm_token = @OldFcmToken;";
 
             return await Connection.ExecuteAsync(sql,
                        new
                        {
-                           NewUserEmail = newUserId,
+                           NewUserId = newUserId,
                            OldFcmToken = oldFcmToken
                        }) != 0;
         });

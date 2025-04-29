@@ -13,13 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
 using Auth.Services;
 using Email;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Server.HttpSys;
 using Shared.Extensions;
 using Shared.Logging;
+using Shared.Models.Database;
 using Shared.Models.Requests.Photos;
 using Shared.Models.Requests.Users;
 
@@ -74,19 +75,27 @@ public class UsersController : ControllerBase
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-
+        UserModel? user;
         if (jwt is null)
-            return BadRequest("No JWT provided");
+        {
+            user = await usersRepo.GetUserByIdAsync(userId);
+            if (user is null)
+                return Conflict("User not found");
+            
+            user.Email = null!;
+
+            return Ok(user);
+        }
 
         if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
             return Unauthorized();
 
-        var user = await usersRepo.GetUserByIdAsync(userId);
+        user = await usersRepo.GetUserByIdAsync(userId);
         if (user is null)
-            return Unauthorized("User not found");
+            return Conflict("User not found");
 
-        if (user.Email != emailFromJwt && !await usersRepo.IsAdminAsync(emailFromJwt!))
-            return BadRequest("User does not belong to this email or is not an admin");
+        if (!await usersRepo.IsAdminAsync(emailFromJwt!) || user.Email != emailFromJwt)
+            user.Email = null!;
 
         return Ok(user);
     }

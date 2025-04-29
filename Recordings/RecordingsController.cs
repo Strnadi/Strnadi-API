@@ -92,6 +92,16 @@ public class RecordingsController : ControllerBase
         return Ok(recording);
     }
 
+    [HttpGet("part/{recId:int}/{partId:int}/sound")]
+    public async Task<IActionResult> GetSound([FromRoute] int recId,
+        [FromRoute] int partId,
+        [FromServices] RecordingsRepository repo)
+    {
+        var recordingPart = await repo.GetPartAsync(recId, partId);
+
+        return File(recordingPart, "audio/wav");
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteRecordingAsync([FromRoute] int id,
         [FromServices] JwtService jwtService,
@@ -125,7 +135,7 @@ public class RecordingsController : ControllerBase
         return deleted ? Ok() : Conflict();
     }
 
-    [HttpPost("upload")]
+    [HttpPost]
     public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo,
@@ -153,7 +163,7 @@ public class RecordingsController : ControllerBase
         return Ok(recordingId);
     }
 
-    [HttpPost("upload-part")]
+    [HttpPost("part/")]
     [RequestSizeLimit(int.MaxValue)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
         [FromServices] JwtService jwtService,
@@ -177,7 +187,7 @@ public class RecordingsController : ControllerBase
         return Ok(recordingPartId);
     }
 
-    [HttpPatch("{id:int}/edit")]
+    [HttpPatch("{id:int}")]
     public async Task<IActionResult> EditAsync([FromRoute] int id,
         [FromBody] UpdateRecordingRequest request,
         [FromServices] JwtService jwtService,

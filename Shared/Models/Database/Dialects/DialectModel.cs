@@ -13,29 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+namespace Shared.Models.Database.Dialects;
 
-using System.ComponentModel.DataAnnotations.Schema;
-using Shared.Models.Database.Dialects;
-
-namespace Shared.Models.Requests.Recordings;
-
-public class FilteredRecordingPartModel
+public class DialectModel
 {
     public int Id { get; set; }
 
-    public DateTime StartDate { get; set; }
-    
-    public DateTime EndDate { get; set; }
-
-    public short State { get; set; }
-
-    public int RecordingId { get; set; }
-    
-    [NotMapped]
-    public List<DetectedDialectModel> DetectedDialects { get; set; }
-
-    public FilteredRecordingPartModel()
-    {
-        DetectedDialects = [];
-    }
+    public string DialectCode { get; set; }
 }

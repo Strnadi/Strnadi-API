@@ -56,13 +56,14 @@ public class EmailService
     }
 
     public void SendPasswordResetMessage(string emailAddress,
+        int userId,
         string? nickname,
         string jwt)
     {
         LinkGenerator linkGenerator = new LinkGenerator(_configuration);
         EmailSender emailSender = new EmailSender(_configuration);
         
-        string link = linkGenerator.GeneratePasswordResetLink(jwt);
+        string link = linkGenerator.GeneratePasswordResetLink(userId, jwt);
         
         emailSender.SendMessage(
             emailAddress,

@@ -18,6 +18,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using Shared.Models.Database.Dialects;
 using Shared.Models.Database.Recordings;
 using Shared.Models.Requests.Recordings;
 using Shared.Tools;
@@ -26,11 +27,8 @@ namespace Repository;
 
 public class RecordingsRepository : RepositoryBase
 {
-    private readonly FileSystemHelper _fileSystemHelper;
-    
     public RecordingsRepository(IConfiguration configuration) : base(configuration)
     {
-        _fileSystemHelper = new FileSystemHelper();
     }
 
     public async Task<RecordingModel[]?> GetAsync(int? userId, bool parts, bool sound)
@@ -61,21 +59,21 @@ public class RecordingsRepository : RepositoryBase
         });
 
     private async Task<IEnumerable<RecordingModel>?> GetAllAsync() =>
-        await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () => 
+        await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
             await Connection.QueryAsync<RecordingModel>("SELECT * FROM recordings"));
 
     public async Task<RecordingModel?> GetAsync(int id, bool parts, bool sound)
     {
         var recording = await GetAsync(id);
-            
+
         if (recording is null || !parts)
             return recording;
-            
+
         recording.Parts = await GetPartsAsync(id, sound);
-            
+
         return recording;
     }
-    
+
     private async Task<RecordingModel?> GetAsync(int id) =>
         await ExecuteSafelyAsync(async () =>
         {
@@ -100,7 +98,7 @@ public class RecordingsRepository : RepositoryBase
                 return parts;
 
             var partsArray = parts as RecordingPartModel[] ?? parts!.ToArray();
-            
+
             foreach (var part in partsArray)
             {
                 string? path = part.FilePath;
@@ -121,7 +119,7 @@ public class RecordingsRepository : RepositoryBase
             const string sql = "SELECT * FROM recording_parts WHERE recording_id = @RecordingId";
             return await Connection.QueryAsync<RecordingPartModel>(sql, new { RecordingId = recordingId });
         });
-    
+
     public async Task<int?> UploadAsync(int userId, RecordingUploadRequest request) =>
         await ExecuteSafelyAsync(async () =>
         {
@@ -148,9 +146,9 @@ public class RecordingsRepository : RepositoryBase
 
         if (partId is null)
             return null;
-        
+
         await SaveSoundFileAsync(request.RecordingId, partId.Value, request.DataBase64);
-        
+
         return partId;
     }
 
@@ -180,45 +178,69 @@ public class RecordingsRepository : RepositoryBase
     private async Task SaveSoundFileAsync(int recordingId, int recordingPartId, string base64)
     {
         byte[] binary = Convert.FromBase64String(base64);
-        string filePath = await _fileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, binary);
+        string filePath = await FileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, binary);
 
         await UpdateFilePathAsync(recordingPartId, filePath);
     }
 
-    private async Task UpdateFilePathAsync(int recordingPartId,
+    private async Task UpdateFilePathAsync(int recordingId,
         string filePath) =>
         await ExecuteSafelyAsync(async () => await Connection.ExecuteAsync(
             "UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id",
             new
             {
                 FilePath = filePath,
-                Id = recordingPartId
+                Id = recordingId
             }));
 
-    public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int recordingPartId, bool verified) =>
-        (verified
-            ? await GetVerifiedFilteredPartsAsync(recordingPartId)
-            : await GetAllFilteredPartsAsync(recordingPartId)
-        )?.ToArray();
+    public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int? recordingId, bool verified)
+    {
+        var filteredParts = (await GetFilteredPartsRawAsync(recordingId, verified))?.ToArray();
 
-    private async Task<IEnumerable<FilteredRecordingPartModel>?> GetAllFilteredPartsAsync(int recordingId) =>
-        await ExecuteSafelyAsync(async () => await Connection.QueryAsync<FilteredRecordingPartModel>(sql:
-            """
-            SELECT * 
-            FROM filtered_recording_parts 
-            WHERE recording_part_id = @RecordingPartId
-            """, new { RecordingPartId = recordingId }));
-    
-    private async Task<IEnumerable<FilteredRecordingPartModel>?> GetVerifiedFilteredPartsAsync(int recordingId) =>
-        await ExecuteSafelyAsync(async () => 
+        if (filteredParts is null)
+            return null;
+
+        var dialects = await GetDialects();
+        if (dialects is null)
+            return null;
+
+        foreach (var part in filteredParts)
+        {
+            var partDialects = await GetDetectedDialects(part.Id) ?? [];
+            foreach (var dialect in partDialects)
+            {
+                dialect.UserGuessDialect = dialects.FirstOrDefault(d => d.Id == dialect.UserGuessDialectId)?.DialectCode;
+                dialect.ConfirmedDialect = dialects.FirstOrDefault(d => d.Id == dialect.ConfirmedDialectId)?.DialectCode;
+            }
+            part.DetectedDialects.AddRange(partDialects);
+        }
+        
+        return filteredParts;
+    }
+
+    private async Task<IEnumerable<FilteredRecordingPartModel>?> GetFilteredPartsRawAsync(int? recordingId, bool verified) =>
+        await ExecuteSafelyAsync(async () =>
             await Connection.QueryAsync<FilteredRecordingPartModel>(
-            """
-                SELECT *
-                FROM filtered_recording_parts
-                WHERE 
-                    recording_part_id = @RecordingPartId
-                    AND state IN (1, 2)
-            """, new { RecordingPartId = recordingId }));
+                $@"
+                    SELECT *
+                    FROM filtered_recording_parts
+                    {(verified || recordingId is not null ? "WHERE" : "")} 
+                        {(recordingId is not null ? "recording_id = @RecordingId" : "")}
+                        {(verified ? "AND state IN (1, 2)" : "")}
+                ", new { RecordingId = recordingId }));
+
+    private async Task<DialectModel[]?> GetDialects() =>
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<DialectModel>("SELECT * FROM dialects"))?.ToArray());
+
+    private async Task<DetectedDialectModel[]?> GetDetectedDialects(int filteredPartId) =>
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<DetectedDialectModel>(
+                "SELECT * FROM detected_dialects WHERE filtered_recording_part_id = @FPartId",
+                new
+                {
+                    FPartId = filteredPartId
+                })).ToArray());
 
     public async Task<bool> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model)
     {
@@ -302,4 +324,10 @@ public class RecordingsRepository : RepositoryBase
             
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
+
+    public async Task<byte[]> GetPartAsync(int recId, int partId)
+    {
+        byte[] content = await FileSystemHelper.ReadRecordingFileAsync(recId, partId);
+        return content;
+    }
 }

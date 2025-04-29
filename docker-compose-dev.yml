@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  strnadi-host-dev:
+    container_name: strnadi-host-dev
+    networks:
+      - strnadi-network-dev
+    build:
+      dockerfile: /home/adm-strnad/Strnadi-API/Host/Dockerfile
+    ports:
+      - "12001:8080"
+    depends_on:
+      - strnadi-db-dev
+    volumes:
+      - /home/strnadi-adm/strnadi-rev:/app/recordings
+  
+  strnadi-db-dev:
+    image: postgres
+    container_name: strnadi-db-dev
+    networks:
+      - strnadi-network-dev
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - /home/strnad-adm/strnadi-db:/var/lib/postgresql/data
+
+networks:
+  strnadi-network-dev:
+    driver: bridge
