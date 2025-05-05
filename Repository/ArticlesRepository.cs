@@ -36,9 +36,13 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             (await Connection.QueryAsync<ArticleModel>("SELECT * FROM articles")).ToArray());
     
-    private async Task<ArticleAttachmentModel[]?> GetArticleFilesAsync(int id) => 
+    private async Task<ArticleAttachmentModel[]?> GetArticleFilesAsync(int articleId) => 
         await ExecuteSafelyAsync(async () => 
-            (await Connection.QueryAsync<ArticleAttachmentModel>("SELECT * FROM articles WHERE id = @Id", new { Id = id })).ToArray());
+            (await Connection.QueryAsync<ArticleAttachmentModel>("SELECT * FROM article_attachments WHERE article_id = @ArticleId",
+                new
+                {
+                    ArticleId = articleId
+                })).ToArray());
 
     public async Task<ArticleModel?> GetAsync(int id)
     {
@@ -146,6 +150,13 @@ public class ArticlesRepository : RepositoryBase
         FileSystemHelper.DeleteArticleAttachment(id, fileName);
         
         return await ExecuteSafelyAsync(async () => 
-            await Connection.ExecuteAsync("DELETE FROM article_attachments WHERE article_id = @Id", new { Id = id }) != 0); 
+            await Connection.ExecuteAsync(
+                "DELETE FROM article_attachments WHERE article_id = @Id AND file_name = @FileName",
+                new
+                {
+                    ArticleId = id,
+                    FileName = fileName
+                }) !=
+            0); 
     }
 }
