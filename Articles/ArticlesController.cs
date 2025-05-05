@@ -41,7 +41,7 @@ public class ArticlesController : ControllerBase
     {
         var article = await articlesRepo.GetAsync(id, fileName);
 
-        return File(article, FileSystemHelper.CreateArticleAttachmentPath(id, fileName));
+        return File(article, MimeHelper.GetMimeType(FileSystemHelper.CreateArticleAttachmentPath(id, fileName)));
     }
 
     [HttpPost]
