@@ -38,7 +38,7 @@ public class ArticlesRepository : RepositoryBase
     
     private async Task<ArticleAttachmentModel[]?> GetArticleFilesAsync(int articleId) => 
         await ExecuteSafelyAsync(async () => 
-            (await Connection.QueryAsync<ArticleAttachmentModel>("SELECT * FROM articles WHERE article_id = @ArticleId",
+            (await Connection.QueryAsync<ArticleAttachmentModel>("SELECT * FROM article_attachments WHERE article_id = @ArticleId",
                 new
                 {
                     ArticleId = articleId
