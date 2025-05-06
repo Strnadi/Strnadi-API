@@ -71,7 +71,7 @@ public class ArticlesRepository : RepositoryBase
                 FROM article_category_assignment 
                 WHERE category_id = (
                     SELECT id 
-                    FROM article_category_assignment 
+                    FROM article_categories 
                     WHERE name = @CategoryName
                 )
                 """, new { CategoryName = categoryName })).ToArray());
