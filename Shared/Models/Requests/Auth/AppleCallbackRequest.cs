@@ -6,5 +6,5 @@ public class AppleCallbackRequest
 
     public string State { get; set; }
 
-    public string User { get; set; }
+    public string? User { get; set; }
 }

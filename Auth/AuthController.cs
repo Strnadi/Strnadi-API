@@ -62,14 +62,19 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("apple")]
-    public async Task<IActionResult> SignInViaApple([FromForm] AppleCallbackRequest req)
+    public async Task<IActionResult> SignInViaApple([FromForm] AppleCallbackRequest req,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] JwtService jwtService)
     {
-        AppleUserInfo? appleUser = null;
-        if (!string.IsNullOrEmpty(req.User))
+        if (req.User is not null)
         {
-            appleUser = JsonSerializer.Deserialize<AppleUserInfo>(req.User);
+            AppleUserInfo? appleUser = null;
+            if (!string.IsNullOrEmpty(req.User))
+            {
+                appleUser = JsonSerializer.Deserialize<AppleUserInfo>(req.User);
+            }
+            if (appleUser is null) return StatusCode(500, "Apple authorization failed");
         }
-        if (appleUser is null) return StatusCode(500, "Apple authorization failed");
 
         throw new NotImplementedException();
     }
