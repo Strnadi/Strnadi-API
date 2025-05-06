@@ -24,6 +24,17 @@ public class ArticlesController : ControllerBase
         return Ok(articles);
     }
 
+    [HttpGet("articles/{categoryName}")]
+    public async Task<IActionResult> Get([FromRoute] string categoryName,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        var article = await articlesRepo.GetAsync(categoryName);
+        if (article is null)
+            return StatusCode(500, "Failed to get article");
+
+        return Ok(article);
+    }
+    
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get([FromServices] ArticlesRepository articlesRepo, [FromRoute] int id)
     {

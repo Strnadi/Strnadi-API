@@ -44,6 +44,35 @@ public class ArticlesRepository : RepositoryBase
                     ArticleId = articleId
                 })).ToArray());
 
+    public async Task<ArticleModel[]?> GetAsync(string categoryName)
+    {
+        var assignments = await GetCategoryAssignmentsByCategory(categoryName);
+        if (assignments is null)
+            return null;
+
+        var articles = new ArticleModel?[assignments.Length];
+        for (int i = 0; i < articles.Length; i++)
+        {
+            articles[i] = await GetAsync(assignments[i].ArticleId);
+            if (articles[i] is null)
+                return null;
+        }   
+        return articles!;
+    }
+
+    private async Task<ArticleCategoryAssignment[]?> GetCategoryAssignmentsByCategory(string categoryName) =>
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<ArticleCategoryAssignment>(
+                """
+                SELECT * 
+                FROM article_category_assignment 
+                WHERE category_id = (
+                    SELECT id 
+                    FROM article_category_assignment 
+                    WHERE name = @CategoryName
+                )
+                """, new { CategoryName = categoryName })).ToArray());
+
     public async Task<ArticleModel?> GetAsync(int id)
     {
         var article = await GetArticleAsync(id);
