@@ -232,4 +232,12 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () => 
             (await Connection.QueryAsync<ArticleCategoryModel>(
                 "SELECT * FROM article_categories")).ToArray());
+
+    public async Task<bool> SaveArticleCategoryAsync(ArticleCategoryUploadRequest req) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync(
+                """
+                INSERT INTO article_categories(label, name)
+                VALUES (@Label, @Name);
+                """, new { req.Label, req.Name })) != 0;
 }

@@ -86,7 +86,7 @@ public class ArticlesController : ControllerBase
         return id is not null ? Ok(id) : StatusCode(500, "Failed to save article");
     }
 
-    [HttpPost("/articles/{id:int}/{fileName}")]
+    [HttpPost("{id:int}/{fileName}")]
     public async Task<IActionResult> Post([FromRoute] int id,
         [FromRoute] string fileName,
         [FromBody] string base64,
@@ -106,7 +106,29 @@ public class ArticlesController : ControllerBase
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
 
-    [HttpPatch("/articles/{id:int}")]
+    [HttpPost("categories")]
+    public async Task<IActionResult> PostCategories([FromBody] ArticleCategoryUploadRequest req,
+        [FromServices] ArticlesRepository articlesRepo,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] JwtService jwtService)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("Only administrators can perform this action");
+
+        bool success = await articlesRepo.SaveArticleCategoryAsync(req);
+        
+        return success ? Ok() : StatusCode(500, "Failed to save article category");
+    }
+
+    [HttpPatch("{id:int}")]
     public async Task<IActionResult> Patch([FromRoute] int id, 
         [FromBody] ArticleUpdateRequest req,
         [FromServices] JwtService jwtService,
@@ -125,7 +147,7 @@ public class ArticlesController : ControllerBase
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
 
-    [HttpPatch("/articles/{id:int}/{fileName}")]
+    [HttpPatch("{id:int}/{fileName}")]
     public async Task<IActionResult> Patch([FromRoute] int id,
         [FromRoute] string fileName,
         [FromBody] string base64,
@@ -145,7 +167,7 @@ public class ArticlesController : ControllerBase
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
 
-    [HttpDelete("/articles/{id:int}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete([FromRoute] int id,
         [FromServices] JwtService jwtService,
         [FromServices] ArticlesRepository articlesRepo)
@@ -163,7 +185,7 @@ public class ArticlesController : ControllerBase
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
 
-    [HttpDelete("/articles/{id:int}/{fileName}")]
+    [HttpDelete("{id:int}/{fileName}")]
     public async Task<IActionResult> Delete([FromRoute] int id, [FromRoute] string fileName,
         [FromServices] JwtService jwtService,
         [FromServices] ArticlesRepository articlesRepo)
