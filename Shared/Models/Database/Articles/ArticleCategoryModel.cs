@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Shared.Models.Database.Articles;
 
 public class ArticleCategoryModel

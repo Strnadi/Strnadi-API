@@ -12,4 +12,7 @@ public class ArticleModel
     
     [NotMapped]
     public ArticleAttachmentModel[] Files { get; set; }
+    
+    [NotMapped]
+    public ArticleCategoryModel[] Categories { get; set; }
 }

@@ -5,4 +5,6 @@ public class ArticleCategoryAssignment
     public int ArticleId { get; set; }
 
     public int CategoryId { get; set; }
+
+    public int Order { get; set; }
 }

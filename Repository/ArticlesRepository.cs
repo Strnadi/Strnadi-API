@@ -53,6 +53,10 @@ public class ArticlesRepository : RepositoryBase
         article.Files = (await GetArticleFilesAsync(id))!;
         if (article.Files == null!)
             return null;
+
+        article.Categories = (await GetCategoriesByArticle(id))!;
+        if (article.Categories == null!)
+            return null;
         
         return article;
     }
@@ -61,6 +65,38 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             await Connection.QueryFirstOrDefaultAsync<ArticleModel>(
                 "SELECT * FROM articles WHERE id = @Id", new { Id = id }));
+
+    private async Task<ArticleCategoryModel[]?> GetCategoriesByArticle(int articleId)
+    {
+        var assignments = await GetCategoryAssignmentsByArticle(articleId);
+        if (assignments is null)
+            return null;
+        
+        var categories = new ArticleCategoryModel[assignments.Length];
+        for (int i = 0; i < categories.Length; i++)
+        {
+            categories[i] = (await GetArticleCategory(assignments[i].CategoryId))!;
+            if (categories[i] == null!)
+                return null;
+        }
+
+        return categories;
+    }
+
+    private async Task<ArticleCategoryAssignment[]?> GetCategoryAssignmentsByArticle(int articleId) =>
+        await ExecuteSafelyAsync(async () => 
+            (await Connection.QueryAsync<ArticleCategoryAssignment>(
+                "SELECT * FROM article_category_assignment WHERE article_id = @ArticleId ORDER BY order",
+                new
+                {
+                    ArticleId = articleId
+                })).ToArray());
+
+    private async Task<ArticleCategoryModel?> GetArticleCategory(int categoryId) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.QueryFirstOrDefaultAsync<ArticleCategoryModel>(
+                "SELECT * FROM article_categories WHERE id = @CategoryId", 
+                new { CategoryId = categoryId }));
 
     public async Task<byte[]> GetAsync(int id, string fileName)
     {
