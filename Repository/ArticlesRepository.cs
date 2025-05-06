@@ -227,4 +227,9 @@ public class ArticlesRepository : RepositoryBase
                 }) !=
             0); 
     }
+
+    public async Task<ArticleCategoryModel[]?> GetCategoriesAsync() =>
+        await ExecuteSafelyAsync(async () => 
+            (await Connection.QueryAsync<ArticleCategoryModel>(
+                "SELECT * FROM article_categories")).ToArray());
 }

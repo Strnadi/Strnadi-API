@@ -24,6 +24,19 @@ public class ArticlesController : ControllerBase
         return Ok(articles);
     }
 
+    [HttpGet("categories")]
+    public async Task<IActionResult> GetCategories([FromServices] ArticlesRepository articlesRepo)
+    {
+        var categories = await articlesRepo.GetCategoriesAsync();
+        if (categories is null)
+            return StatusCode(500, "Failed to get categories");
+        
+        if (categories.Length == 0)
+            return NoContent();
+        
+        return Ok(categories);
+    }
+
     [HttpGet("{categoryName}")]
     public async Task<IActionResult> Get([FromRoute] string categoryName,
         [FromServices] ArticlesRepository articlesRepo)
