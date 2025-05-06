@@ -14,6 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.Text.Json;
 using Auth.Services;
 using Email;
 using Google.Apis.Auth;
@@ -60,6 +61,19 @@ public class AuthController : ControllerBase
         return await usersRepo.IsEmailVerifiedAsync(email) ? Ok() : StatusCode(403);
     }
 
+    [HttpPost("apple")]
+    public async Task<IActionResult> SignInViaApple([FromForm] AppleCallbackRequest req)
+    {
+        AppleUserInfo? appleUser = null;
+        if (!string.IsNullOrEmpty(req.User))
+        {
+            appleUser = JsonSerializer.Deserialize<AppleUserInfo>(req.User);
+        }
+        if (appleUser is null) return StatusCode(500, "Apple authorization failed");
+
+        throw new NotImplementedException();
+    }
+    
     [HttpPost("sign-up-google")]
     public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
