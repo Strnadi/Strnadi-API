@@ -115,7 +115,7 @@ public class ArticlesRepository : RepositoryBase
     private async Task<ArticleCategoryAssignment[]?> GetCategoryAssignmentsByArticle(int articleId) =>
         await ExecuteSafelyAsync(async () => 
             (await Connection.QueryAsync<ArticleCategoryAssignment>(
-                "SELECT * FROM article_category_assignment WHERE article_id = @ArticleId ORDER BY order",
+                "SELECT * FROM article_category_assignment WHERE article_id = @ArticleId ORDER BY \"order\"",
                 new
                 {
                     ArticleId = articleId
