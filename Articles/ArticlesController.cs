@@ -24,7 +24,7 @@ public class ArticlesController : ControllerBase
         return Ok(articles);
     }
 
-    [HttpGet("articles/{categoryName}")]
+    [HttpGet("{categoryName}")]
     public async Task<IActionResult> Get([FromRoute] string categoryName,
         [FromServices] ArticlesRepository articlesRepo)
     {
