@@ -27,6 +27,9 @@ public class ArticlesRepository : RepositoryBase
             article.Files = (await GetArticleFilesAsync(article.Id))!;
             if (article.Files == null!)
                 return null;
+            article.Categories = (await GetCategoriesByArticle(article.Id))!;
+            if (article.Categories == null!)
+                return null;
         }
         
         return articles;
