@@ -142,7 +142,7 @@ public class ArticlesController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
 
-        bool success = await articlesRepo.UpdateArticle(id, req);
+        bool success = await articlesRepo.UpdateArticleAsync(id, req);
         
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
@@ -152,6 +152,7 @@ public class ArticlesController : ControllerBase
         [FromRoute] string fileName,
         [FromBody] string base64,
         [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
         [FromServices] ArticlesRepository articlesRepo)
     {
         string? jwt = this.GetJwt();
@@ -159,10 +160,36 @@ public class ArticlesController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out _))
+        if (!jwtService.TryValidateToken(jwt, out string email))
             return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("Only administrators can perform this action");
 
-        bool success = await articlesRepo.UpdateArticleAttachment(id, fileName, base64);
+        bool success = await articlesRepo.UpdateArticleAttachmentAsync(id, fileName, base64);
+        
+        return success ? Ok() : StatusCode(500, "Failed to save article");
+    }
+
+    [HttpPatch("{categoryName}")]
+    public async Task<IActionResult> AssignArticleToCategory([FromRoute] string categoryName, 
+        [FromBody] AssignArticleToCategoryRequest request,
+        [FromServices] ArticlesRepository articlesRepo,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] JwtService jwtService)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("Only administrators can perform this action");
+        
+        bool success = await articlesRepo.AssignArticleToCategoryAsync(categoryName, request);
         
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
