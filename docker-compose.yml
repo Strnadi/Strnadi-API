@@ -22,8 +22,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - /home/stasik/strnadi-db:/var/lib/postgresql/data
-       
+      - /home/adm-strnad/StrnadiPROD/strnadi-db:/var/lib/postgresql/data
+      
   adminer:
     image: adminer:latest
     restart: always
