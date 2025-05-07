@@ -27,13 +27,13 @@ services:
     volumes:
       - /home/adm-strnad/StrnadiPROD/strnadi-db:/var/lib/postgresql/data
    
-  adminer:
-    image: adminer:latest
-    restart: always
-    ports:
-      - "8080:8080"
-    depends_on:
-      - strnadi-db 
+#  adminer:
+#    image: adminer:latest
+#    restart: always
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - strnadi-db 
 
 networks:
   strnadi-network:
