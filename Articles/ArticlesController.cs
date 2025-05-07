@@ -235,8 +235,8 @@ public class ArticlesController : ControllerBase
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
 
-    [HttpDelete("categories")]
-    public async Task<IActionResult> DeleteCategory([FromBody] int categoryId,
+    [HttpDelete("{categoryName}")]
+    public async Task<IActionResult> DeleteCategory([FromRoute] string categoryName,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] ArticlesRepository articlesRepo)
@@ -252,11 +252,11 @@ public class ArticlesController : ControllerBase
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("Only administrators can perform this action");
 
-        bool success = await articlesRepo.DeleteCategoryAsync(categoryId);
+        bool success = await articlesRepo.DeleteCategoryAsync(categoryName);
         
         Logger.Log(success ? 
-            $"Category {categoryId} deleted successfully" :
-            $"Failed to delete category {categoryId}");
+            $"Category {categoryName} deleted successfully" :
+            $"Failed to delete category {categoryName}");
         
         return success ? Ok() : StatusCode(500, "Failed to delete category");
     }
