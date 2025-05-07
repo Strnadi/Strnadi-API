@@ -46,7 +46,15 @@ public class ArticlesRepository : RepositoryBase
             return null;
 
         var articles = new ArticleModel[assignments.Length];
-        
+        for (int i = 0; i < articles.Length; i++)
+        {
+            var article = await GetArticleAsync(assignments[i].ArticleId);
+            if (article is null)
+                return null;
+            articles[i] = article;
+        }
+
+        return articles;
     }
     
     private async Task<ArticleAttachmentModel[]?> GetArticleFilesAsync(int articleId) => 
@@ -259,8 +267,13 @@ public class ArticlesRepository : RepositoryBase
 
         foreach (var category in categories)
         {
-            var articles = await GetArticlesAsync()
+            var articles = await GetArticlesByCategoryAsync(category.Id);
+            if (articles is null)
+                return null;
+            category.Articles = articles;
         }
+        
+        return categories;
     }
 
     public async Task<bool> SaveArticleCategoryAsync(ArticleCategoryUploadRequest req) =>
