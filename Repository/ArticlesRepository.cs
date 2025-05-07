@@ -309,4 +309,8 @@ public class ArticlesRepository : RepositoryBase
                     CategoryId = categoryId,
                     Order = order
                 })) != 0;
+
+    public async Task<bool> DeleteCategoryAsync(int categoryId) =>
+        await Connection.ExecuteAsync(
+            "DELETE FROM article_categories WHERE id = @Id", new { Id = categoryId }) != 0;
 }

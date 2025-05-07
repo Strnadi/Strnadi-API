@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
+using Shared.Logging;
 using Shared.Models.Requests.Articles;
 using Shared.Tools;
 
@@ -232,5 +233,31 @@ public class ArticlesController : ControllerBase
         bool success = await articlesRepo.DeleteArticleAttachmentAsync(id, fileName);
         
         return success ? Ok() : StatusCode(500, "Failed to save article");
+    }
+
+    [HttpDelete("categories")]
+    public async Task<IActionResult> DeleteCategory([FromBody] int categoryId,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("Only administrators can perform this action");
+
+        bool success = await articlesRepo.DeleteCategoryAsync(categoryId);
+        
+        Logger.Log(success ? 
+            $"Category {categoryId} deleted successfully" :
+            $"Failed to delete category {categoryId}");
+        
+        return success ? Ok() : StatusCode(500, "Failed to delete category");
     }
 }
