@@ -38,6 +38,24 @@ public class ArticlesRepository : RepositoryBase
     private async Task<ArticleModel[]?> GetArticlesAsync() =>
         await ExecuteSafelyAsync(async () =>
             (await Connection.QueryAsync<ArticleModel>("SELECT * FROM articles")).ToArray());
+
+    private async Task<ArticleModel[]?> GetArticlesByCategoryAsync(int categoryId)
+    {
+        var assignments = await GetCategoryAssignmentsByCategoryAsync(categoryId);
+        if (assignments is null)
+            return null;
+
+        var articles = new ArticleModel[assignments.Length];
+        for (int i = 0; i < articles.Length; i++)
+        {
+            var article = await GetArticleAsync(assignments[i].ArticleId);
+            if (article is null)
+                return null;
+            articles[i] = article;
+        }
+
+        return articles;
+    }
     
     private async Task<ArticleAttachmentModel[]?> GetArticleFilesAsync(int articleId) => 
         await ExecuteSafelyAsync(async () => 
@@ -107,7 +125,7 @@ public class ArticlesRepository : RepositoryBase
         var categories = new ArticleCategoryModel[assignments.Length];
         for (int i = 0; i < categories.Length; i++)
         {
-            categories[i] = (await GetArticleCategoryAsync(assignments[i].CategoryId))!;
+            categories[i] = (await GetCategoryAsync(assignments[i].CategoryId))!;
             if (categories[i] == null!)
                 return null;
         }
@@ -115,6 +133,12 @@ public class ArticlesRepository : RepositoryBase
         return categories;
     }
 
+    private async Task<ArticleCategoryAssignment[]?> GetCategoryAssignmentsByCategoryAsync(int categoryId) => 
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<ArticleCategoryAssignment>(
+                "SELECT * FROM article_category_assignment WHERE category_id = @CategoryId ORDER BY \"order\"",
+                new { CategoryId = categoryId })).ToArray());
+    
     private async Task<ArticleCategoryAssignment[]?> GetCategoryAssignmentsByArticleAsync(int articleId) =>
         await ExecuteSafelyAsync(async () => 
             (await Connection.QueryAsync<ArticleCategoryAssignment>(
@@ -124,7 +148,7 @@ public class ArticlesRepository : RepositoryBase
                     ArticleId = articleId
                 })).ToArray());
 
-    private async Task<ArticleCategoryModel?> GetArticleCategoryAsync(int categoryId) =>
+    private async Task<ArticleCategoryModel?> GetCategoryAsync(int categoryId) =>
         await ExecuteSafelyAsync(async () =>
             await Connection.QueryFirstOrDefaultAsync<ArticleCategoryModel>(
                 "SELECT * FROM article_categories WHERE id = @CategoryId", 
@@ -232,6 +256,23 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () => 
             (await Connection.QueryAsync<ArticleCategoryModel>(
                 "SELECT * FROM article_categories")).ToArray());
+    
+    public async Task<ArticleCategoryModel[]?> GetCategoriesWithArticlesAsync()
+    {
+        var categories = await GetCategoriesAsync();
+        if (categories is null)
+            return null;
+
+        foreach (var category in categories)
+        {
+            var articles = await GetArticlesByCategoryAsync(category.Id);
+            if (articles is null)
+                return null;
+            category.Articles = articles;
+        }
+        
+        return categories;
+    }
 
     public async Task<bool> SaveArticleCategoryAsync(ArticleCategoryUploadRequest req) =>
         await ExecuteSafelyAsync(async () =>
@@ -268,4 +309,28 @@ public class ArticlesRepository : RepositoryBase
                     CategoryId = categoryId,
                     Order = order
                 })) != 0;
+
+    public async Task<bool> DeleteCategoryAsync(string categoryName) =>
+        await Connection.ExecuteAsync(
+            "DELETE FROM article_categories WHERE name = @CategoryName", new { CategoryName = categoryName }) != 0;
+
+    public async Task<bool> DeleteArticleCategoryAssignmentAsync(string categoryName, int articleId)
+    {
+        var category = await GetCategoryModelAsync(categoryName);
+        if (category is null)
+            return false;
+
+        return await DeleteArticleCategoryAssignmentAsync(category.Id, articleId);
+    }
+    
+    private async Task<bool> DeleteArticleCategoryAssignmentAsync(int categoryId, int articleId) =>
+        await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteAsync(
+                "DELETE FROM article_category_assignment WHERE article_id = @Id AND category_id = @CategoryId",
+                new
+                {
+                    ArticleId = articleId,
+                    CategoryId = categoryId
+                }) !=
+            0);
 }

@@ -26,6 +26,17 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - /home/strnad-adm/strnadi-db:/var/lib/postgresql/data
+  
+  strnadi-adminer-dev:
+    image: adminer:latest
+    container_name: strnadi-adminer-dev
+    restart: always
+    networks:
+      - strnadi-network-dev
+    ports:
+      - "666:8080"
+    depends_on:
+      - strnadi-db-dev
 
 networks:
   strnadi-network-dev:

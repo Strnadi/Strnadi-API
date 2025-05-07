@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
+using Shared.Logging;
 using Shared.Models.Requests.Articles;
 using Shared.Tools;
 
@@ -25,9 +26,13 @@ public class ArticlesController : ControllerBase
     }
 
     [HttpGet("categories")]
-    public async Task<IActionResult> GetCategories([FromServices] ArticlesRepository articlesRepo)
+    public async Task<IActionResult> GetCategories([FromServices] ArticlesRepository articlesRepo,
+        [FromQuery] bool articles = true)
     {
-        var categories = await articlesRepo.GetCategoriesAsync();
+        var categories = await (articles
+            ? articlesRepo.GetCategoriesWithArticlesAsync()
+            : articlesRepo.GetCategoriesAsync());
+        
         if (categories is null)
             return StatusCode(500, "Failed to get categories");
         
@@ -228,5 +233,54 @@ public class ArticlesController : ControllerBase
         bool success = await articlesRepo.DeleteArticleAttachmentAsync(id, fileName);
         
         return success ? Ok() : StatusCode(500, "Failed to save article");
+    }
+
+    [HttpDelete("categories/{categoryName}")]
+    public async Task<IActionResult> DeleteCategory([FromRoute] string categoryName,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("Only administrators can perform this action");
+
+        bool success = await articlesRepo.DeleteCategoryAsync(categoryName);
+        
+        Logger.Log(success ? 
+            $"Category {categoryName} deleted successfully" :
+            $"Failed to delete category {categoryName}");
+        
+        return success ? Ok() : StatusCode(500, "Failed to delete category");
+    }
+
+    [HttpDelete("{categoryName}/{articleId:int}")]
+    public async Task<IActionResult> DeleteCategory([FromRoute] string categoryName, 
+        [FromRoute] int articleId, 
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("Only administrators can perform this action");
+        
+        bool success = await articlesRepo.DeleteArticleCategoryAssignmentAsync(categoryName, articleId);
+        
+        return success ? Ok() : StatusCode(500, "Failed to delete article from category");
     }
 }
