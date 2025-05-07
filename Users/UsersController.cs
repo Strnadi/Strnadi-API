@@ -94,7 +94,7 @@ public class UsersController : ControllerBase
         if (user is null)
             return Conflict("User not found");
 
-        if (!await usersRepo.IsAdminAsync(emailFromJwt!) || user.Email != emailFromJwt)
+        if (!await usersRepo.IsAdminAsync(emailFromJwt) || user.Email != emailFromJwt)
             user.Email = null!;
 
         return Ok(user);
@@ -122,6 +122,8 @@ public class UsersController : ControllerBase
             return BadRequest("User does not belong to this email or is not an admin");
 
         bool updated = await usersRepo.UpdateAsync(user.Email, model);
+        
+        Logger.Log(updated ? $"User '{user.Email}' has been updated" : $"Failed to update user '{user.Email}'");
 
         return updated ? Ok() : StatusCode(409, "Failed to update user");
     }
@@ -147,6 +149,8 @@ public class UsersController : ControllerBase
             return Unauthorized("User does not belong to this email nor is an administrator");
 
         bool deleted = await usersRepo.DeleteAsync(user.Email);
+        
+        Logger.Log(deleted ? $"User '{user.Email}' has been deleted" : $"Failed to delete user '{user.Email}'");
 
         return deleted ? Ok() : StatusCode(404, "Failed to delete user");
     }
@@ -170,7 +174,7 @@ public class UsersController : ControllerBase
 
         bool verified = await usersRepo.VerifyEmailAsync(userId);
 
-        Logger.Log($"Email verified: '{user.Email}'");
+        Logger.Log(verified ? $"Email verified: '{user.Email}'" : $"Failed to verify email: '{user.Email}'");
 
         return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(verified));
     }
@@ -201,10 +205,12 @@ public class UsersController : ControllerBase
 
         bool changed = await usersRepo.ChangePasswordAsync(user.Email, request.NewPassword);
 
+        Logger.Log(changed
+            ? $"Password changed for email: '{user.Email}'"
+            : $"Failed to change password for email: '{user.Email}'");
+        
         if (!changed)
             return StatusCode(500, "Failed to change password");
-
-        Logger.Log($"Password changed for email: '{user.Email}'");
 
         return Ok();
     }
@@ -219,14 +225,7 @@ public class UsersController : ControllerBase
 
         bool exists = await usersRepo.ExistsAsync(user.Email);
 
-        if (exists)
-        {
-            return Conflict("User already exists");
-        }
-        else
-        {
-            return Ok();
-        }
+        return exists ? Conflict("User already exists") : Ok();
     }
 
     [HttpPost("{userId:int}/upload-profile-photo")]
@@ -245,6 +244,8 @@ public class UsersController : ControllerBase
             return Unauthorized();
 
         bool success = await repo.UploadUserPhotoAsync(userId, req);
+        
+        Logger.Log(success ? $"Uploaded profile photo for user {userId}" : $"Failed to upload profile photo for user {userId}");
 
         return success ? Ok() : Conflict("Failed to save user photo");
     }
