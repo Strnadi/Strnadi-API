@@ -41,7 +41,7 @@ public class ArticlesRepository : RepositoryBase
 
     private async Task<ArticleModel[]?> GetArticlesByCategoryAsync(int categoryId)
     {
-        var assignments = await GetCategoryAssignmentsByArticleAsync(categoryId);
+        var assignments = await GetCategoryAssignmentsByCategoryAsync(categoryId);
         if (assignments is null)
             return null;
 
@@ -256,8 +256,6 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () => 
             (await Connection.QueryAsync<ArticleCategoryModel>(
                 "SELECT * FROM article_categories")).ToArray());
-
-    
     
     public async Task<ArticleCategoryModel[]?> GetCategoriesWithArticlesAsync()
     {

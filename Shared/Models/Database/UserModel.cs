@@ -15,6 +15,7 @@
  */
 
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Shared.Models.Database;
 
@@ -45,5 +46,6 @@ public class UserModel
     public string? Role { get; set; }
 
     [NotMapped]
+    [JsonIgnore]
     public bool IsAdmin => Role == "admin";
 }
