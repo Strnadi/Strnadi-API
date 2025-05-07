@@ -27,7 +27,7 @@ services:
     volumes:
       - /home/strnad-adm/strnadi-db:/var/lib/postgresql/data
   
-  adminer:
+  strnadi-adminer-dev:
     image: adminer:latest
     restart: always
     networks:

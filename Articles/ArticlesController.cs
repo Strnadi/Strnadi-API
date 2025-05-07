@@ -235,7 +235,7 @@ public class ArticlesController : ControllerBase
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
 
-    [HttpDelete("{categoryName}")]
+    [HttpDelete("categories/{categoryName}")]
     public async Task<IActionResult> DeleteCategory([FromRoute] string categoryName,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
