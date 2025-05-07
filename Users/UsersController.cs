@@ -254,14 +254,6 @@ public class UsersController : ControllerBase
         [FromServices] PhotosRepository photosRepo,
         [FromServices] JwtService jwtService)
     {
-        string? jwt = this.GetJwt();
-
-        if (jwt is null)
-            return BadRequest("No JWT provided");
-
-        if (!jwtService.TryValidateToken(jwt, out _))
-            return Unauthorized();
-
         UserProfilePhotoModel? model = await photosRepo.GetUserPhotoAsync(userId);
 
         return model is not null ? Ok(model) : NotFound("User doesnt have profile photo");
