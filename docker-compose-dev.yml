@@ -29,6 +29,7 @@ services:
   
   strnadi-adminer-dev:
     image: adminer:latest
+    container_name: strnadi-adminer-dev
     restart: always
     networks:
       - strnadi-network-dev
