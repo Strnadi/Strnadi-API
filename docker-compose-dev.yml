@@ -33,7 +33,7 @@ services:
     ports:
       - "666:8080"
     depends_on:
-      - strnadi-db
+      - strnadi-db-dev
 
 networks:
   strnadi-network-dev:
