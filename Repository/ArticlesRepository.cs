@@ -313,4 +313,24 @@ public class ArticlesRepository : RepositoryBase
     public async Task<bool> DeleteCategoryAsync(int categoryId) =>
         await Connection.ExecuteAsync(
             "DELETE FROM article_categories WHERE id = @Id", new { Id = categoryId }) != 0;
+
+    public async Task<bool> DeleteArticleCategoryAssignmentAsync(string categoryName, int articleId)
+    {
+        var category = await GetCategoryModelAsync(categoryName);
+        if (category is null)
+            return false;
+
+        return await DeleteArticleCategoryAssignmentAsync(category.Id, articleId);
+    }
+    
+    private async Task<bool> DeleteArticleCategoryAssignmentAsync(int categoryId, int articleId) =>
+        await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteAsync(
+                "DELETE FROM article_category_assignment WHERE article_id = @Id AND category_id = @CategoryId",
+                new
+                {
+                    ArticleId = articleId,
+                    CategoryId = categoryId
+                }) !=
+            0);
 }

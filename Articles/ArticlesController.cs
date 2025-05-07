@@ -260,4 +260,27 @@ public class ArticlesController : ControllerBase
         
         return success ? Ok() : StatusCode(500, "Failed to delete category");
     }
+
+    [HttpDelete("{categoryName}/{articleId:int}")]
+    public async Task<IActionResult> DeleteCategory([FromRoute] string categoryName, 
+        [FromRoute] int articleId, 
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("Only administrators can perform this action");
+        
+        bool success = await articlesRepo.DeleteArticleCategoryAssignmentAsync(categoryName, articleId);
+        
+        return success ? Ok() : StatusCode(500, "Failed to delete article from category");
+    }
 }
