@@ -132,6 +132,8 @@ public class RecordingsController : ControllerBase
 
         bool deleted = await recordingsRepo.DeleteAsync(id, final);
         
+        Logger.Log(deleted ? $"Deleted recording {id}" : $"Failed to delete recording {id}");
+        
         return deleted ? Ok() : Conflict();
     }
 
@@ -155,10 +157,12 @@ public class RecordingsController : ControllerBase
         
         int? recordingId = await recordingsRepo.UploadAsync(user.Id, request);
         
+        Logger.Log(recordingId is not null
+            ? $"Recording {recordingId} has been uploaded"
+            : $"Failed to upload recording {recordingId}");
+        
         if (recordingId is null)
             return StatusCode(409, "Failed to upload recording");
-        
-        Logger.Log($"Recording {recordingId} has been uploaded");
 
         return Ok(recordingId);
     }
@@ -178,11 +182,13 @@ public class RecordingsController : ControllerBase
             return Unauthorized();
         
         int? recordingPartId = await recordingsRepo.UploadPartAsync(request);
+
+        Logger.Log(recordingPartId is null
+            ? $"Recording part {recordingPartId} has been uploaded"
+            : $"Failed to upload recording part {recordingPartId}");
         
         if (recordingPartId is null)
             return StatusCode(500, "Failed to upload recording");
-
-        Logger.Log($"Recording part {recordingPartId} has been uploaded");
         
         return Ok(recordingPartId);
     }
@@ -210,6 +216,8 @@ public class RecordingsController : ControllerBase
             return Unauthorized("User does not belong to this email or is not an admin");
 
         bool updated = await recordingsRepo.UpdateAsync(id, request);
+        
+        Logger.Log(updated ? $"Recording {id} updated successfully" : $"Failed to update recording {id}");
         
         return updated ? Ok() : Conflict();
     }

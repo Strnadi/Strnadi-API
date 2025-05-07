@@ -27,6 +27,9 @@ public class ArticlesRepository : RepositoryBase
             article.Files = (await GetArticleFilesAsync(article.Id))!;
             if (article.Files == null!)
                 return null;
+            article.Categories = (await GetCategoriesByArticleAsync(article.Id))!;
+            if (article.Categories == null!)
+                return null;
         }
         
         return articles;
@@ -36,9 +39,42 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             (await Connection.QueryAsync<ArticleModel>("SELECT * FROM articles")).ToArray());
     
-    private async Task<ArticleAttachmentModel[]?> GetArticleFilesAsync(int id) => 
+    private async Task<ArticleAttachmentModel[]?> GetArticleFilesAsync(int articleId) => 
         await ExecuteSafelyAsync(async () => 
-            (await Connection.QueryAsync<ArticleAttachmentModel>("SELECT * FROM articles WHERE id = @Id", new { Id = id })).ToArray());
+            (await Connection.QueryAsync<ArticleAttachmentModel>("SELECT * FROM article_attachments WHERE article_id = @ArticleId",
+                new
+                {
+                    ArticleId = articleId
+                })).ToArray());
+
+    public async Task<ArticleModel[]?> GetAsync(string categoryName)
+    {
+        var assignments = await GetCategoryAssignmentsByCategoryAsync(categoryName);
+        if (assignments is null)
+            return null;
+
+        var articles = new ArticleModel?[assignments.Length];
+        for (int i = 0; i < articles.Length; i++)
+        {
+            articles[i] = await GetAsync(assignments[i].ArticleId);
+            if (articles[i] is null)
+                return null;
+        }   
+        return articles!;
+    }
+
+    private async Task<ArticleCategoryAssignment[]?> GetCategoryAssignmentsByCategoryAsync(string categoryName) =>
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<ArticleCategoryAssignment>(
+                """
+                SELECT * 
+                FROM article_category_assignment 
+                WHERE category_id = (
+                    SELECT id 
+                    FROM article_categories 
+                    WHERE name = @CategoryName
+                )
+                """, new { CategoryName = categoryName })).ToArray());
 
     public async Task<ArticleModel?> GetAsync(int id)
     {
@@ -49,6 +85,10 @@ public class ArticlesRepository : RepositoryBase
         article.Files = (await GetArticleFilesAsync(id))!;
         if (article.Files == null!)
             return null;
+
+        article.Categories = (await GetCategoriesByArticleAsync(id))!;
+        if (article.Categories == null!)
+            return null;
         
         return article;
     }
@@ -57,6 +97,38 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             await Connection.QueryFirstOrDefaultAsync<ArticleModel>(
                 "SELECT * FROM articles WHERE id = @Id", new { Id = id }));
+
+    private async Task<ArticleCategoryModel[]?> GetCategoriesByArticleAsync(int articleId)
+    {
+        var assignments = await GetCategoryAssignmentsByArticleAsync(articleId);
+        if (assignments is null)
+            return null;
+        
+        var categories = new ArticleCategoryModel[assignments.Length];
+        for (int i = 0; i < categories.Length; i++)
+        {
+            categories[i] = (await GetArticleCategoryAsync(assignments[i].CategoryId))!;
+            if (categories[i] == null!)
+                return null;
+        }
+
+        return categories;
+    }
+
+    private async Task<ArticleCategoryAssignment[]?> GetCategoryAssignmentsByArticleAsync(int articleId) =>
+        await ExecuteSafelyAsync(async () => 
+            (await Connection.QueryAsync<ArticleCategoryAssignment>(
+                "SELECT * FROM article_category_assignment WHERE article_id = @ArticleId ORDER BY \"order\"",
+                new
+                {
+                    ArticleId = articleId
+                })).ToArray());
+
+    private async Task<ArticleCategoryModel?> GetArticleCategoryAsync(int categoryId) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.QueryFirstOrDefaultAsync<ArticleCategoryModel>(
+                "SELECT * FROM article_categories WHERE id = @CategoryId", 
+                new { CategoryId = categoryId }));
 
     public async Task<byte[]> GetAsync(int id, string fileName)
     {
@@ -92,7 +164,7 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteScalarAsync<int>("SELECT * FROM articles WHERE id = @Id", new { Id = id }) != 0);
 
-    public async Task<bool> UpdateArticle(int id, ArticleUpdateRequest req)
+    public async Task<bool> UpdateArticleAsync(int id, ArticleUpdateRequest req)
     {
         if (!await ExistsAsync(id))
             return false;
@@ -120,7 +192,7 @@ public class ArticlesRepository : RepositoryBase
         });
     }
 
-    public async Task<bool> UpdateArticleAttachment(int id, string fileName, string base64)
+    public async Task<bool> UpdateArticleAttachmentAsync(int id, string fileName, string base64)
     {
         if (!await ExistsAsync(id))
             return false;
@@ -146,6 +218,54 @@ public class ArticlesRepository : RepositoryBase
         FileSystemHelper.DeleteArticleAttachment(id, fileName);
         
         return await ExecuteSafelyAsync(async () => 
-            await Connection.ExecuteAsync("DELETE FROM article_attachments WHERE article_id = @Id", new { Id = id }) != 0); 
+            await Connection.ExecuteAsync(
+                "DELETE FROM article_attachments WHERE article_id = @Id AND file_name = @FileName",
+                new
+                {
+                    ArticleId = id,
+                    FileName = fileName
+                }) !=
+            0); 
     }
+
+    public async Task<ArticleCategoryModel[]?> GetCategoriesAsync() =>
+        await ExecuteSafelyAsync(async () => 
+            (await Connection.QueryAsync<ArticleCategoryModel>(
+                "SELECT * FROM article_categories")).ToArray());
+
+    public async Task<bool> SaveArticleCategoryAsync(ArticleCategoryUploadRequest req) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync(
+                """
+                INSERT INTO article_categories(label, name)
+                VALUES (@Label, @Name);
+                """, new { req.Label, req.Name })) != 0;
+
+    private async Task<ArticleCategoryModel?> GetCategoryModelAsync(string categoryName) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.QueryFirstOrDefaultAsync<ArticleCategoryModel>(
+                "SELECT * FROM article_categories WHERE name = @Name", new { Name = categoryName }));
+    
+    public async Task<bool> AssignArticleToCategoryAsync(string categoryName, AssignArticleToCategoryRequest request)
+    {
+        var category = await GetCategoryModelAsync(categoryName);
+        if (category is null)
+            return false;
+
+        return await InsertArticleCategoryAssignmentAsync(request.ArticleId, category.Id, request.Order);
+    }
+
+    private async Task<bool> InsertArticleCategoryAssignmentAsync(int articleId, int categoryId, int order) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync(
+                """
+                INSERT INTO article_category_assignment(article_id, category_id, order)
+                VALUES (@ArticleId, @CategoryId, @Order)
+                """,
+                new
+                {
+                    ArticleId = articleId,
+                    CategoryId = categoryId,
+                    Order = order
+                })) != 0;
 }

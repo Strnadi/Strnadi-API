@@ -128,6 +128,11 @@ public static class FileSystemHelper
         return await File.ReadAllBytesAsync(filePath);
     }
 
+    private static string CreateArticleDirectoryPath(int id)
+    {
+        return $"articles/{id}";
+    }
+
     public static string CreateArticleAttachmentPath(int id, string fileName)
     {
         return $"articles/{id}/{fileName}";
@@ -141,6 +146,9 @@ public static class FileSystemHelper
 
     public static async Task SaveArticleFileAsync(int articleId, string fileName, string base64)
     {
+        if (!Directory.Exists(CreateArticleDirectoryPath(articleId)))
+            Directory.CreateDirectory(CreateArticleDirectoryPath(articleId));
+        
         string path = CreateArticleAttachmentPath(articleId, fileName);
         byte[] content = Convert.FromBase64String(base64);
         await File.WriteAllBytesAsync(path, content);

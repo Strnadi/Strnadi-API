@@ -48,7 +48,7 @@ public class DevicesController : ControllerBase
             ? await devicesRepo.ChangeUserAsync(request.UserId, request.FcmToken)
             : await devicesRepo.AddAsync(request);
 
-        if (success) Logger.Log($"Device for user '{email}' added successfully");
+        Logger.Log(success ? $"Device for user '{email}' added successfully" : $"Failed to add device for user '{email}'");
         
         return success ? Ok() : Conflict();
     }
@@ -74,7 +74,7 @@ public class DevicesController : ControllerBase
             return Conflict("Device doesn't exist");
         
         bool success = await devicesRepo.UpdateAsync(request);
-        if (success) Logger.Log($"Device for user '{email}' updated successfully");
+        Logger.Log(success ? $"Device for user '{email}' updated successfully" : $"Failed to update device for user '{email}'");
         
         return success ? Ok() : StatusCode(500, "Failed to update device");
     }
@@ -100,7 +100,10 @@ public class DevicesController : ControllerBase
             return Conflict("Device doesn't exist");
 
         bool success = await devicesRepo.DeleteAsync(fcmToken);
-        if (success) Logger.Log($"Device for user '{email}' deleted successfully");
+        
+        Logger.Log(success
+            ? $"Device for user '{email}' deleted successfully"
+            : $"Failed to delete device for user '{email}'");
         
         return success ? Ok() : StatusCode(500, "Failed to delete device");
     }

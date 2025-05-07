@@ -14,6 +14,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Shared.Models.Database;
 
 public class UserModel
@@ -42,5 +44,6 @@ public class UserModel
     
     public string? Role { get; set; }
 
+    [NotMapped]
     public bool IsAdmin => Role == "admin";
 }

@@ -13,6 +13,7 @@ services:
       - strnadi-db-dev
     volumes:
       - /home/strnadi-adm/strnadi-rev:/app/recordings
+      - /home/strnadi-adm/strnadi-art:/app/articles
   
   strnadi-db-dev:
     image: postgres

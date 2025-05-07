@@ -74,6 +74,9 @@ public class AuthController : ControllerBase
             return Conflict("User already exists");
         
         string jwt = jwtService.GenerateToken(email);
+
+        Logger.Log($"User '{email}' signed up successfully via Google");
+        
         return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
     }
 
@@ -150,7 +153,7 @@ public class AuthController : ControllerBase
         else 
             await repo.VerifyEmailAsync(request.Email);
 
-        Logger.Log($"User '{request.Email}' signed in successfully");
+        Logger.Log($"User '{request.Email}' signed up successfully");
         return Ok(newJwt);
     }
 

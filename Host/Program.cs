@@ -23,6 +23,7 @@ using Repository;
 using Shared.Logging;
 using Users;
 using Utils;
+using Articles;
 
 namespace Host;
 
@@ -52,7 +53,8 @@ class Program
             .AddApplicationPart(typeof(RecordingsController).Assembly)
             .AddApplicationPart(typeof(DevicesController).Assembly)
             .AddApplicationPart(typeof(UtilsController).Assembly)
-            .AddApplicationPart(typeof(PhotosController).Assembly);
+            .AddApplicationPart(typeof(PhotosController).Assembly)
+            .AddApplicationPart(typeof(ArticlesController).Assembly);
         services.AddRepositories();
         services.AddEmailServices();
         services.AddAuthServices();
