@@ -30,6 +30,8 @@ services:
   adminer:
     image: adminer:latest
     restart: always
+    networks:
+      - strnadi-network-dev
     ports:
       - "666:8080"
     depends_on:
