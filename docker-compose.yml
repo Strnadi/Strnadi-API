@@ -6,14 +6,11 @@ services:
     networks:
       - strnadi-network
     build: 
-      dockerfile: /home/adm-strnad/StrnadiPROD/Strnadi-API/Host/Dockerfile
+      dockerfile: /home/stasik/Strnadi-API/Host/Dockerfile
     ports:
-      - "8080:8080"
+      - "12001:8080"
     depends_on:
       - strnadi-db
-    volumes:
-      - /home/adm-strnad/StrnadiPROD/Strnadi-rec:/app/recordings
-      - /home/adm-strnad/StrnadiPROD/Strnadi-art:/app/articles
     
   strnadi-db:
     image: postgres
