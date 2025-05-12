@@ -11,6 +11,9 @@ services:
       - "12001:8080"
     depends_on:
       - strnadi-db
+    volumes:
+      - /home/adm-strnad/StrnadiPROD/Strnadi-rec:/app/recordings
+      - /home/adm-strnad/StrnadiPROD/Strnadi-art:/app/articles
     
   strnadi-db:
     image: postgres
