@@ -76,7 +76,7 @@ public class UsersController : ControllerBase
     {
         string? jwt = this.GetJwt();
         UserModel? user;
-        if (jwt is null)
+        if (string.IsNullOrEmpty(jwt))
         {
             user = await usersRepo.GetUserByIdAsync(userId);
             if (user is null)
