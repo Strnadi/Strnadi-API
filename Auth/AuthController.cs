@@ -60,6 +60,26 @@ public class AuthController : ControllerBase
         return await usersRepo.IsEmailVerifiedAsync(email) ? Ok() : StatusCode(403);
     }
 
+    [HttpGet("renew-jwt")]
+    public async Task<IActionResult> RenewJwt([FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo) 
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        string? email = jwtService.GetEmail(jwt);
+        if (email is null)
+            return BadRequest("Invalid JWT provided");
+        
+        if (!await usersRepo.ExistsAsync(email))
+            return Conflict("User does not exists");
+
+        string newJwt = jwtService.GenerateToken(email);
+        return Ok(newJwt);
+    }
+
     [HttpPost("sign-up-google")]
     public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
