@@ -41,11 +41,11 @@ public class LinkGenerator
 
     public string GenerateEmailVerificationRedirectionLink(bool success)
     {
-        return $"{_webRootPath}/ucet/email-{(success ? "" : "ne")}verifikovan";
+        return $"{_webRootPath}/ucet/email-{(success ? "" : "ne")}overen";
     }
 
     public string GeneratePasswordResetLink(int userId, string jwt)
     {
-        return $"{_webRootPath}/ucet/reset-hesla?token={jwt}&userId={userId}";
+        return $"{_webRootPath}/ucet/obnova-hesla?token={jwt}&userId={userId}";
     }
 }
