@@ -32,11 +32,18 @@ public class UsersRepository : RepositoryBase
     }
     
     public async Task<bool> ExistsAsync(string email) =>
+        await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM users WHERE email = @Email", 
+                new { Email = email }
+                )) != 0;
+
+    public async Task<bool> ExistsAsync(int userId) =>
         await ExecuteSafelyAsync(async () =>
-        {
-            const string sql = "SELECT COUNT(*) FROM users WHERE email = @Email";
-            return await Connection.ExecuteScalarAsync<int>(sql, new { Email = email }) != 0;
-        });
+            await Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM users WHERE id = @Id",
+                new { Id = userId }
+            )) != 0;
 
     public async Task<bool> AuthorizeAsync(string email, string password) =>
         await ExecuteSafelyAsync(async () =>

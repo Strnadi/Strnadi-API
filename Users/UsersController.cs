@@ -76,7 +76,7 @@ public class UsersController : ControllerBase
     {
         string? jwt = this.GetJwt();
         UserModel? user;
-        if (jwt is null)
+        if (string.IsNullOrEmpty(jwt))
         {
             user = await usersRepo.GetUserByIdAsync(userId);
             if (user is null)
@@ -216,16 +216,20 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("exists")]
-    public async Task<IActionResult> Exists([FromQuery] int userId,
+    public async Task<IActionResult> Exists([FromQuery] int? userId,
+        [FromQuery] string? email,
         [FromServices] UsersRepository usersRepo)
     {
-        var user = await usersRepo.GetUserByIdAsync(userId);
-        if (user is null)
-            return NotFound("User not found");
+        bool exists;
 
-        bool exists = await usersRepo.ExistsAsync(user.Email);
-
-        return exists ? Conflict("User already exists") : Ok();
+        if (email is not null)
+            exists = await usersRepo.ExistsAsync(email);
+        else if (userId is not null)
+            exists = await usersRepo.ExistsAsync(userId.Value);
+        else
+            return BadRequest("Email and userId was not provided");
+        
+        return exists ? Conflict("Exists") : Ok();
     }
 
     [HttpPost("{userId:int}/upload-profile-photo")]
