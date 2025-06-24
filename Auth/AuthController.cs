@@ -24,6 +24,12 @@ using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System.Security.Cryptography;
+using System.Security.Claims;
 
 namespace Auth;
 
@@ -37,6 +43,7 @@ public class AuthController : ControllerBase
     private string _iosId => _configuration["Auth:Google:Ios"] ?? throw new NullReferenceException();
     private string _webId => _configuration["Auth:Google:Web"] ?? throw new NullReferenceException();
     private string _webSecret => _configuration["Auth:Google:WebSecret"] ?? throw new NullReferenceException();
+    private string _appleClientId => _configuration["Auth:Apple:ClientId"] ?? throw new NullReferenceException();
 
     public AuthController(IConfiguration configuration)
     {
@@ -124,6 +131,48 @@ public class AuthController : ControllerBase
         Logger.Log($"User '{email}' logged in successfully via google'");
         
         return Ok(jwt);
+    }
+
+    [HttpPost("apple")]
+    public async Task<IActionResult> LoginViaApple([FromBody] AppleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        var jwtToken = await ValidateAppleIdTokenAsync(req.IdToken);
+        if (jwtToken is null)
+            return Unauthorized("Invalid ID token");
+
+        string email = jwtToken.Claims.First(c => c.Type == "email").Value;
+        bool exists = await repo.ExistsAsync(email);
+
+        if (!exists)
+        {
+            // Treat as first‑time Apple sign‑in (sign‑up)
+            string jwt = jwtService.GenerateToken(email);
+            Logger.Log($"User '{email}' sign up via Apple jwt sent successfully");
+
+            return Ok(new
+            {
+                jwt,
+                firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "given_name")?.Value,
+                lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "family_name")?.Value,
+                email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
+            });
+        }
+        else
+        {
+            UserModel user = (await repo.GetUserByEmailAsync(email))!;
+
+            if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+            {
+                user.IsEmailVerified = true;
+            }
+
+            string jwt = jwtService.GenerateToken(email);
+            Logger.Log($"User '{email}' logged in successfully via Apple");
+
+            return Ok(jwt);
+        }
     }
 
     [HttpPost("login")]
@@ -238,4 +287,37 @@ public class AuthController : ControllerBase
             return null;
         }
     }
+
+    private async Task<JwtSecurityToken?> ValidateAppleIdTokenAsync(string idToken)
+    {
+        try
+        {
+            // Fetch Apple's OpenID configuration (keys are rotated; cache in production)
+            var configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                "https://appleid.apple.com/.well-known/openid-configuration",
+                new OpenIdConnectConfigurationRetriever());
+
+            var oidcConfig = await configurationManager.GetConfigurationAsync();
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidIssuer         = "https://appleid.apple.com",
+                ValidAudience       = _appleClientId,
+                IssuerSigningKeys   = oidcConfig.SigningKeys,
+                ValidateLifetime    = true
+            };
+
+            var handler = new JwtSecurityTokenHandler();
+            handler.InboundClaimTypeMap.Clear(); // keep original claim names
+            _ = handler.ValidateToken(idToken, validationParameters, out SecurityToken validatedToken);
+
+            return (JwtSecurityToken)validatedToken;
+        }
+        catch (Exception e)
+        {
+            Logger.Log($"Failed to validate Apple ID token: {e.Message}", LogLevel.Error);
+            return null;
+        }
+    }
 }
+
+public record AppleAuthRequest(string IdToken);
