@@ -140,7 +140,11 @@ public class AuthController : ControllerBase
     {
         var jwtToken = await ValidateAppleIdTokenAsync(req.IdToken);
         if (jwtToken is null)
-            return Unauthorized("Invalid ID token");
+        {
+            Logger.Log($"The ID token is : {req.IdToken}", LogLevel.Information);
+            return Unauthorized("Invalid ID token"); 
+        }
+            
 
         string email = jwtToken.Claims.First(c => c.Type == "email").Value;
         bool exists = await repo.ExistsAsync(email);
