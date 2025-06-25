@@ -144,14 +144,19 @@ public class AuthController : ControllerBase
         {
             return Unauthorized("Invalid ID token"); 
         }
-        
 
-        string appleId = jwtToken.Claims.First(c => c.Type == "userIdentifer").Value;
+
+        string? appleId = req.userIdentifier;
+        if (appleId is null) return BadRequest("UserIdentifier is null");
         bool exists = await repo.ExistsAppleAsync(appleId);
-        string email = jwtToken.Claims.First(c => c.Type == "email").Value;
+        string? email = req.email;
         
         if (!exists)
         {
+            if (email is null || email == "")
+            {
+                return BadRequest("Email is required for first-time Apple sign-in");
+            }
             // Treat as first‑time Apple sign‑in (sign‑up)
             string jwt = jwtService.GenerateToken(email);
             Logger.Log($"User '{email}' sign up via Apple jwt sent successfully");
@@ -342,5 +347,3 @@ public class AuthController : ControllerBase
         }
     }
 }
-
-public record AppleAuthRequest(string IdToken);
