@@ -146,9 +146,10 @@ public class AuthController : ControllerBase
         }
             
 
+        string appleId = jwtToken.Claims.First(c => c.Type == "userIdentifer").Value;
+        bool exists = await repo.ExistsAppleAsync(appleId);
         string email = jwtToken.Claims.First(c => c.Type == "email").Value;
-        bool exists = await repo.ExistsAsync(email);
-
+        
         if (!exists)
         {
             // Treat as first‑time Apple sign‑in (sign‑up)
@@ -161,21 +162,39 @@ public class AuthController : ControllerBase
                 firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "given_name")?.Value,
                 lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "family_name")?.Value,
                 email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
+                appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "userIdentifier")?.Value
             });
         }
         else
         {
-            UserModel user = (await repo.GetUserByEmailAsync(email))!;
-
-            if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+            if (email == "")
             {
-                user.IsEmailVerified = true;
+                UserModel user = (await repo.GetUserByAppleIdAsync(appleId))!;
+
+                if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+                {
+                    user.IsEmailVerified = true;
+                }
+
+                string jwt = jwtService.GenerateToken(user.Email);
+                Logger.Log($"User '{user.Email}' logged in successfully via Apple");
+
+                return Ok(jwt);
             }
+            else
+            {
+                UserModel user = (await repo.GetUserByEmailAsync(email))!;
 
-            string jwt = jwtService.GenerateToken(email);
-            Logger.Log($"User '{email}' logged in successfully via Apple");
-
-            return Ok(jwt);
+                repo.AddAppleIdAsync(email, appleId);
+                
+                if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+                {
+                    user.IsEmailVerified = true;
+                }
+                string jwt = jwtService.GenerateToken(user.Email);
+                Logger.Log($"User '{user.Email}' logged in successfully via Apple");
+                return Ok(jwt);
+            }
         }
     }
 
