@@ -139,12 +139,12 @@ public class AuthController : ControllerBase
         [FromServices] UsersRepository repo)
     {
         var jwtToken = await ValidateAppleIdTokenAsync(req.IdToken);
+        Logger.Log($"The ID token is : {req.IdToken}", LogLevel.Information);
         if (jwtToken is null)
         {
-            Logger.Log($"The ID token is : {req.IdToken}", LogLevel.Information);
             return Unauthorized("Invalid ID token"); 
         }
-            
+        
 
         string appleId = jwtToken.Claims.First(c => c.Type == "userIdentifer").Value;
         bool exists = await repo.ExistsAppleAsync(appleId);
