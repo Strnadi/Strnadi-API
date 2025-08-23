@@ -58,6 +58,19 @@ public abstract class RepositoryBase : IDisposable
             Logger.Log("Failed to perform repository action: " + e.Message, LogLevel.Error);
         }
     }
+
+    protected async Task<T?> ExecuteSafelyAsync<T>(Task<T> task)
+    {
+        try
+        {
+            return await task;
+        }
+        catch (Exception e)
+        {
+            Logger.Log($"Failed to perform repository action: {e}", LogLevel.Error);
+            return default;
+        }
+    }
     
     protected async Task<T?> ExecuteSafelyAsync<T>(Func<Task<T>> action)
     {
