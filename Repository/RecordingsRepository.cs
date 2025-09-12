@@ -97,7 +97,7 @@ public class RecordingsRepository : RepositoryBase
             if (!sound)
                 return parts;
 
-            var partsArray = parts as RecordingPartModel[] ?? parts!.ToArray();
+            var partsArray = parts as RecordingPartModel[] ?? parts.ToArray();
 
             foreach (var part in partsArray)
             {
@@ -185,7 +185,7 @@ public class RecordingsRepository : RepositoryBase
 
     private async Task UpdateFilePathAsync(int recordingId,
         string filePath) =>
-        await ExecuteSafelyAsync(async () => await Connection.ExecuteAsync(
+        await ExecuteSafelyAsync(Connection.ExecuteAsync(
             "UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id",
             new
             {

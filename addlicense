@@ -1,4 +1,6 @@
-/*
+#!/bin/bash
+
+LICENSE_HEADER="/*
  * Copyright (C) 2024 Stanislav Motsnyi
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,14 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-namespace Shared.Models.Database.Articles;
+ */"
 
-public class ArticleCategoryModel
-{
-    public int Id { get; set; }
+# Find all .dart files and add the header if not already present
+find . -type f -name "*.cs" | while read file; do
+  if ! grep -q "GNU General Public License" "$file"; then
+    echo "$LICENSE_HEADER" | cat - "$file" > temp && mv temp "$file"
+    echo "Added license to: $file"
+  fi
+done
 
-    public string Label { get; set; }
-
-    public string Name { get; set; }
-}
+echo "License added to all Dart files."
