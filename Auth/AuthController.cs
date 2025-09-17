@@ -25,6 +25,11 @@ using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
+using System.Text.Json.Serialization;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Auth;
 
@@ -61,22 +66,68 @@ public class AuthController : ControllerBase
         return await usersRepo.IsEmailVerifiedAsync(email) ? Ok() : StatusCode(403);
     }
 
-    [HttpPost("apple")]
+        [HttpPost("apple")]
     public async Task<IActionResult> SignInViaApple([FromForm] AppleCallbackRequest req,
         [FromServices] UsersRepository usersRepo,
         [FromServices] JwtService jwtService)
     {
-        if (req.User is not null)
+        // TODO: Change req.IdentityToken to correct property name from AppleCallbackRequest
+        var payload = await ValidateAppleIdTokenAsync(req.IdentityToken);
+        if (payload == null)
+            return Unauthorized("Invalid Apple ID token");
+        
+        // Extract user data from JWT
+        string? email = payload.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+        string? subject = payload.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+        
+        if (string.IsNullOrEmpty(email))
+            return BadRequest("No email in Apple token");
+        
+        // Check if user exists
+        bool userExists = await usersRepo.ExistsAsync(email);
+        
+        if (!userExists)
         {
-            AppleUserInfo? appleUser = null;
+            // Create new user
+            var signUpRequest = new SignUpRequest { 
+                // TODO: Fix Email property conflict
+                Email = email 
+            };
+            bool created = await usersRepo.CreateUserAsync(signUpRequest, false);
+            
+            if (!created)
+                return StatusCode(500, "Failed to create user");
+            
+            // Save user name if provided (only on first sign-in)
             if (!string.IsNullOrEmpty(req.User))
             {
-                appleUser = JsonSerializer.Deserialize<AppleUserInfo>(req.User);
+                try
+                {
+                    var appleUserInfo = JsonSerializer.Deserialize<AppleUserInfo>(req.User);
+                    // TODO: Save user name to database
+                    // await usersRepo.UpdateUserNameAsync(email, appleUserInfo.Name);
+                }
+                catch (Exception e)
+                {
+                    Logger.Log($"Failed to parse Apple user info: {e.Message}", LogLevel.Warning);
+                }
             }
-            if (appleUser is null) return StatusCode(500, "Apple authorization failed");
         }
+        
+        // Verify email (Apple guarantees valid emails)
+        await usersRepo.VerifyEmailAsync(email);
+        
+        string jwt = jwtService.GenerateToken(email);
+        Logger.Log($"User '{email}' signed in via Apple");
+        
+        return Ok(jwt);
+    }
 
-        throw new NotImplementedException();
+    private async Task<AppleKeysResponse?> GetApplePublicKeys()
+    {
+        using var client = new HttpClient();
+        var response = await client.GetStringAsync("https://appleid.apple.com/auth/keys");
+        return JsonSerializer.Deserialize<AppleKeysResponse>(response);
     }
     
     [HttpPost("sign-up-google")]
@@ -233,5 +284,115 @@ public class AuthController : ControllerBase
             Logger.Log($"Failed to validate google id token: {e.Message}", LogLevel.Error);
             return null;
         }
+    }
+
+    private async Task<JwtSecurityToken?> ValidateAppleIdTokenAsync(string idToken)
+    {
+        try
+        {
+            // 1. Get Apple's public keys
+            var appleKeys = await GetApplePublicKeysAsync();
+            
+            // 2. Parse token without validation first
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadJwtToken(idToken);
+            
+            // 3. Find the correct key by kid (Key ID)
+            var key = appleKeys.Keys.FirstOrDefault(k => k.Kid == jsonToken.Header.Kid);
+            if (key == null) 
+            {
+                Logger.Log("Apple key not found for kid: " + jsonToken.Header.Kid, LogLevel.Error);
+                return null;
+            }
+            
+            // 4. Create RSA key from Apple JWK
+            var rsa = RSA.Create();
+            rsa.ImportParameters(new RSAParameters
+            {
+                Modulus = Base64UrlEncoder.DecodeBytes(key.N),
+                Exponent = Base64UrlEncoder.DecodeBytes(key.E)
+            });
+            
+            // 5. Setup validation parameters
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = "https://appleid.apple.com",
+                ValidateAudience = true,
+                // TODO: Replace with your actual Bundle ID from Apple Developer Console
+                ValidAudience = "com.yourcompany.yourapp", // TODO: Your Bundle ID here
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(5),
+                IssuerSigningKey = new RsaSecurityKey(rsa),
+                ValidateIssuerSigningKey = true
+            };
+            
+            // 6. Validate the token
+            handler.ValidateToken(idToken, validationParameters, out SecurityToken validatedToken);
+            
+            return (JwtSecurityToken)validatedToken;
+        }
+        catch (Exception e)
+        {
+            Logger.Log($"Apple token validation failed: {e.Message}", LogLevel.Error);
+            return null;
+        }
+    }
+
+    private async Task<AppleKeysResponse> GetApplePublicKeysAsync()
+    {
+        using var client = new HttpClient();
+        var response = await client.GetStringAsync("https://appleid.apple.com/auth/keys");
+        return JsonSerializer.Deserialize<AppleKeysResponse>(response, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        })!;
+    }
+
+    // Apple Keys Response Models
+    public class AppleKeysResponse
+    {
+        [JsonPropertyName("keys")]
+        public AppleKey[] Keys { get; set; } = Array.Empty<AppleKey>();
+    }
+
+    public class AppleKey
+    {
+        [JsonPropertyName("kty")]
+        public string Kty { get; set; } = string.Empty;
+        
+        [JsonPropertyName("kid")]
+        public string Kid { get; set; } = string.Empty;
+        
+        [JsonPropertyName("use")]
+        public string Use { get; set; } = string.Empty;
+        
+        [JsonPropertyName("alg")]
+        public string Alg { get; set; } = string.Empty;
+        
+        [JsonPropertyName("n")]
+        public string N { get; set; } = string.Empty;
+        
+        [JsonPropertyName("e")]
+        public string E { get; set; } = string.Empty;
+    }
+
+    // Apple User Info Model (comes in 'user' field only on first sign-in)
+    public class AppleUserInfo
+    {
+        [JsonPropertyName("name")]
+        public AppleUserName? Name { get; set; }
+        
+        [JsonPropertyName("email")]
+        public string? Email { get; set; }
+    }
+
+    public class AppleUserName
+    {
+        [JsonPropertyName("firstName")]
+        public string? FirstName { get; set; }
+        
+        [JsonPropertyName("lastName")]
+        public string? LastName { get; set; }
     }
 }
