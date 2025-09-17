@@ -100,7 +100,7 @@ public class UsersController : ControllerBase
         Console.WriteLine($"Debil jwt email: {emailFromJwt}");
         Console.WriteLine($"Debil user email: {user.Email}");
 
-        if (!await usersRepo.IsAdminAsync(emailFromJwt) || user.Email != emailFromJwt)
+        if (!await usersRepo.IsAdminAsync(emailFromJwt) && user.Email != emailFromJwt)
         {
             Console.WriteLine("Debil not admin and not debil email");
             user.Email = null!;
