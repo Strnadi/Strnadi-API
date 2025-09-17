@@ -98,6 +98,7 @@ public class UsersController : ControllerBase
             return Conflict("User not found");
         
         Console.WriteLine($"Debil jwt email: {emailFromJwt}");
+        Console.WriteLine($"Debil user email: {user.Email}");
 
         if (!await usersRepo.IsAdminAsync(emailFromJwt) || user.Email != emailFromJwt)
         {
