@@ -145,6 +145,24 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid ID token"); 
         }
 
+        string? authJwt = this.GetJwt();
+        if (authJwt is not null)
+        {
+            if (!jwtService.TryValidateToken(authJwt, out _))
+                return Unauthorized("Invalid auth JWT");
+            
+            string? userEmail = jwtService.GetEmail(authJwt);
+            if (userEmail is null) 
+                return BadRequest("Email is null in auth JWT");
+
+            if (req.userIdentifier is null)
+                return BadRequest("UserIdentifier is null");
+            
+            await repo.AddAppleIdAsync(email: userEmail, appleId:req.userIdentifier);
+            
+            return Ok();
+        }
+
 
         string? appleId = req.userIdentifier;
         if (appleId is null) return BadRequest("UserIdentifier is null");
@@ -184,7 +202,7 @@ public class AuthController : ControllerBase
                 string jwt = jwtService.GenerateToken(user.Email);
                 Logger.Log($"User '{user.Email}' logged in successfully via Apple");
 
-                return Ok(jwt);
+                return Ok(new {jwt});
             }
             else
             {
@@ -198,7 +216,7 @@ public class AuthController : ControllerBase
                 }
                 string jwt = jwtService.GenerateToken(user.Email);
                 Logger.Log($"User '{user.Email}' logged in successfully via Apple");
-                return Ok(jwt);
+                return Ok(new {jwt});
             }
         }
     }
