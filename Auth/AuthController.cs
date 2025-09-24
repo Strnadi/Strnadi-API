@@ -45,6 +45,14 @@ public class AuthController : ControllerBase
     private string _webSecret => _configuration["Auth:Google:WebSecret"] ?? throw new NullReferenceException();
     private string _appleClientId => _configuration["Auth:Apple:ClientId"] ?? throw new NullReferenceException();
 
+    // === Apple (same style) ===
+    private string _appleTeamId        => _configuration["Auth:Apple:TeamId"]         ?? throw new NullReferenceException();
+    private string _appleKeyId         => _configuration["Auth:Apple:KeyId"]          ?? throw new NullReferenceException();
+    private string _appleClientIdWeb   => _configuration["Auth:Apple:ClientIdWeb"]    ?? throw new NullReferenceException(); // Services ID (web)
+    private string _appleClientIdIos   => _configuration["Auth:Apple:ClientIdIos"]    ?? throw new NullReferenceException(); // iOS bundle ID (if you use mobile)
+    private string _appleRedirectUri   => _configuration["Auth:Apple:RedirectUriWeb"] ?? throw new NullReferenceException(); // must match Apple config
+    private string _appleP8Pem         => _configuration["Auth:Apple:P8PrivateKey"]   ?? throw new NullReferenceException(); // PKCS#8 PEM CONTENT
+    
     public AuthController(IConfiguration configuration)
     {
         _configuration = configuration;
@@ -134,116 +142,116 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("apple")]
-public async Task<IActionResult> LoginViaApple(
-    [FromBody] AppleAuthRequest req,
-    [FromServices] JwtService jwtService,
-    [FromServices] UsersRepository repo,
-    [FromServices] AppleAuthOptions appleOptions,
-    [FromServices] IHttpClientFactory httpClientFactory)
-{
-    var http = httpClientFactory.CreateClient();
-
-    // 1) Obtain a verified ID token (prefer: exchange 'code' for web)
-    string? idToken = req.IdToken;
-
-    if (!string.IsNullOrEmpty(req.Code))
+    public async Task<IActionResult> LoginViaApple(
+        [FromBody] AppleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo,
+        [FromServices] AppleAuthOptions appleOptions,
+        [FromServices] IHttpClientFactory httpClientFactory)
     {
-        // Web popup flow
-        var tokenResp = await AppleAuth.ExchangeCodeAsync(
-            http,
-            appleOptions,
-            req.Code!,
-            appleOptions.ClientIdWeb,
-            appleOptions.RedirectUriWeb);
+        var http = httpClientFactory.CreateClient();
 
-        idToken = tokenResp.id_token ?? idToken;
-        if (string.IsNullOrEmpty(idToken))
-            return Unauthorized("Apple did not return an id_token");
-    }
+        // 1) Obtain a verified ID token (prefer: exchange 'code' for web)
+        string? idToken = req.IdToken;
 
-    if (string.IsNullOrEmpty(idToken))
-        return BadRequest("Missing 'code' or 'id_token'");
-
-    // 2) Validate ID token (choose audience based on flow; here prefer web)
-    // If you want to auto-detect audience by trying both, you can catch and retry.
-    JwtSecurityToken jwtToken;
-    try
-    {
-        jwtToken = await AppleAuth.ValidateIdTokenAsync(idToken!, appleOptions.ClientIdWeb);
-    }
-    catch
-    {
-        // fallback for mobile-originated id_tokens
-        jwtToken = await AppleAuth.ValidateIdTokenAsync(idToken!, appleOptions.ClientIdIos);
-    }
-
-    // Claims
-    string appleSub = jwtToken.Claims.First(c => c.Type == "sub").Value;
-    string? emailFromToken = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
-    var emailVerified = jwtToken.Claims.FirstOrDefault(c => c.Type == "email_verified")?.Value;
-    bool isEmailVerified = emailVerified == "true" || emailVerified == "1" || emailVerified?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
-
-    // 3) If user is logged in with your JWT, link Apple to existing account
-    string? authJwt = this.GetJwt();
-    if (!string.IsNullOrEmpty(authJwt))
-    {
-        if (!jwtService.TryValidateToken(authJwt, out _))
-            return Unauthorized("Invalid auth JWT");
-
-        string? userEmail = jwtService.GetEmail(authJwt);
-        if (string.IsNullOrEmpty(userEmail))
-            return BadRequest("Email is null in auth JWT");
-
-        await repo.AddAppleIdAsync(email: userEmail, appleId: appleSub);
-        return Ok();
-    }
-
-    // 4) Sign-in / Sign-up by Apple
-    bool appleExists = await repo.ExistsAppleAsync(appleSub);
-
-    if (!appleExists)
-    {
-        // First time: need a verified email (Apple may not resend later).
-        var email = isEmailVerified ? emailFromToken : null;
-        if (string.IsNullOrWhiteSpace(email))
-            return BadRequest("Email is required & must be verified for first-time Apple sign-in");
-
-        string jwt = jwtService.GenerateToken(email);
-        if (await repo.ExistsAsync(email))
+        if (!string.IsNullOrEmpty(req.Code))
         {
-            await repo.AddAppleIdAsync(email, appleSub);
-            return Ok(new
+            // Web popup flow
+            var tokenResp = await AppleAuth.ExchangeCodeAsync(
+                http,
+                appleOptions,
+                req.Code!,
+                appleOptions.ClientIdWeb,
+                appleOptions.RedirectUriWeb);
+
+            idToken = tokenResp.id_token ?? idToken;
+            if (string.IsNullOrEmpty(idToken))
+                return Unauthorized("Apple did not return an id_token");
+        }
+
+        if (string.IsNullOrEmpty(idToken))
+            return BadRequest("Missing 'code' or 'id_token'");
+
+        // 2) Validate ID token (choose audience based on flow; here prefer web)
+        // If you want to auto-detect audience by trying both, you can catch and retry.
+        JwtSecurityToken jwtToken;
+        try
+        {
+            jwtToken = await AppleAuth.ValidateIdTokenAsync(idToken!, appleOptions.ClientIdWeb);
+        }
+        catch
+        {
+            // fallback for mobile-originated id_tokens
+            jwtToken = await AppleAuth.ValidateIdTokenAsync(idToken!, appleOptions.ClientIdIos);
+        }
+
+        // Claims
+        string appleSub = jwtToken.Claims.First(c => c.Type == "sub").Value;
+        string? emailFromToken = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+        var emailVerified = jwtToken.Claims.FirstOrDefault(c => c.Type == "email_verified")?.Value;
+        bool isEmailVerified = emailVerified == "true" || emailVerified == "1" || emailVerified?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
+        // 3) If user is logged in with your JWT, link Apple to existing account
+        string? authJwt = this.GetJwt();
+        if (!string.IsNullOrEmpty(authJwt))
+        {
+            if (!jwtService.TryValidateToken(authJwt, out _))
+                return Unauthorized("Invalid auth JWT");
+
+            string? userEmail = jwtService.GetEmail(authJwt);
+            if (string.IsNullOrEmpty(userEmail))
+                return BadRequest("Email is null in auth JWT");
+
+            await repo.AddAppleIdAsync(email: userEmail, appleId: appleSub);
+            return Ok();
+        }
+
+        // 4) Sign-in / Sign-up by Apple
+        bool appleExists = await repo.ExistsAppleAsync(appleSub);
+
+        if (!appleExists)
+        {
+            // First time: need a verified email (Apple may not resend later).
+            var email = isEmailVerified ? emailFromToken : null;
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest("Email is required & must be verified for first-time Apple sign-in");
+
+            string jwt = jwtService.GenerateToken(email);
+            if (await repo.ExistsAsync(email))
             {
-                jwt,
-                exists = true,
-                email
-                // name: parse from req.UserJson if you want, but treat as non-verified profile info
-            });
+                await repo.AddAppleIdAsync(email, appleSub);
+                return Ok(new
+                {
+                    jwt,
+                    exists = true,
+                    email
+                    // name: parse from req.UserJson if you want, but treat as non-verified profile info
+                });
+            }
+            else
+            {
+                // Let the client finish onboarding, then persist Apple id once account is created
+                return Ok(new
+                {
+                    jwt,
+                    exists = false,
+                    email
+                });
+            }
         }
         else
         {
-            // Let the client finish onboarding, then persist Apple id once account is created
-            return Ok(new
-            {
-                jwt,
-                exists = false,
-                email
-            });
+            // Returning user via Apple
+            var user = await repo.GetUserByAppleIdAsync(appleSub);
+            if (user is null) return Unauthorized("Linked account not found");
+
+            if (!user.IsEmailVerified.GetValueOrDefault())
+                user.IsEmailVerified = true;
+
+            string jwt = jwtService.GenerateToken(user.Email);
+            return Ok(new { jwt });
         }
     }
-    else
-    {
-        // Returning user via Apple
-        var user = await repo.GetUserByAppleIdAsync(appleSub);
-        if (user is null) return Unauthorized("Linked account not found");
-
-        if (!user.IsEmailVerified.GetValueOrDefault())
-            user.IsEmailVerified = true;
-
-        string jwt = jwtService.GenerateToken(user.Email);
-        return Ok(new { jwt });
-    }
-}
 
     [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
