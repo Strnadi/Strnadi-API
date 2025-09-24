@@ -52,18 +52,21 @@ public static class AppleAuth
         return handler.WriteToken(jwt);
     }
 
-    public static async Task<AppleTokenResponse> ExchangeCodeAsync(HttpClient http, AppleAuthOptions opt, string code, string clientId, string redirectUri)
+    public static async Task<AppleTokenResponse> ExchangeCodeAsync(HttpClient http, AppleAuthOptions opt, string code, string clientId, string? redirectUri)
     {
         var clientSecret = await CreateClientSecretAsync(opt);
-
-        var body = new FormUrlEncodedContent(new[]
+        var pairs = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string,string>("grant_type","authorization_code"),
-            new KeyValuePair<string,string>("code", code),
-            new KeyValuePair<string,string>("client_id", clientId),
-            new KeyValuePair<string,string>("client_secret", clientSecret),
-            new KeyValuePair<string,string>("redirect_uri", redirectUri),
-        });
+            new("grant_type","authorization_code"),
+            new("code", code),
+            new("client_id", clientId),
+            new("client_secret", clientSecret),
+        };
+        if (!string.IsNullOrEmpty(redirectUri))
+        {
+            pairs.Add(new KeyValuePair<string, string>("redirect_uri", redirectUri!));
+        }
+        var body = new FormUrlEncodedContent(pairs);
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "https://appleid.apple.com/auth/token") { Content = body };
         using var res = await http.SendAsync(req);

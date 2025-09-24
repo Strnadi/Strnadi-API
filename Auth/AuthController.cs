@@ -157,12 +157,27 @@ public class AuthController : ControllerBase
         if (!string.IsNullOrEmpty(req.Code))
         {
             // Web popup flow
-            var tokenResp = await AppleAuth.ExchangeCodeAsync(
-                http,
-                appleOptions,
-                req.Code!,
-                appleOptions.ClientIdWeb,
-                appleOptions.RedirectUriWeb);
+            AppleTokenResponse tokenResp;
+            try
+            {
+                tokenResp = await AppleAuth.ExchangeCodeAsync(
+                    http,
+                    appleOptions,
+                    req.Code!,
+                    appleOptions.ClientIdWeb,
+                    appleOptions.RedirectUriWeb);
+            }
+            catch (Exception ex) when (ex.Message.Contains("client_id mismatch", StringComparison.OrdinalIgnoreCase))
+            {
+                // The authorization code was issued to the iOS bundle id (native flow),
+                // retry the token exchange using the iOS client id and without redirect_uri.
+                tokenResp = await AppleAuth.ExchangeCodeAsync(
+                    http,
+                    appleOptions,
+                    req.Code!,
+                    appleOptions.ClientIdIos,
+                    null);
+            }
 
             idToken = tokenResp.id_token ?? idToken;
             if (string.IsNullOrEmpty(idToken))
