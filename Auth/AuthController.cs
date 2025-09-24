@@ -190,8 +190,8 @@ public class AuthController : ControllerBase
                 {
                     jwt,
                     exists = true,
-                    firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "given_name")?.Value,
-                    lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "family_name")?.Value,
+                    firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "givenName")?.Value,
+                    lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "familyName")?.Value,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "userIdentifier")?.Value
                 });
@@ -202,8 +202,8 @@ public class AuthController : ControllerBase
                 {
                     jwt,
                     exists = false,
-                    firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "given_name")?.Value,
-                    lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "family_name")?.Value,
+                    firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "givenName")?.Value,
+                    lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "familyName")?.Value,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "userIdentifier")?.Value
                 });
