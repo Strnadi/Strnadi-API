@@ -219,8 +219,7 @@ public class RecordingsRepository : RepositoryBase
     }
 
     private async Task<IEnumerable<FilteredRecordingPartModel>?> GetFilteredPartsRawAsync(int? recordingId, bool verified) =>
-        await ExecuteSafelyAsync(async () =>
-            await Connection.QueryAsync<FilteredRecordingPartModel>(
+        await ExecuteSafelyAsync(Connection.QueryAsync<FilteredRecordingPartModel>(
                 $@"
                     SELECT *
                     FROM filtered_recording_parts
@@ -231,7 +230,7 @@ public class RecordingsRepository : RepositoryBase
 
     private async Task<DialectModel[]?> GetDialects() =>
         await ExecuteSafelyAsync(async () =>
-            (await Connection.QueryAsync<DialectModel>("SELECT * FROM dialects"))?.ToArray());
+            (await Connection.QueryAsync<DialectModel>("SELECT * FROM dialects")).ToArray());
 
     private async Task<DetectedDialectModel[]?> GetDetectedDialects(int filteredPartId) =>
         await ExecuteSafelyAsync(async () =>
@@ -255,7 +254,7 @@ public class RecordingsRepository : RepositoryBase
     }
 
     private async Task<int> InsertFilteredPartAsync(FilteredRecordingPartUploadRequest model) =>
-        await ExecuteSafelyAsync(async () => await Connection.ExecuteScalarAsync<int>(sql: 
+        await ExecuteSafelyAsync(Connection.ExecuteScalarAsync<int>(sql: 
             """
             INSERT INTO filtered_recording_parts(recording_id, start_date, end_date)
             VALUES (@RecordingId, @StartDate, @EndDate)
@@ -268,24 +267,22 @@ public class RecordingsRepository : RepositoryBase
             }));
 
     private async Task<int?> GetDialectCodeIdAsync(string dialectCode) =>
-        await ExecuteSafelyAsync(async () =>
-            await Connection.ExecuteScalarAsync<int?>(sql:
+        await ExecuteSafelyAsync(Connection.ExecuteScalarAsync<int?>(sql:
                 "SELECT id FROM dialects WHERE dialect_code = @DialectCode", new
                 {
                     DialectCode = dialectCode
                 }));
 
     private async Task<bool> InsertDetectedDialectAsync(int filteredPartId, int dialectId) =>
-        await ExecuteSafelyAsync(async () =>
-            await Connection.ExecuteAsync(sql:
-                """
-                INSERT INTO detected_dialects(filtered_recording_part_id, user_guess_dialect_id) 
-                VALUES (@FilteredPartId, @UserGuessDialectId)
-                """, new
-                {
-                    FilteredPartId = filteredPartId,
-                    UserGuessDialectId = dialectId
-                }) != 0);
+        await ExecuteSafelyAsync(Connection.ExecuteAsync(sql:
+            """
+            INSERT INTO detected_dialects(filtered_recording_part_id, user_guess_dialect_id) 
+            VALUES (@FilteredPartId, @UserGuessDialectId)
+            """, new
+            {
+                FilteredPartId = filteredPartId,
+                UserGuessDialectId = dialectId
+            })) != 0;
 
     public async Task<bool> ExistsAsync(int id) =>
         await GetAsync(id, false, false) is not null;
@@ -299,12 +296,11 @@ public class RecordingsRepository : RepositoryBase
     }
 
     public async Task<bool> DeleteAsync(int id, bool final) =>
-        await ExecuteSafelyAsync(async () =>
-            await Connection.ExecuteAsync(
-                sql: final
-                    ? "DELETE FROM recordings WHERE id = @Id"
-                    : "UPDATE recordings SET deleted = true WHERE id = @Id", 
-                new { Id = id }) != 0);
+        await ExecuteSafelyAsync(Connection.ExecuteAsync(
+            sql: final
+                ? "DELETE FROM recordings WHERE id = @Id"
+                : "UPDATE recordings SET deleted = true WHERE id = @Id", 
+            new { Id = id } ))!= 0;
 
     public async Task<bool> UpdateAsync(int recordingId, UpdateRecordingRequest request) =>
         await ExecuteSafelyAsync(async () =>

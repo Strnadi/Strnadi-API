@@ -75,6 +75,7 @@ public class UsersController : ControllerBase
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
+        Console.WriteLine($"Debil jwt: {jwt}");
         UserModel? user;
         if (string.IsNullOrEmpty(jwt))
         {
@@ -83,6 +84,8 @@ public class UsersController : ControllerBase
                 return Conflict("User not found");
             
             user.Email = null!;
+            
+            Console.WriteLine("Debil no jwt");
 
             return Ok(user);
         }
@@ -93,9 +96,15 @@ public class UsersController : ControllerBase
         user = await usersRepo.GetUserByIdAsync(userId);
         if (user is null)
             return Conflict("User not found");
+        
+        Console.WriteLine($"Debil jwt email: {emailFromJwt}");
+        Console.WriteLine($"Debil user email: {user.Email}");
 
-        if (!await usersRepo.IsAdminAsync(emailFromJwt) || user.Email != emailFromJwt)
+        if (!await usersRepo.IsAdminAsync(emailFromJwt) && user.Email != emailFromJwt)
+        {
+            Console.WriteLine("Debil not admin and not debil email");
             user.Email = null!;
+        }
 
         return Ok(user);
     }
