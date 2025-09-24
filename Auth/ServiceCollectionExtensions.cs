@@ -23,6 +23,8 @@ public static class ServiceCollectionExtensions
     public static void AddAuthServices(this IServiceCollection services)
     {
         services.AddScoped<JwtService>();
+        services.AddScoped<AppleAuthOptions>();
+        services.AddScoped<AppleTokenResponse>();
         services.AddSwaggerGen();
     }
 }
