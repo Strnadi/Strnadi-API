@@ -26,35 +26,49 @@ public sealed class AppleTokenResponse
 
 public static class AppleAuth
 {
-    public static async Task<string> CreateClientSecretAsync(AppleAuthOptions opt)
+    public static async Task<string> CreateClientSecretAsync(AppleAuthOptions opt, string clientIdForSub)
     {
-        // ES256 signing of client secret JWT
-        using var ecdsa = ECDsa.Create();
-        // Import PKCS8 from PEM
-        ecdsa.ImportFromPem(opt.P8PrivateKey.AsSpan());
+        // ES256 signing of client secret JWT; 'sub' must equal the client_id used for the exchange
+        ECDsa? ecdsa = null;
+        try
+        {
+            ecdsa = ECDsa.Create();
+            ecdsa.ImportFromPem(opt.P8PrivateKey.AsSpan());
 
-        var securityKey = new ECDsaSecurityKey(ecdsa) { KeyId = opt.KeyId };
-        var creds = new SigningCredentials(securityKey, SecurityAlgorithms.EcdsaSha256);
+            var securityKey = new ECDsaSecurityKey(ecdsa) { KeyId = opt.KeyId };
+            var creds = new SigningCredentials(securityKey, SecurityAlgorithms.EcdsaSha256);
 
-        var now = DateTimeOffset.UtcNow;
-        var handler = new JwtSecurityTokenHandler();
-        var jwt = handler.CreateJwtSecurityToken(
-            issuer: opt.TeamId,
-            audience: "https://appleid.apple.com",
-            subject: new System.Security.Claims.ClaimsIdentity(new[]
+            var now = DateTimeOffset.UtcNow;
+
+            // Use JsonWebTokenHandler to produce a signed compact JWS string directly
+            var tokenDescriptor = new SecurityTokenDescriptor
             {
-                new System.Security.Claims.Claim("sub", opt.ClientIdWeb) // we’ll override per flow if needed
-            }),
-            notBefore: now.UtcDateTime,
-            expires: now.AddMinutes(30).UtcDateTime,
-            issuedAt: now.UtcDateTime,
-            signingCredentials: creds);
-        return handler.WriteToken(jwt);
+                Issuer = opt.TeamId,
+                Audience = "https://appleid.apple.com",
+                Subject = new System.Security.Claims.ClaimsIdentity(new[]
+                {
+                    new System.Security.Claims.Claim("sub", clientIdForSub)
+                }),
+                NotBefore = now.UtcDateTime,
+                IssuedAt = now.UtcDateTime,
+                Expires = now.AddMinutes(30).UtcDateTime,
+                SigningCredentials = creds
+            };
+
+            var jsonHandler = new Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler();
+            var clientSecret = jsonHandler.CreateToken(tokenDescriptor);
+            return clientSecret;
+        }
+        finally
+        {
+            // Ensure the key is disposed only after the token string has been created
+            ecdsa?.Dispose();
+        }
     }
 
     public static async Task<AppleTokenResponse> ExchangeCodeAsync(HttpClient http, AppleAuthOptions opt, string code, string clientId, string? redirectUri)
     {
-        var clientSecret = await CreateClientSecretAsync(opt);
+        var clientSecret = await CreateClientSecretAsync(opt, clientId);
         var pairs = new List<KeyValuePair<string, string>>
         {
             new("grant_type","authorization_code"),
