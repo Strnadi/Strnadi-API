@@ -25,6 +25,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<JwtService>();
         services.AddScoped<AppleAuthOptions>();
         services.AddScoped<AppleTokenResponse>();
+
+        services.AddHttpClient();
         services.AddSwaggerGen();
     }
 }
