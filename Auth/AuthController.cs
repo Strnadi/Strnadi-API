@@ -44,6 +44,7 @@ public class AuthController : ControllerBase
     private string _webId => _configuration["Auth:Google:Web"] ?? throw new NullReferenceException();
     private string _webSecret => _configuration["Auth:Google:WebSecret"] ?? throw new NullReferenceException();
     private string _appleClientId => _configuration["Auth:Apple:ClientId"] ?? throw new NullReferenceException();
+    private string _appleClientIdWeb => _configuration["Auth:Apple:ClientIdWeb"] ?? throw new NullReferenceException();
 
     public AuthController(IConfiguration configuration)
     {
@@ -385,7 +386,7 @@ public class AuthController : ControllerBase
             var validationParameters = new TokenValidationParameters
             {
                 ValidIssuer         = "https://appleid.apple.com",
-                ValidAudience       = _appleClientId,
+                ValidAudiences      = [_appleClientId, _appleClientIdWeb],
                 IssuerSigningKeys   = oidcConfig.SigningKeys,
                 ValidateLifetime    = true
             };
