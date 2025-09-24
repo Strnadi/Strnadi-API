@@ -251,9 +251,9 @@ public class AuthController : ControllerBase
     {
         Logger.Log($"Got user: {user} with state: {state} and id_token: {idToken}");
 
-        if (state) {
+        if (state is not null) {
             var returnUrl = state.Split("|")[0];
-            return Redirect(new Uri($"{returnUrl}#user={user}&id_token={id_token}").AbsoluteUri);
+            return Redirect(new Uri($"{returnUrl}#user={user}&id_token={idToken}").AbsoluteUri);
         } else {
             return BadRequest();
         }
