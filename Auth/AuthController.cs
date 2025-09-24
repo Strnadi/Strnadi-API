@@ -180,17 +180,35 @@ public class AuthController : ControllerBase
             // Treat as first‑time Apple sign‑in (sign‑up)
             string jwt = jwtService.GenerateToken(email);
             Logger.Log($"User '{email}' sign up via Apple jwt sent successfully");
-            
-            await repo.AddAppleIdAsync(email, appleId);
 
-            return Ok(new
+            if (await repo.ExistsAsync(email))
             {
-                jwt,
-                firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "given_name")?.Value,
-                lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "family_name")?.Value,
-                email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
-                appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "userIdentifier")?.Value
-            });
+                await repo.AddAppleIdAsync(email, appleId);
+
+                return Ok(new
+                {
+                    jwt,
+                    exists = true,
+                    firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "given_name")?.Value,
+                    lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "family_name")?.Value,
+                    email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
+                    appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "userIdentifier")?.Value
+                });
+            }
+            else
+            {
+                return Ok(new
+                {
+                    jwt,
+                    exists = false,
+                    firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "given_name")?.Value,
+                    lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "family_name")?.Value,
+                    email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
+                    appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "userIdentifier")?.Value
+                });
+            }
+            
+            
         }
         else
         {
