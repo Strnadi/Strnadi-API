@@ -32,4 +32,6 @@ public class SignUpRequest
     public string? City { get; set; }
 
     public bool Consent { get; set; }
+    
+    public string? AppleId { get; set; }
 }
