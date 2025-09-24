@@ -15,16 +15,20 @@
  */
 using Auth.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 
 namespace Auth;
 
 public static class ServiceCollectionExtensions
 {
-    public static void AddAuthServices(this IServiceCollection services)
+    public static void AddAuthServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<JwtService>();
-        services.AddScoped<AppleAuthOptions>();
-        services.AddScoped<AppleTokenResponse>();
+
+        var appleOptions = configuration.GetSection("Auth:Apple").Get<AppleAuthOptions>();
+        if (appleOptions is null)
+            throw new InvalidOperationException("Missing configuration section 'Auth:Apple'.");
+        services.AddSingleton(appleOptions);
 
         services.AddHttpClient();
         services.AddSwaggerGen();

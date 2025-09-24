@@ -57,7 +57,7 @@ class Program
             .AddApplicationPart(typeof(ArticlesController).Assembly);
         services.AddRepositories();
         services.AddEmailServices();
-        services.AddAuthServices();
+        services.AddAuthServices(configuration);
         services.AddCors(corsOptions =>
         {
             corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
