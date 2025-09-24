@@ -301,6 +301,9 @@ public class AuthController : ControllerBase
         string newJwt = jwtService.GenerateToken(request.Email);
 
         var user = await repo.GetUserByEmailAsync(request.Email);
+        
+        if (request.AppleId is not null)
+            await repo.AddAppleIdAsync(request.Email, request.AppleId);
 
         if (regularRegister)
             emailService.SendEmailVerificationAsync(user!.Email, user.Id, nickname: request.Nickname, newJwt);
