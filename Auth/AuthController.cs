@@ -168,7 +168,7 @@ public class AuthController : ControllerBase
         string? appleId = req.userIdentifier;
         if (appleId is null) return BadRequest("UserIdentifier is null");
         bool exists = await repo.ExistsAppleAsync(appleId);
-        string? email = req.email;
+        string? email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
 
         Logger.Log($"Apple login attempt. Exists: {exists}, Email: {email}, AppleId: {appleId}", LogLevel.Information);
 
@@ -190,8 +190,8 @@ public class AuthController : ControllerBase
                 {
                     jwt,
                     exists = true,
-                    firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "givenName")?.Value,
-                    lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "familyName")?.Value,
+                    firstName = req.givenName,
+                    lastName  = req.familyName,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
@@ -202,8 +202,8 @@ public class AuthController : ControllerBase
                 {
                     jwt,
                     exists = false,
-                    firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "givenName")?.Value,
-                    lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "familyName")?.Value,
+                    firstName = req.givenName,
+                    lastName  = req.familyName,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
