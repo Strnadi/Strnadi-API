@@ -169,6 +169,8 @@ public class AuthController : ControllerBase
         bool exists = await repo.ExistsAppleAsync(appleId);
         string? email = req.email;
         
+        Logger.Log($"Apple login attempt. Exists: {exists}, Email: {email}, AppleId: {appleId}", LogLevel.Information);
+        
         if (!exists)
         {
             if (email is null || email == "")
