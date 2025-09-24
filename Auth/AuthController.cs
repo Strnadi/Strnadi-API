@@ -245,14 +245,18 @@ public class AuthController : ControllerBase
 
     [HttpPost("apple-callback")]
     public IActionResult AppleCallback(
-        [FromForm] string user,
-        [FromForm] string state,
-        [FromForm(Name = "id_token")] string idToken)
+        [FromForm] string? user,
+        [FromForm] string? state,
+        [FromForm(Name = "id_token")] string? idToken)
     {
         Logger.Log($"Got user: {user} with state: {state} and id_token: {idToken}");
 
-        var returnUrl = state.Split("|")[0];
-        return Redirect($"{returnUrl}#user={user}");
+        if (state) {
+            var returnUrl = state.Split("|")[0];
+            return Redirect(new Uri($"{returnUrl}#user={user}&id_token={id_token}").AbsoluteUri);
+        } else {
+            return BadRequest();
+        }
     }
 
     [HttpPost("login")]
