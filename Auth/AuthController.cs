@@ -193,7 +193,7 @@ public class AuthController : ControllerBase
                     firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "givenName")?.Value,
                     lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "familyName")?.Value,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
-                    appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "userIdentifier")?.Value
+                    appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
             }
             else
@@ -205,7 +205,7 @@ public class AuthController : ControllerBase
                     firstName = jwtToken.Claims.FirstOrDefault(c => c.Type == "givenName")?.Value,
                     lastName  = jwtToken.Claims.FirstOrDefault(c => c.Type == "familyName")?.Value,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
-                    appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "userIdentifier")?.Value
+                    appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
             }
 
