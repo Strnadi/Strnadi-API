@@ -178,6 +178,8 @@ public class AuthController : ControllerBase
             // Treat as first‑time Apple sign‑in (sign‑up)
             string jwt = jwtService.GenerateToken(email);
             Logger.Log($"User '{email}' sign up via Apple jwt sent successfully");
+            
+            await repo.AddAppleIdAsync(email, appleId);
 
             return Ok(new
             {
@@ -190,7 +192,7 @@ public class AuthController : ControllerBase
         }
         else
         {
-            if (email == "")
+            if (email == "" || email is null)
             {
                 UserModel user = (await repo.GetUserByAppleIdAsync(appleId))!;
 
