@@ -302,7 +302,7 @@ public class AuthController : ControllerBase
 
         var user = await repo.GetUserByEmailAsync(request.Email);
         
-        if (request.AppleId is not null)
+        if (request.AppleId is not null && request.AppleId != "")
             await repo.AddAppleIdAsync(request.Email, request.AppleId);
 
         if (regularRegister)
