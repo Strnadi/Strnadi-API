@@ -14,13 +14,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Text;
 using Articles;
 using Auth;
 using Devices;
 using Email;
 using Microsoft.AspNetCore.Http;
+using Microsoft.OpenApi.Readers;
+using Microsoft.OpenApi.Writers;
 using Photos;
 using Recordings;
 using Repository;
@@ -81,16 +86,17 @@ class Program
         app.UseHttpsRedirection();
         app.UseRouting();
         app.MapControllers();
-        app.MapGet("/swagger/StrnadiAPI-openapi.yaml", () => Results.Text(openApiDocument, "application/yaml"));
+        app.MapGet("/swagger/StrnadiAPI-openapi.yaml", () => Results.Text(openApiDocument.Yaml, "application/yaml"));
+        app.MapGet("/swagger/v1/swagger.json", () => Results.Text(openApiDocument.Json, "application/json"));
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/StrnadiAPI-openapi.yaml", "Strnadi API");
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Strnadi API");
             options.RoutePrefix = string.Empty;
             options.DocumentTitle = "Strnadi API - Swagger";
         });
     }
 
-    static string LoadEmbeddedOpenApiDocument()
+    static OpenApiDocumentContent LoadEmbeddedOpenApiDocument()
     {
         const string resourceName = "Host.StrnadiAPI-openapi.yaml";
         var assembly = Assembly.GetExecutingAssembly();
@@ -102,6 +108,33 @@ class Program
         }
 
         using var reader = new StreamReader(stream);
+        var yaml = reader.ReadToEnd();
+        var json = ConvertYamlToJson(yaml);
+
+        return new OpenApiDocumentContent(yaml, json);
+    }
+
+    static string ConvertYamlToJson(string yaml)
+    {
+        var openApiDocument = new OpenApiStringReader().Read(yaml, out var diagnostic);
+        if (diagnostic.Errors.Count > 0)
+        {
+            var errorMessage = string.Join(Environment.NewLine, diagnostic.Errors.Select(error => error.Message));
+            throw new InvalidOperationException($"The embedded OpenAPI document contains errors:{Environment.NewLine}{errorMessage}");
+        }
+
+        using var stream = new MemoryStream();
+        using (var textWriter = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            var jsonWriter = new OpenApiJsonWriter(textWriter);
+            openApiDocument.SerializeAsV3(jsonWriter);
+            textWriter.Flush();
+        }
+
+        stream.Position = 0;
+        using var reader = new StreamReader(stream, Encoding.UTF8);
         return reader.ReadToEnd();
     }
+
+    private sealed record OpenApiDocumentContent(string Yaml, string Json);
 }
