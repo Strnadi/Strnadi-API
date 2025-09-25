@@ -32,6 +32,9 @@ using Repository;
 using Shared.Logging;
 using Users;
 using Utils;
+using Microsoft.AspNetCore.Http;
+using Microsoft.OpenApi.Readers;
+using Microsoft.OpenApi.Writers;
 
 namespace Host;
 
@@ -53,6 +56,7 @@ class Program
 
     static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
+        var openApiDocument = LoadEmbeddedOpenApiDocument();
         services.AddMemoryCache();
         services.AddEndpointsApiExplorer();
         services.AddControllers()
