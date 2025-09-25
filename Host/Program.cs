@@ -14,16 +14,19 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.IO;
+using System.Reflection;
+using Articles;
 using Auth;
 using Devices;
 using Email;
+using Microsoft.AspNetCore.Http;
 using Photos;
 using Recordings;
 using Repository;
 using Shared.Logging;
 using Users;
 using Utils;
-using Articles;
 
 namespace Host;
 
@@ -68,21 +71,37 @@ class Program
                     .AllowAnyHeader();
             });
         });
-        services.AddSwaggerGen();
     }
-    
-    static void ConfigureApp(WebApplication app, IConfiguration configuration) 
+
+    static void ConfigureApp(WebApplication app, IConfiguration configuration)
     {
+        var openApiDocument = LoadEmbeddedOpenApiDocument();
+
         app.UseCors(configuration["CORS:Default"]);
         app.UseHttpsRedirection();
         app.UseRouting();
         app.MapControllers();
-        app.UseSwagger();
+        app.MapGet("/swagger/StrnadiAPI-openapi.yaml", () => Results.Text(openApiDocument, "application/yaml"));
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+            options.SwaggerEndpoint("/swagger/StrnadiAPI-openapi.yaml", "Strnadi API");
             options.RoutePrefix = string.Empty;
             options.DocumentTitle = "Strnadi API - Swagger";
         });
+    }
+
+    static string LoadEmbeddedOpenApiDocument()
+    {
+        const string resourceName = "Host.StrnadiAPI-openapi.yaml";
+        var assembly = Assembly.GetExecutingAssembly();
+
+        using Stream? stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream is null)
+        {
+            throw new InvalidOperationException($"Embedded OpenAPI document '{resourceName}' was not found.");
+        }
+
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 }

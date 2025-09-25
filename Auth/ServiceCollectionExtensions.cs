@@ -23,6 +23,5 @@ public static class ServiceCollectionExtensions
     public static void AddAuthServices(this IServiceCollection services)
     {
         services.AddScoped<JwtService>();
-        services.AddSwaggerGen();
     }
 }

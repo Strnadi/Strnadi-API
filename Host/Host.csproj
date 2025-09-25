@@ -44,6 +44,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <EmbeddedResource Include="..\StrnadiAPI-openapi.yaml">
+        <Link>StrnadiAPI-openapi.yaml</Link>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\Articles\Articles.csproj" />
       <ProjectReference Include="..\Auth\Auth.csproj" />
       <ProjectReference Include="..\Devices\Devices.csproj" />
