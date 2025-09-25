@@ -1,84 +1,2086 @@
-openapi: "3.1.0"
+openapi: 3.1.0
 info:
-  title: "StrnadiAPI API"
-  description: "StrnadiAPI API"
-  version: "1.0.0"
+  title: Strnadi API
+  description: |
+    HTTP API used by the Strnadi applications to manage user accounts, bird recordings,
+    articles and other shared resources. The specification documents the behavior of the
+    existing ASP.NET controllers so it can be imported into Swagger UI or other OpenAPI tooling.
+  version: 1.0.0
 servers:
-  - url: "https://StrnadiAPI"
+  - url: https://api.strnadi.cz
+    description: PROD API
+  - url: https://devapi.strnadi.cz
+    description: DEV API
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+    description: Authentication, token management and onboarding flows.
+  - name: Users
+    description: Endpoints that manage user profiles.
+  - name: Devices
+    description: Device registration for push notifications.
+  - name: Recordings
+    description: CRUD operations for uploaded audio recordings.
+  - name: Filtered Recordings
+    description: Machine filtered recording parts and detected dialects.
+  - name: Photos
+    description: Upload and retrieval of user and recording images.
+  - name: Articles
+    description: Public knowledge base articles and categories.
+  - name: Utils
+    description: Utility endpoints.
+  - name: Map
+    description: Reverse proxy for Mapy.cz API access.
 paths:
+  /auth/verify-jwt:
+    get:
+      tags: [Auth]
+      summary: Verify that a JWT belongs to a verified account
+      description: |
+        Validates the bearer token supplied in the `Authorization` header and confirms that the
+        underlying account has its email address verified.
+      responses:
+        '200':
+          description: JWT is valid and the email has already been verified.
+        '400':
+          description: The bearer token is missing or the email could not be extracted.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: The JWT is valid but the email has not been verified yet.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/renew-jwt:
+    get:
+      tags: [Auth]
+      summary: Renew a JWT
+      description: Issues a fresh JWT for the currently authenticated user.
+      responses:
+        '200':
+          description: Renewed JWT token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/JwtToken'
+        '400':
+          description: The request did not provide a bearer token or the token was invalid.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The user referenced by the JWT no longer exists.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/sign-up-google:
+    post:
+      tags: [Auth]
+      summary: Sign up with Google
+      description: Creates a new account based on a Google ID token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Signup succeeded and a JWT was issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleAuthResponse'
+        '401':
+          description: The provided Google ID token was invalid.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: An account with the supplied Google email already exists.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/login-google:
+    post:
+      tags: [Auth]
+      summary: Login with Google
+      description: Authenticates a user using a Google ID token and issues a JWT.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Authentication succeeded.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/JwtToken'
+        '401':
+          description: The Google ID token could not be validated.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The Google account has not been registered in Strnadi yet.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/apple:
+    post:
+      tags: [Auth]
+      summary: Sign in or link an Apple ID
+      description: |
+        Handles Apple sign-in flows for mobile and web clients. When the caller is already
+        authenticated the Apple ID will be linked to that account. Otherwise the endpoint issues
+        a JWT for onboarding or for an existing user.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppleAuthRequest'
+      responses:
+        '200':
+          description: Apple identity was validated.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AppleAuthLinkResponse'
+                  - $ref: '#/components/schemas/AppleAuthSignInResponse'
+        '400':
+          description: The request was missing either an ID token or authorization code, or the email could not be verified.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: The provided Apple credentials were invalid or the caller supplied an invalid JWT while linking accounts.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The referenced user account does not exist when linking an Apple identity.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /auth/login:
     post:
-      summary: "POST auth/login"
+      tags: [Auth]
+      summary: Login with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
       responses:
-        "200":
-          description: "OK"
+        '200':
+          description: Login succeeded and a JWT token was issued.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/JwtToken'
+        '401':
+          description: The password did not match.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: No user with the supplied email exists.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /auth/sign-up:
     post:
-      summary: "POST auth/sign-up"
+      tags: [Auth]
+      summary: Sign up with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
       responses:
-        "200":
-          description: "OK"
-  /auth/verify:
-    post:
-      summary: "POST auth/verify"
-      parameters:
-        - name: "jwt"
-          in: "query"
-          required: false
-      responses:
-        "200":
-          description: "OK"
-  /recordings:
+        '200':
+          description: Signup succeeded and a JWT was issued.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/JwtToken'
+        '400':
+          description: The request did not contain the required data or JWT when attempting an Apple linked signup.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The email address is already registered or the user could not be created.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/{userId}/resend-verify-email:
     get:
-      summary: "GET recordings"
+      tags: [Auth]
+      summary: Resend the email verification link
       parameters:
-        - name: "jwt"
-          in: "query"
-          required: false
+        - name: userId
+          in: path
+          required: true
+          description: Numeric identifier of the user requesting another verification email.
+          schema:
+            type: integer
+            minimum: 1
       responses:
-        "200":
-          description: "OK"
-  /recordings/download:
+        '200':
+          description: A new verification email has been queued.
+        '208':
+          description: The email address is already verified.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: The bearer token or the associated email was missing.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: The supplied JWT was invalid or did not belong to the target user.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/{email}/reset-password:
     get:
-      summary: "GET recordings/download"
+      tags: [Auth]
+      summary: Initiate a password reset email
+      description: Sends a password reset email containing a JWT token.
       parameters:
-        - name: "id"
-          in: "query"
-          required: false
-        - name: "jwt"
-          in: "query"
-          required: false
-        - name: "sound"
-          in: "query"
-          required: false
+        - name: email
+          in: path
+          required: true
+          description: Email address that should receive the reset message.
+          schema:
+            type: string
+            format: email
+      security: []
       responses:
-        "200":
-          description: "OK"
-  /recordings/upload:
-    post:
-      summary: "POST recordings/upload"
-      responses:
-        "200":
-          description: "OK"
-  /recordings/upload-part:
-    post:
-      summary: "POST recordings/upload-part"
-      responses:
-        "200":
-          description: "OK"
+        '200':
+          description: A password reset email has been queued.
+        '404':
+          description: No user with the supplied email exists.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /users:
     get:
-      summary: "GET users"
-      parameters:
-        - name: "jwt"
-          in: "query"
-          required: false
+      tags: [Users]
+      summary: List all users
+      description: Returns basic information for every registered user. Only administrators may access this endpoint.
       responses:
-        "200":
-          description: "OK"
-  /utils/health:
+        '200':
+          description: List of users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserModel'
+        '400':
+          description: The request did not contain a bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: The caller is not an administrator or supplied an invalid JWT.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/get-id:
     get:
-      summary: "GET utils/health"
+      tags: [Users]
+      summary: Get the identifier of the current user
+      description: Extracts the user id from the supplied JWT.
       responses:
-        "200":
-          description: "OK"
+        '200':
+          description: Identifier of the authenticated user.
+          content:
+            application/json:
+              schema:
+                type: integer
+                minimum: 1
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: The supplied JWT was invalid or the user no longer exists.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{userId}:
+    get:
+      tags: [Users]
+      summary: Get profile by identifier
+      description: |
+        Returns a user profile. When the caller is unauthenticated only non-sensitive fields are
+        returned (the email is omitted). Authenticated callers receive their full profile and
+        administrators may view the email of any account.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserModel'
+        '401':
+          description: The supplied JWT was invalid for viewing protected fields.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: No user with the supplied identifier exists.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Users]
+      summary: Update profile information
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserModel'
+      responses:
+        '200':
+          description: The profile was updated.
+        '400':
+          description: The request did not contain a bearer token or referenced a different user.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: The supplied JWT is invalid.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The profile could not be updated.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Users]
+      summary: Delete a user account
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: The account has been deleted.
+        '400':
+          description: The request did not contain a bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: The caller is not allowed to delete this user.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The user could not be deleted because it does not exist.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{userId}/verify-email:
+    get:
+      tags: [Users]
+      summary: Finalize email verification
+      description: Confirms a verification link and redirects to the configured front-end application.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: jwt
+          in: query
+          required: true
+          description: Verification JWT included in the email message.
+          schema:
+            $ref: '#/components/schemas/JwtToken'
+      security: []
+      responses:
+        '301':
+          description: Redirect to the front-end confirmation page.
+          headers:
+            Location:
+              description: Target redirection URL.
+              schema:
+                type: string
+                format: uri
+        '401':
+          description: The verification token is invalid.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{userId}/change-password:
+    patch:
+      tags: [Users]
+      summary: Change the password for the current user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password updated.
+        '400':
+          description: Missing bearer token or attempting to change another user's password.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The password could not be changed due to a server error.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/exists:
+    get:
+      tags: [Users]
+      summary: Check whether a user exists
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            format: email
+      security: []
+      responses:
+        '200':
+          description: The user does not exist and the identifier may be used.
+        '400':
+          description: Neither `email` nor `userId` was provided.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: A user already exists with the supplied identifier.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{userId}/upload-profile-photo:
+    post:
+      tags: [Users]
+      summary: Upload or replace a user profile photo
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfilePhotoModel'
+      responses:
+        '200':
+          description: Photo uploaded successfully.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The photo could not be saved.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{userId}/get-profile-photo:
+    get:
+      tags: [Users]
+      summary: Download the stored profile photo
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: Base64 encoded profile photo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfilePhotoModel'
+        '404':
+          description: The user does not have a stored profile photo.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /devices/add:
+    post:
+      tags: [Devices]
+      summary: Register a device for push notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDeviceRequest'
+      responses:
+        '200':
+          description: Device registered or reassigned successfully.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The device could not be registered.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /devices/update:
+    patch:
+      tags: [Devices]
+      summary: Update an existing device token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceRequest'
+      responses:
+        '200':
+          description: Device token updated.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The original device token does not exist or update failed.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The update failed due to a server error.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /devices/delete/{fcmToken}:
+    delete:
+      tags: [Devices]
+      summary: Remove a registered device
+      parameters:
+        - name: fcmToken
+          in: path
+          required: true
+          description: Firebase Cloud Messaging token identifying the device.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Device deleted.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The device token does not exist.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The device could not be deleted due to a server error.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings:
+    get:
+      tags: [Recordings]
+      summary: List recordings
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          description: When supplied, restricts results to recordings owned by the given user.
+          schema:
+            type: integer
+            minimum: 1
+        - name: parts
+          in: query
+          required: false
+          description: Include metadata for recording parts in the response.
+          schema:
+            type: boolean
+            default: false
+        - name: sound
+          in: query
+          required: false
+          description: Include base64 encoded audio for each part. Only meaningful when `parts=true`.
+          schema:
+            type: boolean
+            default: false
+      security: []
+      responses:
+        '200':
+          description: Matching recordings.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecordingModel'
+        '204':
+          description: No recordings matched the supplied filters.
+        '500':
+          description: A database error occurred while fetching recordings.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Recordings]
+      summary: Upload a new recording metadata entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordingUploadRequest'
+      responses:
+        '200':
+          description: Identifier of the created recording.
+          content:
+            application/json:
+              schema:
+                type: integer
+                minimum: 1
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or user does not exist.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The recording could not be stored.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/deleted:
+    get:
+      tags: [Recordings]
+      summary: List soft-deleted recordings
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: parts
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: sound
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Deleted recordings (admin only).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecordingModel'
+        '204':
+          description: No deleted recordings matched the filters.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to load recordings.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/{id}:
+    get:
+      tags: [Recordings]
+      summary: Get a recording by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: parts
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: sound
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      security: []
+      responses:
+        '200':
+          description: Recording metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingModel'
+        '204':
+          description: The recording does not exist or was deleted.
+    delete:
+      tags: [Recordings]
+      summary: Delete or soft-delete a recording
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: final
+          in: query
+          required: false
+          description: Permanently delete the recording instead of soft deleting. Requires admin rights.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Recording deleted.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT or insufficient permissions.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The recording could not be found.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The recording could not be deleted.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Recordings]
+      summary: Update recording metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecordingRequest'
+      responses:
+        '200':
+          description: Recording updated.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT or insufficient permissions.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The recording could not be updated.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/part/{recId}/{partId}/sound:
+    get:
+      tags: [Recordings]
+      summary: Download the audio for a recording part
+      parameters:
+        - name: recId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: partId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: Raw WAV audio for the requested part.
+          content:
+            audio/wav:
+              schema:
+                type: string
+                format: binary
+  /recordings/part:
+    post:
+      tags: [Recordings]
+      summary: Upload a part of a recording
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordingPartUploadRequest'
+      responses:
+        '200':
+          description: Identifier of the created recording part.
+          content:
+            application/json:
+              schema:
+                type: integer
+                minimum: 1
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The recording part could not be stored.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/filtered:
+    get:
+      tags: [Filtered Recordings]
+      summary: List filtered recording parts
+      parameters:
+        - name: recordingId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: verified
+          in: query
+          required: false
+          description: When true, only returns parts whose state indicates verification (1 or 2).
+          schema:
+            type: boolean
+            default: false
+      security: []
+      responses:
+        '200':
+          description: Filtered recording parts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FilteredRecordingPartModel'
+        '204':
+          description: No filtered parts matched the supplied filters.
+        '409':
+          description: The filtered parts could not be loaded.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Filtered Recordings]
+      summary: Upload a filtered recording part
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilteredRecordingPartUploadRequest'
+      responses:
+        '200':
+          description: Filtered part stored successfully.
+        '400':
+          description: Missing bearer token or an unknown dialect code was supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The filtered part could not be saved.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /photos/upload/recording-photo:
+    post:
+      tags: [Photos]
+      summary: Upload photos for a recording
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadRecordingPhotoRequest'
+      responses:
+        '200':
+          description: Recording photos saved.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The photos could not be stored.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /articles:
+    get:
+      tags: [Articles]
+      summary: List all articles
+      security: []
+      responses:
+        '200':
+          description: Articles currently published.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArticleModel'
+        '204':
+          description: No articles are available.
+        '500':
+          description: Failed to load articles.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Articles]
+      summary: Create a new article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleUploadRequest'
+      responses:
+        '200':
+          description: Identifier of the created article.
+          content:
+            application/json:
+              schema:
+                type: integer
+                minimum: 1
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The article could not be stored.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /articles/categories:
+    get:
+      tags: [Articles]
+      summary: List article categories
+      parameters:
+        - name: articles
+          in: query
+          required: false
+          description: Include articles assigned to each category.
+          schema:
+            type: boolean
+            default: true
+      security: []
+      responses:
+        '200':
+          description: Article categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArticleCategoryModel'
+        '204':
+          description: No categories exist.
+        '500':
+          description: Failed to load categories.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Articles]
+      summary: Create a new article category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleCategoryUploadRequest'
+      responses:
+        '200':
+          description: Category created.
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The category could not be created.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /articles/{identifier}:
+    get:
+      tags: [Articles]
+      summary: Get article details or articles by category
+      description: |
+        When `identifier` is numeric the endpoint returns a single article. Otherwise it is
+        interpreted as a category name and returns every article assigned to that category.
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          schema:
+            oneOf:
+              - type: integer
+                minimum: 1
+              - type: string
+      security: []
+      responses:
+        '200':
+          description: Article or articles assigned to the category.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ArticleModel'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/ArticleModel'
+        '500':
+          description: Failed to load the requested content.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Articles]
+      summary: Update an article or assign an article to a category
+      description: |
+        When `identifier` is numeric the request body must contain article fields to update.
+        Otherwise it is treated as a category name and assigns an article to that category.
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          schema:
+            oneOf:
+              - type: integer
+                minimum: 1
+              - type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ArticleUpdateRequest'
+                - $ref: '#/components/schemas/AssignArticleToCategoryRequest'
+      responses:
+        '200':
+          description: Article or category assignment updated.
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator when modifying categories.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The update failed.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Articles]
+      summary: Delete an article
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Article deleted.
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The article could not be deleted.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /articles/{id}/{fileName}:
+    get:
+      tags: [Articles]
+      summary: Download an article attachment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+      security: []
+      responses:
+        '200':
+          description: Binary attachment content.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+    post:
+      tags: [Articles]
+      summary: Upload an attachment for an article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              format: byte
+      responses:
+        '200':
+          description: Attachment stored.
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The attachment could not be saved.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Articles]
+      summary: Replace an article attachment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              format: byte
+      responses:
+        '200':
+          description: Attachment replaced.
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The attachment could not be updated.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Articles]
+      summary: Delete an article attachment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Attachment deleted.
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The attachment could not be deleted.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /articles/categories/{categoryName}:
+    delete:
+      tags: [Articles]
+      summary: Delete an article category
+      parameters:
+        - name: categoryName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Category deleted.
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The category could not be deleted.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /articles/{categoryName}/{articleId}:
+    delete:
+      tags: [Articles]
+      summary: Remove an article from a category
+      parameters:
+        - name: categoryName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Article removed from the category.
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The association could not be deleted.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /utils/health:
+    head:
+      tags: [Utils]
+      summary: Health probe
+      description: Lightweight health check endpoint used by infrastructure probes.
+      security: []
+      responses:
+        '200':
+          description: Service is reachable.
+  /map/{path}:
+    get:
+      tags: [Map]
+      summary: Proxy a request to the Mapy.cz API
+      description: Forwards the request path and query string to the Mapy.cz REST API using the configured API key.
+      parameters:
+        - name: path
+          in: path
+          required: true
+          description: Remaining path forwarded to Mapy.cz.
+          schema:
+            type: string
+      security: []
+      responses:
+        '200':
+          description: Response returned by the Mapy.cz API.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '502':
+          description: The upstream Mapy.cz API returned an error.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: string
+      description: Human readable message describing the error.
+    JwtToken:
+      type: string
+      description: Encoded JSON Web Token.
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    GoogleAuthRequest:
+      type: object
+      required: [idToken]
+      properties:
+        idToken:
+          type: string
+          description: Google ID token obtained from the client SDK.
+    GoogleAuthResponse:
+      type: object
+      required: [jwt, firstName, lastName]
+      properties:
+        jwt:
+          $ref: '#/components/schemas/JwtToken'
+        firstName:
+          type: string
+        lastName:
+          type: string
+    AppleAuthRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Authorization code returned by the Apple web flow.
+        idToken:
+          type: string
+          description: Apple ID token returned by native flows.
+        state:
+          type: string
+        nonce:
+          type: string
+        email:
+          type: string
+          format: email
+        userJson:
+          type: string
+          description: Raw `user` JSON returned by Apple on the first login.
+    AppleAuthLinkResponse:
+      type: object
+      description: Empty JSON object returned when an Apple ID was linked to an existing account.
+      additionalProperties: false
+    AppleAuthSignInResponse:
+      type: object
+      required: [jwt]
+      properties:
+        jwt:
+          $ref: '#/components/schemas/JwtToken'
+        exists:
+          type: boolean
+          description: Indicates whether the user already exists in the system.
+        email:
+          type: string
+          format: email
+          description: Email address reported by Apple when available.
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    SignUpRequest:
+      type: object
+      required: [email, firstName, lastName, consent]
+      properties:
+        nickname:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          nullable: true
+        firstName:
+          type: string
+        lastName:
+          type: string
+        postCode:
+          type: integer
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        consent:
+          type: boolean
+        appleId:
+          type: string
+          nullable: true
+    AddDeviceRequest:
+      type: object
+      required: [userId, fcmToken, devicePlatform, deviceModel]
+      properties:
+        userId:
+          type: integer
+          minimum: 1
+        fcmToken:
+          type: string
+        devicePlatform:
+          type: string
+        deviceModel:
+          type: string
+    UpdateDeviceRequest:
+      type: object
+      required: [oldFcmToken, newFcmToken]
+      properties:
+        oldFcmToken:
+          type: string
+        newFcmToken:
+          type: string
+    UpdateUserModel:
+      type: object
+      properties:
+        nickname:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        postCode:
+          type: integer
+          nullable: true
+    ChangePasswordRequest:
+      type: object
+      required: [newPassword]
+      properties:
+        newPassword:
+          type: string
+          format: password
+    UserProfilePhotoModel:
+      type: object
+      required: [format, photoBase64]
+      properties:
+        format:
+          type: string
+          description: File extension (for example `jpg`).
+        photoBase64:
+          type: string
+          format: byte
+          description: Base64 encoded profile picture.
+    UploadRecordingPhotoRequest:
+      type: object
+      required: [recordingId, photosBase64, format]
+      properties:
+        recordingId:
+          type: integer
+          minimum: 1
+        photosBase64:
+          type: string
+          format: byte
+          description: Base64 encoded image data.
+        format:
+          type: string
+          description: File extension (for example `png`).
+    RecordingUploadRequest:
+      type: object
+      required: [createdAt, estimatedBirdsCount, device, byApp]
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        estimatedBirdsCount:
+          type: integer
+          minimum: 0
+        device:
+          type: string
+        byApp:
+          type: boolean
+        note:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+    RecordingPartUploadRequest:
+      type: object
+      required:
+        - recordingId
+        - startDate
+        - endDate
+        - gpsLatitudeStart
+        - gpsLongitudeStart
+        - gpsLatitudeEnd
+        - gpsLongitudeEnd
+        - dataBase64
+      properties:
+        recordingId:
+          type: integer
+          minimum: 1
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        gpsLatitudeStart:
+          type: number
+          format: double
+        gpsLatitudeEnd:
+          type: number
+          format: double
+        gpsLongitudeStart:
+          type: number
+          format: double
+        gpsLongitudeEnd:
+          type: number
+          format: double
+        dataBase64:
+          type: string
+          format: byte
+    UpdateRecordingRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        estimatedBirdsCount:
+          type: integer
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        notePost:
+          type: string
+          nullable: true
+        device:
+          type: string
+          nullable: true
+    FilteredRecordingPartUploadRequest:
+      type: object
+      required: [recordingId, startDate, endDate, dialectCode]
+      properties:
+        recordingId:
+          type: integer
+          minimum: 1
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        dialectCode:
+          type: string
+    FilteredRecordingPartModel:
+      type: object
+      required: [id, startDate, endDate, state, recordingId, detectedDialects]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        state:
+          type: integer
+          description: Workflow state of the filtered part.
+        recordingId:
+          type: integer
+          minimum: 1
+        detectedDialects:
+          type: array
+          items:
+            $ref: '#/components/schemas/DetectedDialectModel'
+    DetectedDialectModel:
+      type: object
+      required: [id, userGuessDialectId, filteredRecordingPartId]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        userGuessDialectId:
+          type: integer
+          minimum: 1
+        userGuessDialect:
+          type: string
+          nullable: true
+        confirmedDialectId:
+          type: integer
+          minimum: 1
+          nullable: true
+        confirmedDialect:
+          type: string
+          nullable: true
+        filteredRecordingPartId:
+          type: integer
+          minimum: 1
+    RecordingModel:
+      type: object
+      required:
+        - id
+        - userId
+        - name
+        - createdAt
+        - estimatedBirdsCount
+        - byApp
+        - deleted
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        userId:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        estimatedBirdsCount:
+          type: integer
+        byApp:
+          type: boolean
+        note:
+          type: string
+          nullable: true
+        notePost:
+          type: string
+          nullable: true
+        deleted:
+          type: boolean
+        parts:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/RecordingPartModel'
+    RecordingPartModel:
+      type: object
+      required:
+        - id
+        - recordingId
+        - startDate
+        - endDate
+        - gpsLatitudeStart
+        - gpsLatitudeEnd
+        - gpsLongitudeStart
+        - gpsLongitudeEnd
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        recordingId:
+          type: integer
+          minimum: 1
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        gpsLatitudeStart:
+          type: number
+          format: double
+        gpsLatitudeEnd:
+          type: number
+          format: double
+        gpsLongitudeStart:
+          type: number
+          format: double
+        gpsLongitudeEnd:
+          type: number
+          format: double
+        square:
+          type: string
+          nullable: true
+        filePath:
+          type: string
+          nullable: true
+        dataBase64:
+          type: string
+          format: byte
+          nullable: true
+    ArticleUploadRequest:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    ArticleUpdateRequest:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    AssignArticleToCategoryRequest:
+      type: object
+      required: [articleId, order]
+      properties:
+        articleId:
+          type: integer
+          minimum: 1
+        order:
+          type: integer
+    ArticleCategoryUploadRequest:
+      type: object
+      required: [label, name]
+      properties:
+        label:
+          type: string
+        name:
+          type: string
+    ArticleAttachmentModel:
+      type: object
+      required: [id, articleId, fileName]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        articleId:
+          type: integer
+          minimum: 1
+        fileName:
+          type: string
+    ArticleCategoryModel:
+      type: object
+      required: [id, label, name]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        label:
+          type: string
+        name:
+          type: string
+        articles:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ArticleModel'
+    ArticleModel:
+      type: object
+      required: [id, name, description]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        description:
+          type: string
+        files:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ArticleAttachmentModel'
+        categories:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ArticleCategoryModel'
+    UserModel:
+      type: object
+      required: [id, email, firstName, lastName, creationDate]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        nickname:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+        lastName:
+          type: string
+        postCode:
+          type: integer
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        creationDate:
+          type: string
+          format: date-time
+        isEmailVerified:
+          type: boolean
+          nullable: true
+        consent:
+          type: boolean
+          nullable: true
+        role:
+          type: string
+          nullable: true
