@@ -1536,7 +1536,7 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /articles/{categoryName}/{articleId}:
+  /articles/categories/{categoryName}/{articleId}:
     delete:
       tags: [Articles]
       summary: Remove an article from a category
