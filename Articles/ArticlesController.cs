@@ -261,7 +261,7 @@ public class ArticlesController : ControllerBase
         return success ? Ok() : StatusCode(500, "Failed to delete category");
     }
 
-    [HttpDelete("{categoryName}/{articleId:int}")]
+    [HttpDelete("categories/{categoryName}/{articleId:int}")]
     public async Task<IActionResult> DeleteCategory([FromRoute] string categoryName, 
         [FromRoute] int articleId, 
         [FromServices] JwtService jwtService,
