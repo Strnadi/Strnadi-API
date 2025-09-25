@@ -24,6 +24,5 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<EmailService>();
         services.AddSingleton<EmailSender>();
         services.AddSingleton<LinkGenerator>();
-        services.AddSwaggerGen();
     }
 }

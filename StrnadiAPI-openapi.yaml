@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.1
 info:
   title: Strnadi API
   description: |
@@ -181,6 +181,41 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: The referenced user account does not exist when linking an Apple identity.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/apple-callback:
+    post:
+      tags: [Auth]
+      summary: Handle the Apple sign-in redirect callback
+      description: |
+        Accepts the callback that Apple sends after the user authorizes the Strnadi application.
+        The endpoint redirects the browser back to the originally requested return URL while
+        preserving the `user` payload and the `id_token` issued by Apple in the URI fragment.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [state]
+              properties:
+                user:
+                  type: string
+                  description: Base64 encoded JSON payload with the Apple user information.
+                state:
+                  type: string
+                  description: Encoded state value that contains the original return URL.
+                id_token:
+                  type: string
+                  description: The Apple identity token that should be persisted by the client.
+      responses:
+        '302':
+          description: Redirected to the return URL with the Apple payload appended as a fragment.
+        '400':
+          description: The callback parameters were invalid or missing.
           content:
             text/plain:
               schema:
@@ -1501,7 +1536,7 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /articles/{categoryName}/{articleId}:
+  /articles/categories/{categoryName}/{articleId}:
     delete:
       tags: [Articles]
       summary: Remove an article from a category
