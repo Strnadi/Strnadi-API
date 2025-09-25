@@ -41,6 +41,13 @@
       <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="7.3.1" />
       <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.1" />
       <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.3.1" />
+      <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.16" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="..\StrnadiAPI-openapi.yaml">
+        <Link>StrnadiAPI-openapi.yaml</Link>
+      </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
