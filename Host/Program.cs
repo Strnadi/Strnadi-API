@@ -80,6 +80,7 @@ class Program
                     .AllowAnyHeader();
             });
         });
+        services.AddSwaggerGen();
     }
 
     static void ConfigureApp(WebApplication app, IConfiguration configuration)
@@ -92,12 +93,14 @@ class Program
         app.MapControllers();
         app.MapGet("/swagger/StrnadiAPI-openapi.yaml", () => Results.Text(openApiDocument.Yaml, "application/yaml"));
         app.MapGet("/swagger/v1/swagger.json", () => Results.Text(openApiDocument.Json, "application/json"));
+        app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
             options.SwaggerEndpoint("/swagger/v1/swagger.json", "Strnadi API");
             options.RoutePrefix = string.Empty;
             options.DocumentTitle = "Strnadi API - Swagger";
         });
+        app.UseReDoc();
     }
 
     static OpenApiDocumentContent LoadEmbeddedOpenApiDocument()

@@ -38,9 +38,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="7.3.1" />
-      <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.1" />
-      <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.3.1" />
+      <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+      <PackageReference Include="Swashbuckle.AspNetCore.ReDoc" Version="9.0.4" />
       <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.16" />
     </ItemGroup>
 
