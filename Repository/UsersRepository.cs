@@ -37,6 +37,13 @@ public class UsersRepository : RepositoryBase
                 "SELECT COUNT(*) FROM users WHERE email = @Email", 
                 new { Email = email }
                 )) != 0;
+    
+    public async Task<bool> ExistsAppleAsync(string appleId) =>
+        await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM users WHERE appleid = @AppleId", 
+                new { AppleId = appleId }
+                )) != 0;
 
     public async Task<bool> ExistsAsync(int userId) =>
         await ExecuteSafelyAsync(async () =>
@@ -80,8 +87,8 @@ public class UsersRepository : RepositoryBase
                 
             const string sql =
                 """
-                INSERT INTO users(nickname, email, password, first_name, last_name, post_code, city, consent) 
-                VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @PostCode, @City, @Consent)
+                INSERT INTO users(nickname, email, password, first_name, last_name, post_code, city, consent, appleid) 
+                VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @PostCode, @City, @Consent, @AppleId)
                 """;
 
             string? hashedPassword = null;
@@ -100,7 +107,8 @@ public class UsersRepository : RepositoryBase
                 request.LastName,
                 request.PostCode,
                 request.City,
-                request.Consent 
+                request.Consent,
+                request.AppleId
             }) != 0;
         });
 
@@ -126,6 +134,19 @@ public class UsersRepository : RepositoryBase
             if (user is null)
                 return null;
             
+            user.Password = null;
+            return user;
+        });
+    
+    public async Task<UserModel?> GetUserByAppleIdAsync(string appleId) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            const string sql = "SELECT * FROM users WHERE appleid = @AppleId";
+            var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { AppleId = appleId });
+
+            if (user is null)
+                return null;
+
             user.Password = null;
             return user;
         });
@@ -218,6 +239,16 @@ public class UsersRepository : RepositoryBase
             Console.WriteLine(sql);
             
             return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+    
+    public async Task<bool> AddAppleIdAsync(string email, string appleId) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(appleId))
+                return false;
+
+            const string sql = "UPDATE users SET appleid = @AppleId WHERE email = @Email";
+            return await Connection.ExecuteAsync(sql, new { AppleId = appleId, Email = email }) != 0;
         });
 
     public async Task<bool> DeleteAsync(string email)
