@@ -259,6 +259,23 @@ public class AuthController : ControllerBase
             return BadRequest();
         }
     }
+    
+    [HttpPost("apple/callback")]
+    public IActionResult AppleAppCallback(
+        [FromForm] string? user,
+        [FromForm] string? state,
+        [FromForm(Name = "id_token")] string? idToken)
+    {
+        Logger.Log($"Got user: {user} with state: {state} and id_token: {idToken}");
+
+        if (state is not null)
+        {
+            var returnUrl = "intent://callback?...#Intent;scheme=signinwithapple;package=com.delta.strnadi;end"; // state.Split("|")[0];
+            return Redirect(new Uri($"{returnUrl}#user={user}&id_token={idToken}").AbsoluteUri);
+        } else {
+            return BadRequest();
+        }
+    }
 
     [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
