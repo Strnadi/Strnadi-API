@@ -267,11 +267,13 @@ public class AuthController : ControllerBase
         [FromForm(Name = "id_token")] string? idToken)
     {
         Logger.Log($"Got user: {user} with state: {state} and id_token: {idToken}");
-
+        
+        
+        var returnUrl = "intent://callback?...#Intent;scheme=signinwithapple;package=com.delta.strnadi;end"; // state.Split("|")[0];
+        return Redirect(new Uri($"{returnUrl}#user={user}&id_token={idToken}").AbsoluteUri);
         if (state is not null)
         {
-            var returnUrl = "intent://callback?...#Intent;scheme=signinwithapple;package=com.delta.strnadi;end"; // state.Split("|")[0];
-            return Redirect(new Uri($"{returnUrl}#user={user}&id_token={idToken}").AbsoluteUri);
+            
         } else {
             return BadRequest();
         }
