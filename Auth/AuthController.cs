@@ -264,20 +264,26 @@ public class AuthController : ControllerBase
     public IActionResult AppleAppCallback(
         [FromForm] string? user,
         [FromForm] string? state,
-        [FromForm(Name = "id_token")] string? idToken)
+        [FromForm(Name = "id_token")] string? idToken,
+        [FromForm(Name = "code")] string? code)
     {
-        Logger.Log($"Got user: {user} with state: {state} and id_token: {idToken}");
-        
-        
-        var returnUrl = "intent://callback?...#Intent;scheme=signinwithapple;package=com.delta.strnadi;end"; // state.Split("|")[0];
-        return Redirect(new Uri($"{returnUrl}#user={user}&id_token={idToken}").AbsoluteUri);
-        if (state is not null)
-        {
-            
-        } else {
-            return BadRequest();
-        }
-    }
+        Logger.Log($"[Android] Apple callback: user={user}, state={state}, id_token={(idToken != null ? "<present>" : "<null>")}, code={(code != null ? "<present>" : "<null>")}", LogLevel.Information);
+
+        // Resolve target Android package id (prefer configuration, fallback to default)
+        var androidPackage = _configuration["Auth:Android:Package"] ?? "com.delta.strnadi";
+
+        // Build query string to forward to the app via the intent deep-link
+        var parts = new List<string>();
+        if (!string.IsNullOrEmpty(code)) parts.Add($"code={Uri.EscapeDataString(code)}");
+        if (!string.IsNullOrEmpty(state)) parts.Add($"state={Uri.EscapeDataString(state)}");
+        if (!string.IsNullOrEmpty(idToken)) parts.Add($"id_token={Uri.EscapeDataString(idToken)}");
+        if (!string.IsNullOrEmpty(user)) parts.Add($"user={Uri.EscapeDataString(user)}");
+        var query = parts.Count > 0 ? "?" + string.Join("&", parts) : string.Empty;
+
+        // Redirect back into the Android app via intent:// deep link
+        var intentUrl = $"intent://callback{query}#Intent;scheme=signinwithapple;package={androidPackage};end";
+        return Redirect(intentUrl);
+}
 
     [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
