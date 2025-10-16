@@ -54,6 +54,7 @@
       <ProjectReference Include="..\Articles\Articles.csproj" />
       <ProjectReference Include="..\Auth\Auth.csproj" />
       <ProjectReference Include="..\Devices\Devices.csproj" />
+      <ProjectReference Include="..\Dictionary\Dictionary.csproj" />
       <ProjectReference Include="..\Email\Email.csproj" />
       <ProjectReference Include="..\Photos\Photos.csproj" />
       <ProjectReference Include="..\Recordings\Recordings.csproj" />

@@ -246,7 +246,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
 
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
 
         bool success = await repo.UploadUserPhotoAsync(userId, req);
