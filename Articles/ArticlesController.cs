@@ -209,7 +209,7 @@ public class ArticlesController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
         
-        if (!jwtService.TryValidateToken(jwt, out _))
+        if (!jwtService.TryValidateToken(jSinglewt, out _))
             return Unauthorized();
 
         bool success = await articlesRepo.DeleteArticleAsync(id);

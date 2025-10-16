@@ -36,6 +36,7 @@ public static class Logger
         {
             LogLevel.Warning => ConsoleColor.Yellow,
             LogLevel.Error => ConsoleColor.Red,
+            LogLevel.Debug => ConsoleColor.Magenta,
             
             _ => ConsoleColor.Green
         };
@@ -47,4 +48,5 @@ public enum LogLevel
     Information,
     Warning,
     Error,
+    Debug
 }
