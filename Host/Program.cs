@@ -14,27 +14,20 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using Articles;
 using Auth;
 using Devices;
+using Dictionary;
 using Email;
-using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
 using Photos;
 using Recordings;
 using Repository;
-using Shared.Logging;
 using Users;
 using Utils;
-using Microsoft.AspNetCore.Http;
-using Microsoft.OpenApi.Readers;
-using Microsoft.OpenApi.Writers;
 
 namespace Host;
 
@@ -66,7 +59,8 @@ class Program
             .AddApplicationPart(typeof(DevicesController).Assembly)
             .AddApplicationPart(typeof(UtilsController).Assembly)
             .AddApplicationPart(typeof(PhotosController).Assembly)
-            .AddApplicationPart(typeof(ArticlesController).Assembly);
+            .AddApplicationPart(typeof(ArticlesController).Assembly)
+            .AddApplicationPart(typeof(DictionaryController).Assembly);
         services.AddRepositories();
         services.AddEmailServices();
         services.AddAuthServices();

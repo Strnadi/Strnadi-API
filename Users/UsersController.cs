@@ -75,7 +75,6 @@ public class UsersController : ControllerBase
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        Console.WriteLine($"Debil jwt: {jwt}");
         UserModel? user;
         if (string.IsNullOrEmpty(jwt))
         {
@@ -85,8 +84,6 @@ public class UsersController : ControllerBase
             
             user.Email = null!;
             
-            Console.WriteLine("Debil no jwt");
-
             return Ok(user);
         }
 
@@ -97,12 +94,8 @@ public class UsersController : ControllerBase
         if (user is null)
             return Conflict("User not found");
         
-        Console.WriteLine($"Debil jwt email: {emailFromJwt}");
-        Console.WriteLine($"Debil user email: {user.Email}");
-
         if (!await usersRepo.IsAdminAsync(emailFromJwt) && user.Email != emailFromJwt)
         {
-            Console.WriteLine("Debil not admin and not debil email");
             user.Email = null!;
         }
 
@@ -253,7 +246,7 @@ public class UsersController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
 
-        if (!jwtService.TryValidateToken(jwt, out string? emailFromJwt))
+        if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
 
         bool success = await repo.UploadUserPhotoAsync(userId, req);

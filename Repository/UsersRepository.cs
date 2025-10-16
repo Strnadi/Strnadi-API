@@ -18,10 +18,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Shared.Logging;
 using Shared.Tools;
 using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
 using Shared.Models.Requests.Users;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Repository;
 
@@ -116,7 +119,7 @@ public class UsersRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE id = @UserId;";
-            var user = await Connection.QuerySingleOrDefaultAsync<UserModel>(sql, new { UserId = userId });
+            var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { UserId = userId });
 
             if (user is null)
                 return null;
@@ -129,11 +132,14 @@ public class UsersRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE email = @UserEmail";
+            Logger.Log("Executing SQL: " + sql, LogLevel.Debug);
             var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { UserEmail = email });
 
+            Logger.Log("blabla", LogLevel.Debug);
             if (user is null)
                 return null;
             
+            Logger.Log("user is not nall", LogLevel.Debug);
             user.Password = null;
             return user;
         });

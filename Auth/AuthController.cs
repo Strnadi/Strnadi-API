@@ -30,6 +30,8 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Cryptography;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Auth;
 
@@ -105,7 +107,7 @@ public class AuthController : ControllerBase
 
         Logger.Log($"User '{email}' signed up successfully via Google");
 
-        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
+        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName });
     }
 
     [HttpPost("login-google")]
@@ -140,7 +142,7 @@ public class AuthController : ControllerBase
         [FromServices] UsersRepository repo)
     {
         var jwtToken = await ValidateAppleIdTokenAsync(req.IdToken);
-        Logger.Log($"The ID token is : {req.IdToken}", LogLevel.Information);
+        Logger.Log($"The ID token is : {req.IdToken}");
         if (jwtToken is null)
         {
             return Unauthorized("Invalid ID token");
@@ -156,16 +158,18 @@ public class AuthController : ControllerBase
             if (userEmail is null)
                 return BadRequest("Email is null in auth JWT");
 
-            if (req.userIdentifier is null)
+            if (req.UserIdentifier is null)
                 return BadRequest("UserIdentifier is null");
 
-            await repo.AddAppleIdAsync(email: userEmail, appleId:req.userIdentifier);
+            Logger.Log("Apple id in some if");
+            await repo.AddAppleIdAsync(email: userEmail, appleId: req.UserIdentifier);
+            Logger.Log("Done apple id in some if");
 
             return Ok();
         }
 
 
-        string? appleId = req.userIdentifier;
+        string? appleId = req.UserIdentifier;
         if (appleId is null) return BadRequest("UserIdentifier is null");
         bool exists = await repo.ExistsAppleAsync(appleId);
         string? email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
@@ -178,20 +182,23 @@ public class AuthController : ControllerBase
             {
                 return BadRequest("Email is required for first-time Apple sign-in");
             }
+
             // Treat as first‑time Apple sign‑in (sign‑up)
             string jwt = jwtService.GenerateToken(email);
             Logger.Log($"User '{email}' sign up via Apple jwt sent successfully");
 
             if (await repo.ExistsAsync(email))
             {
+                Logger.Log("Zacala hodina debilovani");
                 await repo.AddAppleIdAsync(email, appleId);
+                Logger.Log("Skoncila hodina debilovani");
 
                 return Ok(new
                 {
                     jwt,
                     exists = true,
-                    firstName = req.givenName,
-                    lastName  = req.familyName,
+                    firstName = req.GivenName,
+                    lastName = req.FamilyName,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
@@ -202,8 +209,8 @@ public class AuthController : ControllerBase
                 {
                     jwt,
                     exists = false,
-                    firstName = req.givenName,
-                    lastName  = req.familyName,
+                    firstName = req.GivenName,
+                    lastName = req.FamilyName,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
@@ -213,7 +220,7 @@ public class AuthController : ControllerBase
         }
         else
         {
-            if (email == "" || email is null)
+            if (string.IsNullOrEmpty(email))
             {
                 UserModel user = (await repo.GetUserByAppleIdAsync(appleId))!;
 
@@ -225,21 +232,24 @@ public class AuthController : ControllerBase
                 string jwt = jwtService.GenerateToken(user.Email);
                 Logger.Log($"User '{user.Email}' logged in successfully via Apple");
 
-                return Ok(new {jwt});
+                return Ok(new { jwt });
             }
             else
             {
                 UserModel user = (await repo.GetUserByEmailAsync(email))!;
-
-                repo.AddAppleIdAsync(email, appleId);
+                
+                Logger.Log("Kokotovani zacalo");
+                await repo.AddAppleIdAsync(email, appleId);
+                Logger.Log("Kokotovani skoncilo");
 
                 if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
                 {
                     user.IsEmailVerified = true;
                 }
+
                 string jwt = jwtService.GenerateToken(user.Email);
                 Logger.Log($"User '{user.Email}' logged in successfully via Apple");
-                return Ok(new {jwt});
+                return Ok(new { jwt });
             }
         }
     }
@@ -252,12 +262,47 @@ public class AuthController : ControllerBase
     {
         Logger.Log($"Got user: {user} with state: {state} and id_token: {idToken}");
 
-        if (state is not null) {
+        if (state is not null)
+        {
             var returnUrl = state.Split("|")[0];
             return Redirect(new Uri($"{returnUrl}#user={user}&id_token={idToken}").AbsoluteUri);
-        } else {
+        }
+        else
+        {
             return BadRequest();
         }
+    }
+    
+    [HttpPost("apple/callback")]
+    public IActionResult AppleAppCallback(
+        [FromForm] string? user,
+        [FromForm] string? state,
+        [FromForm(Name = "id_token")] string? idToken,
+        [FromForm(Name = "code")] string? code)
+    {
+        Logger.Log($"[Android] Apple callback: user={user}, state={state}, id_token={(idToken != null ? "<present>" : "<null>")}, code={(code != null ? "<present>" : "<null>")}", LogLevel.Information);
+
+        // Resolve target Android package id (prefer configuration, fallback to default)
+        var androidPackage = _configuration["Auth:Android:Package"] ?? "com.delta.strnadi";
+
+        // Build query string to forward to the app via the intent deep-link
+        var parts = new List<string>();
+        if (!string.IsNullOrEmpty(code)) parts.Add($"code={Uri.EscapeDataString(code)}");
+        if (!string.IsNullOrEmpty(state)) parts.Add($"state={Uri.EscapeDataString(state)}");
+        if (!string.IsNullOrEmpty(idToken)) parts.Add($"id_token={Uri.EscapeDataString(idToken)}");
+        if (!string.IsNullOrEmpty(user)) parts.Add($"user={Uri.EscapeDataString(user)}");
+        var query = parts.Count > 0 ? "?" + string.Join("&", parts) : string.Empty;
+
+        // Redirect back into the Android app via intent:// deep link
+        var intentUrl = $"intent://callback{query}#Intent;scheme=signinwithapple;package={androidPackage};end";
+        return Redirect(intentUrl);
+}
+
+    [HttpGet("has-apple-id")]
+    public async Task<IActionResult> HasAppleId([FromQuery] int userId, [FromServices] UsersRepository users)
+    {
+        var has = (await users.GetUserByIdAsync(userId))?.AppleId is not null;
+        return has ? Ok() : Conflict();
     }
 
     [HttpPost("login")]
