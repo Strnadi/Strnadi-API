@@ -34,4 +34,6 @@ public class SignUpRequest
     public bool Consent { get; set; }
     
     public string? AppleId { get; set; }
+    
+    public string? GoogleId { get; set; }
 }

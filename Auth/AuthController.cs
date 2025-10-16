@@ -96,33 +96,34 @@ public class AuthController : ControllerBase
         if (payload is null)
             return Unauthorized("Invalid ID token");
 
-        string email = payload.Email;
-        bool userExists = await repo.ExistsAsync(email);
+        string googleId = payload.Subject;
+        
+        UserModel? user = await repo.GetUserByGoogleId(googleId);
 
-        if (userExists)
+        if (user is not null)
         {
-            UserModel user = (await repo.GetUserByEmailAsync(email))!;
-
+            // If email is not marked as verified yet
             if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
             {
                 user.IsEmailVerified = true;
             }
 
-            string jwt = jwtService.GenerateToken(email);
-            Logger.Log($"User '{email}' logged in successfully via Google");
+            string jwt = jwtService.GenerateToken(user.Email);
+            Logger.Log($"User '{user.Email}' logged in successfully via Google");
 
             return Ok(jwt);
         }
         else
         {
-            string jwt = jwtService.GenerateToken(email);
-            Logger.Log($"User '{email}' signed up successfully via Google");
+            string jwt = jwtService.GenerateToken(user.Email);
+            Logger.Log($"User '{user.Email}' signed up successfully via Google");
 
             return Ok(new
             {
                 jwt,
                 firstName = payload.GivenName,
                 lastName = payload.FamilyName,
+                googleId,
             });
         }
     }
@@ -324,12 +325,10 @@ public class AuthController : ControllerBase
         bool regularRegister = receivedJwt is null && request.Password is not null;
 
         bool exists = await repo.ExistsAsync(request.Email);
-
         if (exists)
             return Conflict("User already exists");
 
         bool created = await repo.CreateUserAsync(request, regularRegister);
-
         if (!created)
             return Conflict("Failed to create user");
 
