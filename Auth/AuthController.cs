@@ -153,9 +153,7 @@ public class AuthController : ControllerBase
             if (req.UserIdentifier is null)
                 return BadRequest("UserIdentifier is null");
 
-            Logger.Log("Apple id in some if");
             await repo.AddAppleIdAsync(email: userEmail, appleId: req.UserIdentifier);
-            Logger.Log("Done apple id in some if");
 
             return Ok();
         }
@@ -180,9 +178,7 @@ public class AuthController : ControllerBase
 
             if (await repo.ExistsAsync(email))
             {
-                Logger.Log("Zacala hodina debilovani");
                 await repo.AddAppleIdAsync(email, appleId);
-                Logger.Log("Skoncila hodina debilovani");
 
                 return Ok(new
                 {
@@ -229,9 +225,7 @@ public class AuthController : ControllerBase
             {
                 UserModel user = (await repo.GetUserByEmailAsync(email))!;
                 
-                Logger.Log("Kokotovani zacalo");
                 await repo.AddAppleIdAsync(email, appleId);
-                Logger.Log("Kokotovani skoncilo");
 
                 if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
                 {
