@@ -208,11 +208,16 @@ public class RecordingsController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? email)) 
             return Unauthorized();
         
-        var user = await usersRepo.GetUserByEmailAsync(email!);
-        if (user is null)
+        var jwtUser = await usersRepo.GetUserByEmailAsync(email!);
+        if (jwtUser is null)
             return Unauthorized("User does not exist");
-        
-        if (user.Email != email && !user.IsAdmin)
+
+        var recording = await recordingsRepo.GetAsync(id, parts: false, sound: false);
+        if (recording is null)
+            return NotFound("Recording not found");
+
+        var recordingOwner = (await usersRepo.GetUserByIdAsync(recording.UserId))!;
+        if (jwtUser.Email != recordingOwner.Email || !jwtUser.IsAdmin)
             return Unauthorized("User does not belong to this email or is not an admin");
 
         bool updated = await recordingsRepo.UpdateAsync(id, request);
