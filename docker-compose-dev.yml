@@ -14,6 +14,7 @@ services:
     volumes:
       - /home/strnadi-adm/strnadi-rev:/app/recordings
       - /home/strnadi-adm/strnadi-art:/app/articles
+      - /home/strnadi-adm/strnadi-usr:/app/users
   
   strnadi-db-dev:
     image: postgres
