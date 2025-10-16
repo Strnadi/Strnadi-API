@@ -28,9 +28,6 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using System.Security.Cryptography;
-using System.Security.Claims;
-using Microsoft.Extensions.Logging;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace Auth;
@@ -90,8 +87,8 @@ public class AuthController : ControllerBase
         return Ok(newJwt);
     }
 
-    [HttpPost("sign-up-google")]
-    public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
     {
@@ -100,40 +97,34 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid ID token");
 
         string email = payload.Email;
-        if (await repo.ExistsAsync(email))
-            return Conflict("User already exists");
+        bool userExists = await repo.ExistsAsync(email);
 
-        string jwt = jwtService.GenerateToken(email);
-
-        Logger.Log($"User '{email}' signed up successfully via Google");
-
-        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName });
-    }
-
-    [HttpPost("login-google")]
-    public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleAuthRequest req,
-        [FromServices] JwtService jwtService,
-        [FromServices] UsersRepository repo)
-    {
-        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
-        if (payload is null)
-            return Unauthorized("Invalid ID token");
-
-        string email = payload.Email;
-        if (!await repo.ExistsAsync(email))
-            return Conflict("User doesn't exist");
-
-        UserModel user = (await repo.GetUserByEmailAsync(email))!;
-
-        if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+        if (userExists)
         {
-            user.IsEmailVerified = true;
+            UserModel user = (await repo.GetUserByEmailAsync(email))!;
+
+            if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+            {
+                user.IsEmailVerified = true;
+            }
+
+            string jwt = jwtService.GenerateToken(email);
+            Logger.Log($"User '{email}' logged in successfully via Google");
+
+            return Ok(jwt);
         }
+        else
+        {
+            string jwt = jwtService.GenerateToken(email);
+            Logger.Log($"User '{email}' signed up successfully via Google");
 
-        string jwt = jwtService.GenerateToken(email);
-        Logger.Log($"User '{email}' logged in successfully via google'");
-
-        return Ok(jwt);
+            return Ok(new
+            {
+                jwt,
+                firstName = payload.GivenName,
+                lastName = payload.FamilyName,
+            });
+        }
     }
 
     [HttpPost("apple")]
@@ -167,7 +158,6 @@ public class AuthController : ControllerBase
 
             return Ok();
         }
-
 
         string? appleId = req.UserIdentifier;
         if (appleId is null) return BadRequest("UserIdentifier is null");
