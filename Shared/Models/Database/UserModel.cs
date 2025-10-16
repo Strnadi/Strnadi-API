@@ -44,8 +44,9 @@ public class UserModel
     public bool? Consent { get; set; }
     
     public string? Role { get; set; }
+    
+    public string? AppleId { get; set; }
 
-    [NotMapped]
-    [JsonIgnore]
+    [NotMapped] [JsonIgnore]
     public bool IsAdmin => Role == "admin";
 }

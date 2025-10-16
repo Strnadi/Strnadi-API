@@ -105,7 +105,7 @@ public class AuthController : ControllerBase
 
         Logger.Log($"User '{email}' signed up successfully via Google");
 
-        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName});
+        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName });
     }
 
     [HttpPost("login-google")]
@@ -140,7 +140,7 @@ public class AuthController : ControllerBase
         [FromServices] UsersRepository repo)
     {
         var jwtToken = await ValidateAppleIdTokenAsync(req.IdToken);
-        Logger.Log($"The ID token is : {req.IdToken}", LogLevel.Information);
+        Logger.Log($"The ID token is : {req.IdToken}");
         if (jwtToken is null)
         {
             return Unauthorized("Invalid ID token");
@@ -156,16 +156,16 @@ public class AuthController : ControllerBase
             if (userEmail is null)
                 return BadRequest("Email is null in auth JWT");
 
-            if (req.userIdentifier is null)
+            if (req.UserIdentifier is null)
                 return BadRequest("UserIdentifier is null");
 
-            await repo.AddAppleIdAsync(email: userEmail, appleId:req.userIdentifier);
+            await repo.AddAppleIdAsync(email: userEmail, appleId: req.UserIdentifier);
 
             return Ok();
         }
 
 
-        string? appleId = req.userIdentifier;
+        string? appleId = req.UserIdentifier;
         if (appleId is null) return BadRequest("UserIdentifier is null");
         bool exists = await repo.ExistsAppleAsync(appleId);
         string? email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
@@ -178,6 +178,7 @@ public class AuthController : ControllerBase
             {
                 return BadRequest("Email is required for first-time Apple sign-in");
             }
+
             // Treat as first‑time Apple sign‑in (sign‑up)
             string jwt = jwtService.GenerateToken(email);
             Logger.Log($"User '{email}' sign up via Apple jwt sent successfully");
@@ -190,8 +191,8 @@ public class AuthController : ControllerBase
                 {
                     jwt,
                     exists = true,
-                    firstName = req.givenName,
-                    lastName  = req.familyName,
+                    firstName = req.GivenName,
+                    lastName = req.FamilyName,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
@@ -202,8 +203,8 @@ public class AuthController : ControllerBase
                 {
                     jwt,
                     exists = false,
-                    firstName = req.givenName,
-                    lastName  = req.familyName,
+                    firstName = req.GivenName,
+                    lastName = req.FamilyName,
                     email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value,
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
@@ -225,7 +226,7 @@ public class AuthController : ControllerBase
                 string jwt = jwtService.GenerateToken(user.Email);
                 Logger.Log($"User '{user.Email}' logged in successfully via Apple");
 
-                return Ok(new {jwt});
+                return Ok(new { jwt });
             }
             else
             {
@@ -237,9 +238,10 @@ public class AuthController : ControllerBase
                 {
                     user.IsEmailVerified = true;
                 }
+
                 string jwt = jwtService.GenerateToken(user.Email);
                 Logger.Log($"User '{user.Email}' logged in successfully via Apple");
-                return Ok(new {jwt});
+                return Ok(new { jwt });
             }
         }
     }
@@ -252,12 +254,22 @@ public class AuthController : ControllerBase
     {
         Logger.Log($"Got user: {user} with state: {state} and id_token: {idToken}");
 
-        if (state is not null) {
+        if (state is not null)
+        {
             var returnUrl = state.Split("|")[0];
             return Redirect(new Uri($"{returnUrl}#user={user}&id_token={idToken}").AbsoluteUri);
-        } else {
+        }
+        else
+        {
             return BadRequest();
         }
+    }
+
+    [HttpGet("has-apple-id")]
+    public async Task<IActionResult> HasAppleId([FromQuery] int userId, [FromServices] UsersRepository users)
+    {
+        var has = (await users.GetUserByIdAsync(userId))?.AppleId is not null;
+        return has ? Ok() : Conflict();
     }
 
     [HttpPost("login")]
