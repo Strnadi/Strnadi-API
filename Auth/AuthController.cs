@@ -30,6 +30,8 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Cryptography;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Auth;
 
@@ -159,7 +161,9 @@ public class AuthController : ControllerBase
             if (req.UserIdentifier is null)
                 return BadRequest("UserIdentifier is null");
 
+            Logger.Log("Apple id in some if");
             await repo.AddAppleIdAsync(email: userEmail, appleId: req.UserIdentifier);
+            Logger.Log("Done apple id in some if");
 
             return Ok();
         }
@@ -185,7 +189,9 @@ public class AuthController : ControllerBase
 
             if (await repo.ExistsAsync(email))
             {
+                Logger.Log("Zacala hodina debilovani");
                 await repo.AddAppleIdAsync(email, appleId);
+                Logger.Log("Skoncila hodina debilovani");
 
                 return Ok(new
                 {
@@ -214,7 +220,7 @@ public class AuthController : ControllerBase
         }
         else
         {
-            if (email == "" || email is null)
+            if (string.IsNullOrEmpty(email))
             {
                 UserModel user = (await repo.GetUserByAppleIdAsync(appleId))!;
 
@@ -231,8 +237,10 @@ public class AuthController : ControllerBase
             else
             {
                 UserModel user = (await repo.GetUserByEmailAsync(email))!;
-
-                repo.AddAppleIdAsync(email, appleId);
+                
+                Logger.Log("Kokotovani zacalo");
+                await repo.AddAppleIdAsync(email, appleId);
+                Logger.Log("Kokotovani skoncilo");
 
                 if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
                 {
