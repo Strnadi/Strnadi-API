@@ -101,7 +101,7 @@ public class FilteredRecordingsController : ControllerBase
             return BadRequest("Invalid dialect code");
 
         bool createdDetected = await recordingsRepo.InsertDetectedDialectAsync(part!.Id, userGuessDialectId: null, dialectId);
-        if (createdDetected)
+        if (!createdDetected)
         {
             Logger.Log("FilteredRecordingsController::InsertDetectedDialectAsync returned false", LogLevel.Error);
             return StatusCode(500);
