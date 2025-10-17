@@ -375,21 +375,57 @@ public class RecordingsRepository : RepositoryBase
                 }));
 
     public async Task<FilteredRecordingPartModel?> CreateFilteredPartAsync(
-        int recordingId, DateTime start, DateTime end, FilteredRecordingPartState state, bool representant) =>
+        int recordingId, DateTime startDate, DateTime endDate, FilteredRecordingPartState state, bool representant) =>
         await ExecuteSafelyAsync(
             Connection.QuerySingleAsync<FilteredRecordingPartModel>(
                 """
-                    INSERT INTO filtered_recording_parts(recording_id, start, end, state, representant_flag)
-                    VALUES (@RecordingId, @Start, @End, @State, @Representant)
+                    INSERT INTO filtered_recording_parts(recording_id, start_date, end_date, state, representant_flag)
+                    VALUES (@RecordingId, @StartDate, @EndDate, @State, @Representant)
                     RETURNING *
                 """,
                 new
                 {
                     RecordingId = recordingId,
-                    Start = start,
-                    End = end,
+                    StartDate = startDate,
+                    EndDate = endDate,
                     State = (short)state,
                     Representant = representant
                 }
             ));
+
+    public async Task<bool> UpdateFilteredPartAsync(int filteredPartId, DateTime? start, DateTime? end,
+        bool? representant) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", filteredPartId);
+            
+            if (start != null)
+            {
+                updateFields.Add("start = @Start");
+                parameters.Add("@Start", start.Value);
+            }
+
+            if (end != null)
+            {
+                updateFields.Add("end = @End");
+                parameters.Add("@End", end.Value);
+            }
+
+            if (representant != null)
+            {
+                updateFields.Add("representant_flag = @Representant");
+                parameters.Add("@Representant", representant.Value);
+            }
+
+            var sql = $"UPDATE recordings SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+
+    public async Task<bool> SetConfirmedDialect(int filteredPartId, string confirmedDialectCode)
+    {
+        throw new NotImplementedException();
+    }
 }

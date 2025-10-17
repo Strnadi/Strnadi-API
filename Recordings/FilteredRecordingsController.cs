@@ -13,6 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using System.Reflection;
 using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -88,8 +90,8 @@ public class FilteredRecordingsController : ControllerBase
 
         var part = await recordingsRepo.CreateFilteredPartAsync(
             req.RecordingId,
-            req.Start,
-            req.End,
+            req.StartDate,
+            req.EndDate,
             FilteredRecordingPartState.ConfirmedManually,
             req.Representant
         );
@@ -107,5 +109,42 @@ public class FilteredRecordingsController : ControllerBase
         
         return Ok();
     }
-    
+
+    [HttpPatch("update-confirmed-dialect")]
+    public async Task<IActionResult> UpdateConfirmedDialectAsync([FromBody] UpdateConfirmedDialectRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+        
+        if (req.StartDate == null && req.EndDate == null && req.Representant == null && req.ConfirmedDialectCode == null)
+            return Ok();
+
+        if (req.Representant != null || req.StartDate != null || req.EndDate != null)
+        {
+            bool updated = await recordingsRepo.UpdateFilteredPartAsync(req.FilteredPartId, req.StartDate, req.EndDate, req.Representant);
+            if (!updated)
+            {
+                Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: UpdateFilteredPartsAsync returned false");
+                return StatusCode(500);
+            }
+        }
+
+        if (req.ConfirmedDialectCode != null)
+        {
+            bool updated = await recordingsRepo.SetConfirmedDialect(req.FilteredPartId, req.ConfirmedDialectCode);
+        }
+
+        throw new NotImplementedException();
+    }
 }
