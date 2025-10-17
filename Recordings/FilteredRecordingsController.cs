@@ -15,10 +15,13 @@
  */
 using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Repository;
 using Shared.Extensions;
 using Shared.Logging;
+using Shared.Models.Database.Recordings;
 using Shared.Models.Requests.Recordings;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Recordings;
 
@@ -65,4 +68,44 @@ public class FilteredRecordingsController : ControllerBase
             Ok() :
             Conflict();
     }
+    
+    [HttpPost("post-confirmed-dialect")]
+    public async Task<IActionResult> PostConfirmedDialectAsync([FromBody] PostConfirmedDialectRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+
+        var part = await recordingsRepo.CreateFilteredPartAsync(
+            req.RecordingId,
+            req.Start,
+            req.End,
+            FilteredRecordingPartState.ConfirmedManually,
+            req.Representant
+        );
+
+        var dialectId = await recordingsRepo.GetDialectCodeIdAsync(req.DialectCode);
+        if (dialectId is null)
+            return BadRequest("Invalid dialect code");
+
+        bool createdDetected = await recordingsRepo.InsertDetectedDialectAsync(part!.Id, userGuessDialectId: null, dialectId);
+        if (createdDetected)
+        {
+            Logger.Log("FilteredRecordingsController::InsertDetectedDialectAsync returned false", LogLevel.Error);
+            return StatusCode(500);
+        }
+        
+        return Ok();
+    }
+    
 }
