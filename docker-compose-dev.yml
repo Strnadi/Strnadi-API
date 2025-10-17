@@ -11,6 +11,7 @@ services:
       - "12001:8080"
     depends_on:
       - strnadi-db-dev
+      - strnadi-ffmpeg-dev
     volumes:
       - /home/strnadi-adm/strnadi-rev:/app/recordings
       - /home/strnadi-adm/strnadi-art:/app/articles
@@ -38,6 +39,12 @@ services:
       - "666:8080"
     depends_on:
       - strnadi-db-dev
+      - 
+  strnadi-ffmpeg-dev:
+    image: jrottenberg/ffmpeg:latest
+    container_name: strnadi-ffmpeg-dev
+    networks:
+      - strnadi-network-dev
 
 networks:
   strnadi-network-dev:
