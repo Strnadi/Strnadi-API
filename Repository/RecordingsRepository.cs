@@ -19,6 +19,7 @@ using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using NAudio.Wave;
 using Shared.Logging;
 using Shared.Models.Database.Dialects;
 using Shared.Models.Database.Recordings;
@@ -459,4 +460,34 @@ public class RecordingsRepository : RepositoryBase
                     Id = filteredPartId
                 })
         ) != 0;
+
+    public async Task FixSameDatesInPartsAsync()
+    {
+        var parts = await ExecuteSafelyAsync(
+            Connection.QueryAsync<RecordingPartModel>(
+                "SELECT * FROM recording_parts WHERE start_date = end_date"
+            ));
+
+        if (parts is null)
+            return;
+
+        foreach (var part in parts)
+        {
+            try
+            {
+                using var reader = new AudioFileReader(part.FilePath);
+                var duration = reader.TotalTime;
+                var newEndDate = part.StartDate.Add(duration);
+                Console.WriteLine();
+                Logger.Log("Part id: " + part.Id);
+                Logger.Log("Start date: " + part.StartDate);
+                Logger.Log("Old end date: " + part.EndDate);
+                Logger.Log("New end date: " + newEndDate);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Failed to fix part " + part.Id + ": " + ex, LogLevel.Error);
+            }
+        }
+    }
 }
