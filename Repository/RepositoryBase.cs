@@ -55,7 +55,7 @@ public abstract class RepositoryBase : IDisposable
         }
         catch (Exception e)
         {
-            Logger.Log("Failed to perform repository action: " + e.Message, LogLevel.Error);
+            Logger.Log("Failed to perform repository action: " + e, LogLevel.Error);
         }
     }
 
