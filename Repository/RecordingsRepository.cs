@@ -18,15 +18,20 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Shared.Logging;
 using Shared.Models.Database.Dialects;
 using Shared.Models.Database.Recordings;
 using Shared.Models.Requests.Recordings;
 using Shared.Tools;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Repository;
 
 public class RecordingsRepository : RepositoryBase
 {
+    private readonly TimeSpan _timeMatchTolerance = TimeSpan.FromSeconds(1);
+    
     public RecordingsRepository(IConfiguration configuration) : base(configuration)
     {
     }
@@ -256,24 +261,25 @@ public class RecordingsRepository : RepositoryBase
     private async Task<int> InsertFilteredPartAsync(FilteredRecordingPartUploadRequest model) =>
         await ExecuteSafelyAsync(Connection.ExecuteScalarAsync<int>(sql: 
             """
-            INSERT INTO filtered_recording_parts(recording_id, start_date, end_date)
-            VALUES (@RecordingId, @StartDate, @EndDate)
+            INSERT INTO filtered_recording_parts(recording_id, start_date, end_date, state)
+            VALUES (@RecordingId, @StartDate, @EndDate, @State)
             RETURNING id;
             """, new
             {
                 model.RecordingId,
                 model.StartDate,
-                model.EndDate
+                model.EndDate,
+                State = (int)FilteredRecordingPartState.AwaitingProcession
             }));
 
-    private async Task<int?> GetDialectCodeIdAsync(string dialectCode) =>
+    public async Task<int?> GetDialectCodeIdAsync(string dialectCode) =>
         await ExecuteSafelyAsync(Connection.ExecuteScalarAsync<int?>(sql:
                 "SELECT id FROM dialects WHERE dialect_code = @DialectCode", new
                 {
                     DialectCode = dialectCode
                 }));
 
-    private async Task<bool> InsertDetectedDialectAsync(int filteredPartId, int dialectId) =>
+    private async Task<bool> InsertDetectedDialectAsync(int filteredPartId, int userGuessDialectId) =>
         await ExecuteSafelyAsync(Connection.ExecuteAsync(sql:
             """
             INSERT INTO detected_dialects(filtered_recording_part_id, user_guess_dialect_id) 
@@ -281,8 +287,29 @@ public class RecordingsRepository : RepositoryBase
             """, new
             {
                 FilteredPartId = filteredPartId,
-                UserGuessDialectId = dialectId
+                UserGuessDialectId = userGuessDialectId
             })) != 0;
+
+    public async Task<bool> InsertDetectedDialectAsync(int filteredPartId, int? userGuessDialectId,
+        int? confirmedDialectId)
+    {
+        if (userGuessDialectId is null && confirmedDialectId is null)
+        {
+            Logger.Log("RecordingsRepository::InsertDetectedDialectAsync: Both user guess and confirmed dialect IDs are null. Cannot insert detected dialect.", LogLevel.Warning);
+            return false;
+        }
+        
+        return await ExecuteSafelyAsync(Connection.ExecuteAsync(sql:
+            """
+            INSERT INTO detected_dialects(filtered_recording_part_id, user_guess_dialect_id, confirmed_dialect_id) 
+            VALUES (@FilteredPartId, @UserGuessDialectId, @ConfirmedDialectId)
+            """, new
+            {
+                FilteredPartId = filteredPartId,
+                UserGuessDialectId = userGuessDialectId,
+                ConfirmedDialectId = confirmedDialectId
+            })) != 0;
+    }
 
     public async Task<bool> ExistsAsync(int id) =>
         await GetAsync(id, false, false) is not null;
@@ -326,4 +353,110 @@ public class RecordingsRepository : RepositoryBase
         byte[] content = await FileSystemHelper.ReadRecordingFileAsync(recId, partId);
         return content;
     }
+
+    public async Task<FilteredRecordingPartModel?> FindFilteredPartByTimeAsync(
+        int recordingId, DateTime start, DateTime end) =>
+        await ExecuteSafelyAsync(
+            Connection.QueryFirstOrDefaultAsync<FilteredRecordingPartModel>(
+                @"
+                    SELECT *
+                    FROM filtered_recording_parts
+                    WHERE recording_id = @RecordingId
+                        AND ABS(EXTRACT(EPOCH FROM (start - @Start))) < @ToleranceSeconds
+                        AND ABS(EXTRACT(EPOCH FROM (end - @End))) < @ToleranceSeconds
+                    LIMIT 1
+                ",
+                new
+                {
+                    RecordingId = recordingId,
+                    Start = start,
+                    End = end,
+                    ToleranceSeconds = _timeMatchTolerance.Seconds
+                }));
+
+    public async Task<FilteredRecordingPartModel?> CreateFilteredPartAsync(
+        int recordingId, DateTime startDate, DateTime endDate, FilteredRecordingPartState state, bool representant) =>
+        await ExecuteSafelyAsync(
+            Connection.QuerySingleAsync<FilteredRecordingPartModel>(
+                """
+                    INSERT INTO filtered_recording_parts(recording_id, start_date, end_date, state, representant_flag)
+                    VALUES (@RecordingId, @StartDate, @EndDate, @State, @Representant)
+                    RETURNING *
+                """,
+                new
+                {
+                    RecordingId = recordingId,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    State = (short)state,
+                    Representant = representant
+                }
+            ));
+
+    public async Task<bool> UpdateFilteredPartAsync(int filteredPartId, DateTime? start, DateTime? end,
+        bool? representant) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", filteredPartId);
+            
+            if (start != null)
+            {
+                updateFields.Add("start_date = @Start");
+                parameters.Add("@Start", start.Value);
+            }
+
+            if (end != null)
+            {
+                updateFields.Add("end_date = @End");
+                parameters.Add("@End", end.Value);
+            }
+
+            if (representant != null)
+            {
+                updateFields.Add("representant_flag = @Representant");
+                parameters.Add("@Representant", representant.Value);
+            }
+
+            var sql = $"UPDATE filtered_recording_parts SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+
+    public async Task<bool> SetConfirmedDialect(int filteredPartId, string confirmedDialectCode)
+    {
+        int? dialectId = await GetDialectCodeIdAsync(confirmedDialectCode);
+        if (dialectId == null)
+            return false;
+
+        return await ExecuteSafelyAsync(
+            Connection.ExecuteAsync(sql:
+                "UPDATE detected_dialects SET confirmed_dialect_id = @DialectId WHERE filtered_recording_part_id = @PartId ",
+                new
+                {
+                    DialectId = dialectId,
+                    PartId = filteredPartId
+                }
+            )) != 0;
+    }
+
+    public async Task<bool> DeleteFilteredPartAsync(int filteredPartId) =>
+        await ExecuteSafelyAsync(
+            Connection.ExecuteAsync(
+                "DELETE FROM filtered_recording_parts WHERE id = @FilteredPartId",
+                new
+                {
+                    FilteredPartId = filteredPartId
+                })) != 0;
+
+    public async Task<bool> ExistsFilteredPartAsync(int filteredPartId) =>
+        await ExecuteSafelyAsync(
+            Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM filtered_recording_parts WHERE id = @Id",
+                new
+                {
+                    Id = filteredPartId
+                })
+        ) != 0;
 }
