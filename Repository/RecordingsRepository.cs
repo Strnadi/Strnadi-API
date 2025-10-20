@@ -478,7 +478,11 @@ public class RecordingsRepository : RepositoryBase
                 using var reader = new AudioFileReader(part.FilePath);
                 var duration = reader.TotalTime;
                 var newEndDate = part.StartDate.Add(duration);
-                Logger.Log("New end date for part " + part.Id + " is " + newEndDate);
+                Console.WriteLine();
+                Logger.Log("Part id: " + part.Id);
+                Logger.Log("Start date: " + part.StartDate);
+                Logger.Log("Old end date: " + part.EndDate);
+                Logger.Log("New end date: " + newEndDate);
             }
             catch (Exception ex)
             {
