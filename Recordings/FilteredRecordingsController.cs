@@ -121,7 +121,7 @@ public class FilteredRecordingsController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
 
-        if (jwtService.TryValidateToken(jwt, out string? email))
+        if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
         if (!await usersRepo.IsAdminAsync(email))
