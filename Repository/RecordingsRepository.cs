@@ -419,7 +419,7 @@ public class RecordingsRepository : RepositoryBase
                 parameters.Add("@Representant", representant.Value);
             }
 
-            var sql = $"UPDATE recordings SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            var sql = $"UPDATE filtered_recording_parts SET {string.Join(", ", updateFields)} WHERE id = @Id";
             
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
