@@ -426,6 +426,18 @@ public class RecordingsRepository : RepositoryBase
 
     public async Task<bool> SetConfirmedDialect(int filteredPartId, string confirmedDialectCode)
     {
-        throw new NotImplementedException();
+        int? dialectId = await GetDialectCodeIdAsync(confirmedDialectCode);
+        if (dialectId == null)
+            return false;
+
+        return await ExecuteSafelyAsync(
+            Connection.ExecuteAsync(sql:
+                "UPDATE detected_dialects SET confirmed_dialect_id = @DialectId WHERE filtered_recording_part_id = @PartId ",
+                new
+                {
+                    DialectId = dialectId,
+                    PartId = filteredPartId
+                }
+            )) != 0;
     }
 }
