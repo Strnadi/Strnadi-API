@@ -133,19 +133,23 @@ public class FilteredRecordingsController : ControllerBase
         if (req.Representant != null || req.StartDate != null || req.EndDate != null)
         {
             bool updated = await recordingsRepo.UpdateFilteredPartAsync(req.FilteredPartId, req.StartDate, req.EndDate, req.Representant);
+            Logger.Log("Updated Filtered part with id " + req.FilteredPartId, LogLevel.Debug);
             if (!updated)
             {
-                Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: UpdateFilteredPartsAsync returned false");
+                Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: UpdateFilteredPartsAsync returned false", LogLevel.Warning);
                 return StatusCode(500);
             }
         }
+        
+        Logger.Log("Heherherhehre");
 
         if (req.ConfirmedDialectCode != null)
         {
             bool updated = await recordingsRepo.SetConfirmedDialect(req.FilteredPartId, req.ConfirmedDialectCode);
+            Logger.Log($"Heherherhehre haha: {updated}");
             if (!updated)
             {
-                Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: SetConfirmedDialect returned false");
+                Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: SetConfirmedDialect returned false", LogLevel.Warning);
                 return StatusCode(500);
             }
         }
