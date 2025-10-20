@@ -30,6 +30,7 @@
       <PackageReference Include="Dapper" Version="2.1.66" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0-preview.1.25080.5" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0-preview.1.25080.5" />
+      <PackageReference Include="NAudio" Version="2.2.1" />
       <PackageReference Include="Npgsql" Version="9.0.3" />
       <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="7.3.1" />
       <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.1" />
