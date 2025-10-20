@@ -403,13 +403,13 @@ public class RecordingsRepository : RepositoryBase
             
             if (start != null)
             {
-                updateFields.Add("start = @Start");
+                updateFields.Add("start_date = @Start");
                 parameters.Add("@Start", start.Value);
             }
 
             if (end != null)
             {
-                updateFields.Add("end = @End");
+                updateFields.Add("end_date = @End");
                 parameters.Add("@End", end.Value);
             }
 
