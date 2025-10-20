@@ -449,4 +449,14 @@ public class RecordingsRepository : RepositoryBase
                 {
                     FilteredPartId = filteredPartId
                 })) != 0;
+
+    public async Task<bool> ExistsFilteredPartAsync(int filteredPartId) =>
+        await ExecuteSafelyAsync(
+            Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM filtered_recording_parts WHERE id = @Id",
+                new
+                {
+                    Id = filteredPartId
+                })
+        ) != 0;
 }

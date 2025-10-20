@@ -88,6 +88,9 @@ public class FilteredRecordingsController : ControllerBase
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
 
+        if (!await recordingsRepo.ExistsAsync(req.RecordingId))
+            return Conflict("Recording does not exist");
+
         var part = await recordingsRepo.CreateFilteredPartAsync(
             req.RecordingId,
             req.StartDate,
@@ -127,8 +130,18 @@ public class FilteredRecordingsController : ControllerBase
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
         
+        if (!await recordingsRepo.ExistsFilteredPartAsync(req.FilteredPartId)) 
+            return Conflict("Filtered part does not exist");
+        
         if (req.StartDate == null && req.EndDate == null && req.Representant == null && req.ConfirmedDialectCode == null)
             return Ok();
+
+        if (req.ConfirmedDialectCode is not null)
+        {
+            var dialectId = await recordingsRepo.GetDialectCodeIdAsync(req.ConfirmedDialectCode);
+            if (dialectId is null)
+                return BadRequest("Invalid dialect code");
+        }
 
         if (req.Representant != null || req.StartDate != null || req.EndDate != null)
         {
@@ -166,6 +179,9 @@ public class FilteredRecordingsController : ControllerBase
 
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
+        
+        if (!await recordingsRepo.ExistsFilteredPartAsync(filteredPartId))
+            return Conflict("Filtered part does not exist");
         
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");

@@ -1,6 +1,6 @@
 namespace Shared.Models.Requests.Recordings;
 
-public class UpdateConfirmedDialectRequest
+public struct UpdateConfirmedDialectRequest
 {
     public int FilteredPartId { get; set; }
     
