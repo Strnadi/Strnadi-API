@@ -473,10 +473,17 @@ public class RecordingsRepository : RepositoryBase
 
         foreach (var part in parts)
         {
-            using var reader = new AudioFileReader(part.FilePath);
-            var duration = reader.TotalTime;
-            var newEndDate = part.StartDate.Add(duration);
-            Logger.Log("New end date for part " + part.Id + " is " + newEndDate);
+            try
+            {
+                using var reader = new AudioFileReader(part.FilePath);
+                var duration = reader.TotalTime;
+                var newEndDate = part.StartDate.Add(duration);
+                Logger.Log("New end date for part " + part.Id + " is " + newEndDate);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Failed to fix part " + part.Id + ": " + ex, LogLevel.Error);
+            }
         }
     }
 }
