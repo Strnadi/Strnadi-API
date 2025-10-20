@@ -473,12 +473,12 @@ public class RecordingsRepository : RepositoryBase
 
         foreach (var part in parts)
         {
+            Console.WriteLine();
             try
             {
                 using var reader = new AudioFileReader(part.FilePath);
                 var duration = reader.TotalTime;
                 var newEndDate = part.StartDate.Add(duration);
-                Console.WriteLine();
                 Logger.Log("Part id: " + part.Id);
                 Logger.Log("Start date: " + part.StartDate);
                 Logger.Log("Old end date: " + part.EndDate);
