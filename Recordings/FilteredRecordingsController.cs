@@ -133,7 +133,7 @@ public class FilteredRecordingsController : ControllerBase
         if (req.Representant != null || req.StartDate != null || req.EndDate != null)
         {
             bool updated = await recordingsRepo.UpdateFilteredPartAsync(req.FilteredPartId, req.StartDate, req.EndDate, req.Representant);
-            Logger.Log("Updated Filtered part with id " + req.FilteredPartId, LogLevel.Debug);
+            Logger.Log("Updated Filtered part with id " + req.FilteredPartId);
             if (!updated)
             {
                 Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: UpdateFilteredPartsAsync returned false", LogLevel.Warning);
@@ -141,12 +141,9 @@ public class FilteredRecordingsController : ControllerBase
             }
         }
         
-        Logger.Log("Heherherhehre");
-
         if (req.ConfirmedDialectCode != null)
         {
             bool updated = await recordingsRepo.SetConfirmedDialect(req.FilteredPartId, req.ConfirmedDialectCode);
-            Logger.Log($"Heherherhehre haha: {updated}");
             if (!updated)
             {
                 Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: SetConfirmedDialect returned false", LogLevel.Warning);
@@ -155,5 +152,26 @@ public class FilteredRecordingsController : ControllerBase
         }
 
         return Ok();
+    }
+
+    [HttpDelete("delete-confirmed-dialect/{filteredPartId:int}")]
+    public async Task<IActionResult> DeleteConfirmedDialectAsync([FromRoute] int filteredPartId,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+        
+        bool deleted =  await recordingsRepo.DeleteFilteredPartAsync(filteredPartId);
+
+        return deleted ? Ok() : Conflict();
     }
 }

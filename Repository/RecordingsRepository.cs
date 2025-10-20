@@ -440,4 +440,13 @@ public class RecordingsRepository : RepositoryBase
                 }
             )) != 0;
     }
+
+    public async Task<bool> DeleteFilteredPartAsync(int filteredPartId) =>
+        await ExecuteSafelyAsync(
+            Connection.ExecuteAsync(
+                "DELETE FROM filtered_recording_parts WHERE id = @FilteredPartId",
+                new
+                {
+                    FilteredPartId = filteredPartId
+                })) != 0;
 }
