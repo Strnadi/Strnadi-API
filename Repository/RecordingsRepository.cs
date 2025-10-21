@@ -231,7 +231,7 @@ public class RecordingsRepository : RepositoryBase
                     FROM filtered_recording_parts
                     {(verified || recordingId is not null ? "WHERE" : "")} 
                         {(recordingId is not null ? "recording_id = @RecordingId" : "")}
-                        {(verified ? "AND state IN (1, 2)" : "")}
+                        {(verified ? $"{(recordingId is not null ? "AND" : "")} state IN (2, 3, 5, 7)" : "")}
                 ", new { RecordingId = recordingId }));
 
     private async Task<DialectModel[]?> GetDialects() =>
@@ -497,6 +497,18 @@ public class RecordingsRepository : RepositoryBase
                 Logger.Log("File format: " + format);
                 string duration = ffmpeg.GetFileDuration(part.FilePath);
                 Logger.Log("File duration: " + duration + " seconds");
+                if (double.TryParse(duration, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double seconds))
+                {
+                    TimeSpan ts = TimeSpan.FromSeconds(seconds);
+                    var newEndDate = part.StartDate.Add(ts);
+                    Logger.Log("Calculated new end date: " + newEndDate);
+                    await Connection.ExecuteAsync("UPDATE recording_parts SET end_date = @EndDate WHERE id = @Id", new
+                    {
+                        EndDate = newEndDate,
+                        Id = part.Id
+                    });
+                    Logger.Log($"Updated part {part.Id} end date to {newEndDate}");
+                }                
             // }
             // catch
             // {
