@@ -516,4 +516,9 @@ public class RecordingsRepository : RepositoryBase
             // }
         }
     }
+
+    public async Task<DialectModel[]> GetDialectsAsync()
+    {
+        return (await Connection.QueryAsync<DialectModel>("SELECT * FROM dialects")).ToArray();
+    }
 }
