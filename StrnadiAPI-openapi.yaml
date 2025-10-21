@@ -2091,7 +2091,14 @@ components:
           nullable: true
     FilteredRecordingPartModel:
       type: object
-      required: [id, startDate, endDate, state, recordingId, detectedDialects]
+      required:
+        - id
+        - startDate
+        - endDate
+        - state
+        - recordingId
+        - representant
+        - detectedDialects
       properties:
         id:
           type: integer
@@ -2108,13 +2115,22 @@ components:
         recordingId:
           type: integer
           minimum: 1
+        representant:
+          type: boolean
+          description: Indicates whether the part represents the whole recording.
+        parentId:
+          type: integer
+          minimum: 1
+          nullable: true
         detectedDialects:
           type: array
           items:
             $ref: '#/components/schemas/DetectedDialectModel'
     DetectedDialectModel:
       type: object
-      required: [id, userGuessDialectId, filteredRecordingPartId]
+      required:
+        - id
+        - filteredRecordingPartId
       properties:
         id:
           type: integer
@@ -2122,6 +2138,7 @@ components:
         userGuessDialectId:
           type: integer
           minimum: 1
+          nullable: true
         userGuessDialect:
           type: string
           nullable: true
