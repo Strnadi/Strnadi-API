@@ -231,7 +231,7 @@ public class RecordingsRepository : RepositoryBase
                     FROM filtered_recording_parts
                     {(verified || recordingId is not null ? "WHERE" : "")} 
                         {(recordingId is not null ? "recording_id = @RecordingId" : "")}
-                        {(verified ? "AND state IN (1, 2)" : "")}
+                        {(verified ? $"{(recordingId is not null ? "AND" : "")} state IN (1, 2)" : "")}
                 ", new { RecordingId = recordingId }));
 
     private async Task<DialectModel[]?> GetDialects() =>
