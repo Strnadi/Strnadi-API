@@ -38,7 +38,6 @@ public class RecordingModel
     
     public bool Deleted { get; set; }
     
-    [NotMapped]
     public double TotalSeconds { get; set; }
     
     public IEnumerable<RecordingPartModel>? Parts { get; set; }
