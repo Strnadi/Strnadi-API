@@ -473,21 +473,35 @@ public class RecordingsRepository : RepositoryBase
 
         foreach (var part in parts)
         {
-            try
-            {
-                using var reader = new AudioFileReader(part.FilePath);
-                var duration = reader.TotalTime;
-                var newEndDate = part.StartDate.Add(duration);
-                Console.WriteLine();
-                Logger.Log("Part id: " + part.Id);
-                Logger.Log("Start date: " + part.StartDate);
-                Logger.Log("Old end date: " + part.EndDate);
-                Logger.Log("New end date: " + newEndDate);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log("Failed to fix part " + part.Id + ": " + ex, LogLevel.Error);
-            }
+            Console.WriteLine();
+            // try
+            // {
+            //     using var reader = new AudioFileReader(part.FilePath);
+            //     var duration = reader.TotalTime;
+            //     var newEndDate = part.StartDate.Add(duration);
+            //     Logger.Log("Part id: " + part.Id);
+            //     Logger.Log("Start date: " + part.StartDate);
+            //     Logger.Log("Old end date: " + part.EndDate);
+            //     Logger.Log("New end date: " + newEndDate);
+            // }
+            // catch (Exception ex)
+            // {
+            //     Logger.Log("Failed to fix part " + part.Id + ": " + ex, LogLevel.Error);
+            // }
+            //
+            // try
+            // {
+                FFmpegService ffmpeg = new();
+                Logger.Log("Start analyzing sound file for part " + part.Id);
+                string format = ffmpeg.DetectFileFormat(part.FilePath);
+                Logger.Log("File format: " + format);
+                string duration = ffmpeg.GetFileDuration(part.FilePath);
+                Logger.Log("File duration: " + duration + " seconds");
+            // }
+            // catch
+            // {
+            //     Logger.Log("Failed to detect file format " + part.Id, LogLevel.Error);
+            // }
         }
     }
 }
