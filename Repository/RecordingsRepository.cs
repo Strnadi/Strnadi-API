@@ -492,6 +492,7 @@ public class RecordingsRepository : RepositoryBase
             try
             {
                 FFmpegService ffmpeg = new();
+                Logger.Log("Start detecting file format for part " + part.Id);
                 string format = ffmpeg.DetectFileFormat(part.FilePath);
                 Logger.Log("File format: " + format);
             }
