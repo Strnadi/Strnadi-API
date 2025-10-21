@@ -69,7 +69,16 @@ public class RecordingsRepository : RepositoryBase
 
     private async Task<IEnumerable<RecordingModel>?> GetAllAsync() =>
         await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
-            await Connection.QueryAsync<RecordingModel>("SELECT * FROM recordings"));
+            await Connection.QueryAsync<RecordingModel>(
+                """
+                SELECT r.*,
+                       COALESCE((
+                           SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
+                           FROM recording_parts rp
+                           WHERE rp.recording_id = r.id
+                       ), 0)::DOUBLE PRECISION AS total_seconds
+                FROM recordings r;
+                """));
 
     public async Task<RecordingModel?> GetAsync(int id, bool parts, bool sound)
     {
