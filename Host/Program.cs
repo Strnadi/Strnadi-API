@@ -92,6 +92,11 @@ class Program
             options.RoutePrefix = string.Empty;
             options.DocumentTitle = "Strnadi API - Swagger";
         });
+        app.UseReDoc(options =>
+        {
+            options.SpecUrl("/swagger/v1/swagger.json");
+            options.DocumentTitle = "Strnadi API - Swagger";
+        });
     }
 
     static OpenApiDocumentContent LoadEmbeddedOpenApiDocument()
