@@ -220,6 +220,57 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /auth/apple/callback:
+    post:
+      tags: [Auth]
+      summary: Handle the Apple sign-in redirect for Android clients
+      description: |
+        Mirrors the web callback but returns an Android `intent://` deep link that forwards the
+        Apple payload back into the mobile application.
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  description: Base64 encoded JSON payload with the Apple user information.
+                  nullable: true
+                state:
+                  type: string
+                  description: Encoded state value that contains the original return URL.
+                  nullable: true
+                id_token:
+                  type: string
+                  description: Apple identity token supplied by the platform.
+                  nullable: true
+                code:
+                  type: string
+                  description: Authorization code provided by Apple when `response_mode=form_post`.
+                  nullable: true
+      responses:
+        '302':
+          description: Redirected to the Android intent deep link containing the Apple payload.
+  /auth/has-apple-id:
+    get:
+      tags: [Auth]
+      summary: Check whether a user has a linked Apple ID
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: The specified user has an Apple ID linked to the account.
+        '409':
+          description: The user has no linked Apple ID or does not exist.
   /auth/login:
     post:
       tags: [Auth]
@@ -358,6 +409,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: The caller is not an administrator or supplied an invalid JWT.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to load users from the repository.
           content:
             text/plain:
               schema:
@@ -1126,7 +1183,7 @@ paths:
         '200':
           description: Filtered part stored successfully.
         '400':
-          description: Missing bearer token or an unknown dialect code was supplied.
+          description: Missing bearer token.
           content:
             text/plain:
               schema:
@@ -1139,6 +1196,112 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: The filtered part could not be saved.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/filtered/post-confirmed-dialect:
+    post:
+      tags: [Filtered Recordings]
+      summary: Create a manually confirmed dialect part
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostConfirmedDialectRequest'
+      responses:
+        '200':
+          description: Confirmed dialect part created and linked to the recording.
+        '400':
+          description: Missing bearer token or an invalid dialect code was provided.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The referenced recording does not exist.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The confirmed dialect could not be persisted.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/filtered/update-confirmed-dialect:
+    patch:
+      tags: [Filtered Recordings]
+      summary: Update a manually confirmed dialect part
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConfirmedDialectRequest'
+      responses:
+        '200':
+          description: Confirmed dialect part updated.
+        '400':
+          description: Missing bearer token or an invalid dialect code was provided.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The filtered part does not exist.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The filtered part could not be updated.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/filtered/delete-confirmed-dialect/{filteredPartId}:
+    delete:
+      tags: [Filtered Recordings]
+      summary: Delete a manually confirmed dialect part
+      parameters:
+        - name: filteredPartId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Confirmed dialect part deleted.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The filtered part does not exist or could not be deleted.
           content:
             text/plain:
               schema:
@@ -1567,6 +1730,26 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /utils/fix-same-dates:
+    get:
+      tags: [Utils]
+      summary: Fix duplicate recording part timestamps
+      description: Re-runs the maintenance routine that normalizes duplicate timestamps for recording parts.
+      responses:
+        '200':
+          description: The maintenance routine completed.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /utils/health:
     head:
       tags: [Utils]
@@ -1868,6 +2051,44 @@ components:
           format: date-time
         dialectCode:
           type: string
+    PostConfirmedDialectRequest:
+      type: object
+      required: [recordingId, startDate, endDate, dialectCode, representant]
+      properties:
+        recordingId:
+          type: integer
+          minimum: 1
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        dialectCode:
+          type: string
+        representant:
+          type: boolean
+    UpdateConfirmedDialectRequest:
+      type: object
+      required: [filteredPartId]
+      properties:
+        filteredPartId:
+          type: integer
+          minimum: 1
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+        confirmedDialectCode:
+          type: string
+          nullable: true
+        representant:
+          type: boolean
+          nullable: true
     FilteredRecordingPartModel:
       type: object
       required: [id, startDate, endDate, state, recordingId, detectedDialects]
