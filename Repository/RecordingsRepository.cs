@@ -60,7 +60,7 @@ public class RecordingsRepository : RepositoryBase
                                           SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
                                           FROM recording_parts rp
                                           WHERE rp.recording_id = r.id
-                                      ), 0)::DOUBLE PRECISION AS TotalSeconds
+                                      ), 0)::DOUBLE PRECISION AS "TotalSeconds"
                                FROM recordings r
                                WHERE r.user_id = @UserId;
                                """;
@@ -93,7 +93,7 @@ public class RecordingsRepository : RepositoryBase
                                SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
                                FROM recording_parts rp
                                WHERE rp.recording_id = r.id
-                           ), 0)::DOUBLE PRECISION AS TotalSeconds
+                           ), 0)::DOUBLE PRECISION AS "TotalSeconds"
                     FROM recordings r
                     WHERE r.id = @Id;
                     """,
