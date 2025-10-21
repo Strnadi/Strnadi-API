@@ -474,32 +474,32 @@ public class RecordingsRepository : RepositoryBase
         foreach (var part in parts)
         {
             Console.WriteLine();
-            try
-            {
-                using var reader = new AudioFileReader(part.FilePath);
-                var duration = reader.TotalTime;
-                var newEndDate = part.StartDate.Add(duration);
-                Logger.Log("Part id: " + part.Id);
-                Logger.Log("Start date: " + part.StartDate);
-                Logger.Log("Old end date: " + part.EndDate);
-                Logger.Log("New end date: " + newEndDate);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log("Failed to fix part " + part.Id + ": " + ex, LogLevel.Error);
-            }
-
-            try
-            {
+            // try
+            // {
+            //     using var reader = new AudioFileReader(part.FilePath);
+            //     var duration = reader.TotalTime;
+            //     var newEndDate = part.StartDate.Add(duration);
+            //     Logger.Log("Part id: " + part.Id);
+            //     Logger.Log("Start date: " + part.StartDate);
+            //     Logger.Log("Old end date: " + part.EndDate);
+            //     Logger.Log("New end date: " + newEndDate);
+            // }
+            // catch (Exception ex)
+            // {
+            //     Logger.Log("Failed to fix part " + part.Id + ": " + ex, LogLevel.Error);
+            // }
+            //
+            // try
+            // {
                 FFmpegService ffmpeg = new();
                 Logger.Log("Start detecting file format for part " + part.Id);
                 string format = ffmpeg.DetectFileFormat(part.FilePath);
                 Logger.Log("File format: " + format);
-            }
-            catch
-            {
-                Logger.Log("Failed to detect file format " + part.Id, LogLevel.Error);
-            }
+            // }
+            // catch
+            // {
+            //     Logger.Log("Failed to detect file format " + part.Id, LogLevel.Error);
+            // }
         }
     }
 }
