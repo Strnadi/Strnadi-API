@@ -488,6 +488,17 @@ public class RecordingsRepository : RepositoryBase
             {
                 Logger.Log("Failed to fix part " + part.Id + ": " + ex, LogLevel.Error);
             }
+
+            try
+            {
+                FFmpegService ffmpeg = new();
+                string format = ffmpeg.DetectFileFormat(part.FilePath);
+                Logger.Log("File format: " + format);
+            }
+            catch
+            {
+                Logger.Log("Failed to detect file format " + part.Id, LogLevel.Error);
+            }
         }
     }
 }
