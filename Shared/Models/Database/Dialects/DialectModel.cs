@@ -20,4 +20,6 @@ public class DialectModel
     public int Id { get; set; }
 
     public string DialectCode { get; set; }
+    
+    public string Color { get; set; }
 }

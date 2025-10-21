@@ -18,8 +18,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using NAudio.Wave;
 using Shared.Logging;
 using Shared.Models.Database.Dialects;
 using Shared.Models.Database.Recordings;
@@ -40,7 +38,7 @@ public class RecordingsRepository : RepositoryBase
     public async Task<RecordingModel[]?> GetAsync(int? userId, bool parts, bool sound)
     {
         RecordingModel[]? recordings = (userId is not null
-            ? await GetByEmailAsync(userId.Value)
+            ? await GetByUserIdAsync(userId.Value)
             : await GetAllAsync())?.ToArray();
 
         if (recordings is null)
@@ -53,20 +51,34 @@ public class RecordingsRepository : RepositoryBase
         return recordings;
     }
 
-    private async Task<IEnumerable<RecordingModel>?> GetByEmailAsync(int userId) =>
+    private async Task<IEnumerable<RecordingModel>?> GetByUserIdAsync(int userId) =>
         await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
         {
             const string sql = """
-                               SELECT * 
-                               FROM recordings
-                               WHERE user_id = @UserId
+                               SELECT r.*,
+                                      COALESCE((
+                                          SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
+                                          FROM recording_parts rp
+                                          WHERE rp.recording_id = r.id
+                                      ), 0)::DOUBLE PRECISION AS "TotalSeconds"
+                               FROM recordings r
+                               WHERE r.user_id = @UserId;
                                """;
             return await Connection.QueryAsync<RecordingModel>(sql, new { UserId = userId });
         });
 
     private async Task<IEnumerable<RecordingModel>?> GetAllAsync() =>
         await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
-            await Connection.QueryAsync<RecordingModel>("SELECT * FROM recordings"));
+            await Connection.QueryAsync<RecordingModel>(
+                """
+                SELECT r.*,
+                       COALESCE((
+                           SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
+                           FROM recording_parts rp
+                           WHERE rp.recording_id = r.id
+                       ), 0)::DOUBLE PRECISION AS total_seconds
+                FROM recordings r;
+                """));
 
     public async Task<RecordingModel?> GetAsync(int id, bool parts, bool sound)
     {
@@ -84,7 +96,16 @@ public class RecordingsRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             var r = await Connection.QueryFirstOrDefaultAsync<RecordingModel>(
-                "SELECT * FROM recordings WHERE id = @Id",
+                """
+                    SELECT r.*,
+                           COALESCE((
+                               SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
+                               FROM recording_parts rp
+                               WHERE rp.recording_id = r.id
+                           ), 0)::DOUBLE PRECISION AS "TotalSeconds"
+                    FROM recordings r
+                    WHERE r.id = @Id;
+                    """,
                 new
                 {
                     Id = id
@@ -122,7 +143,11 @@ public class RecordingsRepository : RepositoryBase
     private async Task<IEnumerable<RecordingPartModel>?> GetPartsAsync(int recordingId) =>
         await ExecuteSafelyAsync<IEnumerable<RecordingPartModel>?>(async () =>
         {
-            const string sql = "SELECT * FROM recording_parts WHERE recording_id = @RecordingId";
+            const string sql = """
+                               SELECT *
+                               FROM recording_parts 
+                               WHERE recording_id = @RecordingId
+                               """;
             return await Connection.QueryAsync<RecordingPartModel>(sql, new { RecordingId = recordingId });
         });
 
@@ -515,5 +540,10 @@ public class RecordingsRepository : RepositoryBase
             //     Logger.Log("Failed to detect file format " + part.Id, LogLevel.Error);
             // }
         }
+    }
+
+    public async Task<DialectModel[]> GetDialectsAsync()
+    {
+        return (await Connection.QueryAsync<DialectModel>("SELECT * FROM dialects")).ToArray();
     }
 }
