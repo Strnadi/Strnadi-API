@@ -497,6 +497,18 @@ public class RecordingsRepository : RepositoryBase
                 Logger.Log("File format: " + format);
                 string duration = ffmpeg.GetFileDuration(part.FilePath);
                 Logger.Log("File duration: " + duration + " seconds");
+                if (double.TryParse(duration, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double seconds))
+                {
+                    TimeSpan ts = TimeSpan.FromSeconds(seconds);
+                    var newEndDate = part.StartDate.Add(ts);
+                    Logger.Log("Calculated new end date: " + newEndDate);
+                    await Connection.ExecuteAsync("UPDATE recording_parts SET end_date = @EndDate WHERE id = @Id", new
+                    {
+                        EndDate = newEndDate,
+                        Id = part.Id
+                    });
+                    Logger.Log($"Updated part {part.Id} end date to {newEndDate}");
+                }                
             // }
             // catch
             // {
