@@ -492,9 +492,11 @@ public class RecordingsRepository : RepositoryBase
             // try
             // {
                 FFmpegService ffmpeg = new();
-                Logger.Log("Start detecting file format for part " + part.Id);
+                Logger.Log("Start analyzing sound file for part " + part.Id);
                 string format = ffmpeg.DetectFileFormat(part.FilePath);
                 Logger.Log("File format: " + format);
+                string duration = ffmpeg.GetFileDuration(part.FilePath);
+                Logger.Log("File duration: " + duration + " seconds");
             // }
             // catch
             // {
