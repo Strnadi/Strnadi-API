@@ -29,6 +29,7 @@ public static class FFmpegService
         {
             FileName = "ffmpeg",
             Arguments = command,
+            RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
