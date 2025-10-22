@@ -209,6 +209,7 @@ public class RecordingsRepository : RepositoryBase
     private async Task SaveSoundFileAsync(int recordingId, int recordingPartId, string base64)
     {
         byte[] binary = Convert.FromBase64String(base64);
+        byte[] normalized = await FFmpegService.NormalizeAudioAsync(binary);
         string filePath = await FileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, binary);
 
         await UpdateFilePathAsync(recordingPartId, filePath);
@@ -499,51 +500,48 @@ public class RecordingsRepository : RepositoryBase
         foreach (var part in parts)
         {
             Console.WriteLine();
-            // try
-            // {
-            //     using var reader = new AudioFileReader(part.FilePath);
-            //     var duration = reader.TotalTime;
-            //     var newEndDate = part.StartDate.Add(duration);
-            //     Logger.Log("Part id: " + part.Id);
-            //     Logger.Log("Start date: " + part.StartDate);
-            //     Logger.Log("Old end date: " + part.EndDate);
-            //     Logger.Log("New end date: " + newEndDate);
-            // }
-            // catch (Exception ex)
-            // {
-            //     Logger.Log("Failed to fix part " + part.Id + ": " + ex, LogLevel.Error);
-            // }
-            //
-            // try
-            // {
-                FFmpegService ffmpeg = new();
-                Logger.Log("Start analyzing sound file for part " + part.Id);
-                string format = ffmpeg.DetectFileFormat(part.FilePath);
-                Logger.Log("File format: " + format);
-                string duration = ffmpeg.GetFileDuration(part.FilePath);
-                Logger.Log("File duration: " + duration + " seconds");
-                if (double.TryParse(duration, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double seconds))
+            Logger.Log("Start analyzing sound file for part " + part.Id);
+            string format = FFmpegService.DetectFileFormat(part.FilePath);
+            Logger.Log("File format: " + format);
+            string duration = FFmpegService.GetFileDuration(part.FilePath);
+            Logger.Log("File duration: " + duration + " seconds");
+            if (double.TryParse(duration, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double seconds))
+            {
+                TimeSpan ts = TimeSpan.FromSeconds(seconds);
+                var newEndDate = part.StartDate.Add(ts);
+                Logger.Log("Calculated new end date: " + newEndDate);
+                await Connection.ExecuteAsync("UPDATE recording_parts SET end_date = @EndDate WHERE id = @Id", new
                 {
-                    TimeSpan ts = TimeSpan.FromSeconds(seconds);
-                    var newEndDate = part.StartDate.Add(ts);
-                    Logger.Log("Calculated new end date: " + newEndDate);
-                    await Connection.ExecuteAsync("UPDATE recording_parts SET end_date = @EndDate WHERE id = @Id", new
-                    {
-                        EndDate = newEndDate,
-                        Id = part.Id
-                    });
-                    Logger.Log($"Updated part {part.Id} end date to {newEndDate}");
-                }                
-            // }
-            // catch
-            // {
-            //     Logger.Log("Failed to detect file format " + part.Id, LogLevel.Error);
-            // }
+                    EndDate = newEndDate,
+                    Id = part.Id
+                });
+                Logger.Log($"Updated part {part.Id} end date to {newEndDate}");
+            }                
         }
     }
 
     public async Task<DialectModel[]> GetDialectsAsync()
     {
         return (await Connection.QueryAsync<DialectModel>("SELECT * FROM dialects")).ToArray();
+    }
+
+    public async Task NormalizeAudiosAsync()
+    {
+        var parts = await ExecuteSafelyAsync(
+            Connection.QueryAsync<RecordingPartModel>(
+                "SELECT * FROM recording_parts WHERE file_path IS NOT NULL"
+            ));
+
+        if (parts is null)
+            return;
+
+        foreach (var part in parts)
+        {
+            Logger.Log("Normalizing audio for part " + part.Id);
+            byte[] originalContent = await File.ReadAllBytesAsync(part.FilePath);
+            byte[] normalizedContent = await FFmpegService.NormalizeAudioAsync(originalContent);
+            await File.WriteAllBytesAsync(part.FilePath, normalizedContent);
+            Logger.Log("Normalized audio saved for part " + part.Id);
+        }
     }
 }

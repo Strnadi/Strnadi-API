@@ -47,4 +47,24 @@ public class UtilsController : ControllerBase
         await recordingsRepo.FixSameDatesInPartsAsync();
         return Ok();
     }
+
+    [HttpGet("normalize-existing-audios")]
+    public async Task<IActionResult> NormalizeExistingAudios([FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+
+        await recordingsRepo.NormalizeAudiosAsync();
+        return Ok();
+    }
 }
