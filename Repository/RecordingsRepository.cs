@@ -210,7 +210,7 @@ public class RecordingsRepository : RepositoryBase
     {
         byte[] binary = Convert.FromBase64String(base64);
         byte[] normalized = await FFmpegService.NormalizeAudioAsync(binary);
-        string filePath = await FileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, binary);
+        string filePath = await FileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, normalized);
 
         await UpdateFilePathAsync(recordingPartId, filePath);
     }
