@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using Shared.Logging;
 
 namespace Shared.Tools;
@@ -68,6 +69,18 @@ public static class FFmpegService
         
         Logger.Log("FFmpegService::NormalizeAudioAsync: Started FFmpeg process for audio normalization");
         
+        var stderrTask = Task.Run(async () =>
+        {
+            var sb = new StringBuilder();
+            while (!ffmpeg.StandardError.EndOfStream)
+            {
+                var line = await ffmpeg.StandardError.ReadLineAsync();
+                if (line != null)
+                    sb.AppendLine(line);
+            }
+            return sb.ToString();
+        });
+        
         // write input audio to stdin and close it 
         await ffmpeg.StandardInput.BaseStream.WriteAsync(content);
         await ffmpeg.StandardInput.FlushAsync();
@@ -75,9 +88,6 @@ public static class FFmpegService
         
         Logger.Log("FFmpegService::NormalizeAudioAsync: Written input audio to FFmpeg stdin");
 
-        // read stderr parallelly to avoid deadlocks
-        var errorTask = Task.Run(() => ffmpeg.StandardError.ReadToEndAsync());
-        
         Logger.Log("FFmpegService::NormalizeAudioAsync: Started reading FFmpeg stderr");
 
         // read stdout (normalized audio)
@@ -91,7 +101,7 @@ public static class FFmpegService
         
         Logger.Log("FFmpegService::NormalizeAudioAsync: FFmpeg process exited");
 
-        var errors = await errorTask;
+        var errors = await stderrTask;
         if (!string.IsNullOrWhiteSpace(errors))
             Logger.Log($"FFmpegService::NormalizeAudioAsync: {errors}");
 
