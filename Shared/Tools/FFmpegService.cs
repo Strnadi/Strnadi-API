@@ -81,7 +81,6 @@ public static class FFmpegService
             return sb.ToString();
         });
         
-        // Одновременно пишем в stdin и читаем из stdout
         var writeTask = Task.Run(async () =>
         {
             try
@@ -114,11 +113,9 @@ public static class FFmpegService
             }
         });
 
-        // Ждем завершения записи и чтения
         await writeTask;
         var result = await readTask;
         
-        // Ждем завершения процесса
         await ffmpeg.WaitForExitAsync();
         
         Logger.Log("FFmpegService::NormalizeAudioAsync: FFmpeg process exited");
