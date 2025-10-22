@@ -66,20 +66,30 @@ public static class FFmpegService
     {
         Process ffmpeg = ExecuteFFmpeg("-i pipe:0 -f wav -acodec pcm_s16le -ar 48000 -ac 1 pipe:1");
         
+        Logger.Log("FFmpegService::NormalizeAudioAsync: Started FFmpeg process for audio normalization");
+        
         // write input audio to stdin and close it 
         await ffmpeg.StandardInput.BaseStream.WriteAsync(content);
         await ffmpeg.StandardInput.FlushAsync();
         ffmpeg.StandardInput.Close();
+        
+        Logger.Log("FFmpegService::NormalizeAudioAsync: Written input audio to FFmpeg stdin");
 
         // read stderr parallelly to avoid deadlocks
         var errorTask = Task.Run(() => ffmpeg.StandardError.ReadToEndAsync());
+        
+        Logger.Log("FFmpegService::NormalizeAudioAsync: Started reading FFmpeg stderr");
 
         // read stdout (normalized audio)
         using var ms = new MemoryStream();
         await ffmpeg.StandardOutput.BaseStream.CopyToAsync(ms);
+        
+        Logger.Log("FFmpegService::NormalizeAudioAsync: Read normalized audio from FFmpeg stdout");
 
         // await process exit
         await ffmpeg.WaitForExitAsync();
+        
+        Logger.Log("FFmpegService::NormalizeAudioAsync: FFmpeg process exited");
 
         var errors = await errorTask;
         if (!string.IsNullOrWhiteSpace(errors))
