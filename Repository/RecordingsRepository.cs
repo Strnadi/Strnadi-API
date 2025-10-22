@@ -544,4 +544,25 @@ public class RecordingsRepository : RepositoryBase
             Logger.Log("Normalized audio saved for part " + part.Id);
         }
     }
+
+    public async Task AnalyzePartsAsync()
+    {
+        var parts = await ExecuteSafelyAsync(
+            Connection.QueryAsync<RecordingPartModel>(
+                "SELECT * FROM recording_parts WHERE file_path IS NOT NULL"
+            ));
+
+        if (parts is null)
+            return;
+
+        foreach (var part in parts)
+        {
+            Console.WriteLine();
+            Logger.Log("Start analyzing sound file for part " + part.Id);
+            string format = FFmpegService.DetectFileFormat(part.FilePath);
+            Logger.Log("File format: " + format);
+            string duration = FFmpegService.GetFileDuration(part.FilePath);
+            Logger.Log("File duration: " + duration + " seconds");
+        }
+    }
 }

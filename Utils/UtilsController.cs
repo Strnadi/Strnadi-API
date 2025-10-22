@@ -67,4 +67,24 @@ public class UtilsController : ControllerBase
         await recordingsRepo.NormalizeAudiosAsync();
         return Ok();
     }
+    
+    [HttpGet("analyze-parts")]
+    public async Task<IActionResult> AnalyzeParts([FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+
+        await recordingsRepo.AnalyzePartsAsync();
+        return Ok();
+    }
 }
