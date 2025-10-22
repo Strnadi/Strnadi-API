@@ -81,30 +81,57 @@ public static class FFmpegService
             return sb.ToString();
         });
         
-        // write input audio to stdin and close it 
-        await ffmpeg.StandardInput.BaseStream.WriteAsync(content);
-        await ffmpeg.StandardInput.FlushAsync();
-        ffmpeg.StandardInput.Close();
+        // Одновременно пишем в stdin и читаем из stdout
+        var writeTask = Task.Run(async () =>
+        {
+            try
+            {
+                await ffmpeg.StandardInput.BaseStream.WriteAsync(content);
+                await ffmpeg.StandardInput.FlushAsync();
+                ffmpeg.StandardInput.Close();
+                Logger.Log("FFmpegService::NormalizeAudioAsync: Written input audio to FFmpeg stdin");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FFmpegService::NormalizeAudioAsync: Error writing to stdin: {ex.Message}");
+                throw;
+            }
+        });
         
-        Logger.Log("FFmpegService::NormalizeAudioAsync: Written input audio to FFmpeg stdin");
+        var readTask = Task.Run(async () =>
+        {
+            try
+            {
+                using var ms = new MemoryStream();
+                await ffmpeg.StandardOutput.BaseStream.CopyToAsync(ms);
+                Logger.Log("FFmpegService::NormalizeAudioAsync: Read normalized audio from FFmpeg stdout");
+                return ms.ToArray();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FFmpegService::NormalizeAudioAsync: Error reading from stdout: {ex.Message}");
+                throw;
+            }
+        });
 
-        Logger.Log("FFmpegService::NormalizeAudioAsync: Started reading FFmpeg stderr");
-
-        // read stdout (normalized audio)
-        using var ms = new MemoryStream();
-        await ffmpeg.StandardOutput.BaseStream.CopyToAsync(ms);
+        // Ждем завершения записи и чтения
+        await writeTask;
+        var result = await readTask;
         
-        Logger.Log("FFmpegService::NormalizeAudioAsync: Read normalized audio from FFmpeg stdout");
-
-        // await process exit
+        // Ждем завершения процесса
         await ffmpeg.WaitForExitAsync();
         
         Logger.Log("FFmpegService::NormalizeAudioAsync: FFmpeg process exited");
 
         var errors = await stderrTask;
         if (!string.IsNullOrWhiteSpace(errors))
-            Logger.Log($"FFmpegService::NormalizeAudioAsync: {errors}");
+            Logger.Log($"FFmpegService::NormalizeAudioAsync: FFmpeg stderr: {errors}");
 
-        return ms.ToArray();    
+        if (ffmpeg.ExitCode != 0)
+        {
+            throw new Exception($"FFmpeg exited with code {ffmpeg.ExitCode}: {errors}");
+        }
+
+        return result;
     }
 }
