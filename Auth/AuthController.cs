@@ -124,7 +124,7 @@ public class AuthController : ControllerBase
             jwt = jwtService.GenerateToken(user.Email);
             Logger.Log($"User '{user.Email}' logged in successfully via Google");
 
-            return Ok(new { jwt });
+            return Ok(new { Exists = true, jwt });
         }
         
         jwt = jwtService.GenerateToken(user.Email);
@@ -132,10 +132,11 @@ public class AuthController : ControllerBase
 
         return Ok(new
         {
-            jwt,
-            firstName = payload.GivenName,
-            lastName = payload.FamilyName,
-            googleId,
+            Exists = false,
+            Jwt = jwt,
+            FirstName = payload.GivenName,
+            FastName = payload.FamilyName,
+            GoogleId = googleId,
         });
     }
 
