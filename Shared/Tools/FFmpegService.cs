@@ -63,11 +63,14 @@ public static class FFmpegService
     
     public static string GetFileDuration(string filePath) => ExecuteFFprobe($"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{filePath}\"");
     
-    public static async Task<byte[]> NormalizeAudioAsync(byte[] content)
+    public static async Task<byte[]> NormalizeAudioAsync(string filePath)
     {
-        Process ffmpeg = ExecuteFFmpeg("-i pipe:0 -f wav -acodec pcm_s16le -ar 48000 -ac 1 pipe:1");
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException($"Audio file not found: {filePath}");
+
+        Process ffmpeg = ExecuteFFmpeg($"-i \"{filePath}\" -f wav -acodec pcm_s16le -ar 48000 -ac 1 pipe:1");
         
-        Logger.Log("FFmpegService::NormalizeAudioAsync: Started FFmpeg process for audio normalization");
+        Logger.Log($"FFmpegService::NormalizeAudioAsync: Started FFmpeg process for audio normalization of {filePath}");
         
         var stderrTask = Task.Run(async () =>
         {
@@ -79,22 +82,6 @@ public static class FFmpegService
                     sb.AppendLine(line);
             }
             return sb.ToString();
-        });
-        
-        var writeTask = Task.Run(async () =>
-        {
-            try
-            {
-                await ffmpeg.StandardInput.BaseStream.WriteAsync(content);
-                await ffmpeg.StandardInput.FlushAsync();
-                ffmpeg.StandardInput.Close();
-                Logger.Log("FFmpegService::NormalizeAudioAsync: Written input audio to FFmpeg stdin");
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"FFmpegService::NormalizeAudioAsync: Error writing to stdin: {ex.Message}");
-                throw;
-            }
         });
         
         var readTask = Task.Run(async () =>
@@ -113,7 +100,6 @@ public static class FFmpegService
             }
         });
 
-        await writeTask;
         var result = await readTask;
         
         await ffmpeg.WaitForExitAsync();

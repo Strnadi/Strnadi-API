@@ -29,13 +29,21 @@ public static class FileSystemHelper
     {
         CreateRecordingsDirectoryIfNotExists(recordingId);
         
-        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.{recording_file_extension}";
+        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.normalized";
         await File.WriteAllBytesAsync(path, data);
 
         return path;
     }
-    
-    public static async Task<string> SaveOriginal 
+
+    public static async Task<string> SaveOriginalRecordingFileAsync(int recordingId, int recordingPartId, byte[] data)
+    {
+        CreateRecordingsDirectoryIfNotExists(recordingId);
+
+        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.original";
+        await File.WriteAllBytesAsync(path, data);
+
+        return path;
+    }
     
     public static async Task<byte[]> ReadRecordingFileAsync(int recordingId, int recordingPartId)
     {
@@ -160,10 +168,5 @@ public static class FileSystemHelper
     {
         string path = CreateArticleAttachmentPath(id, fileName);
         File.Delete(path);
-    }
-
-    public static async Task<string> SaveTemporaryRecordingFileAsync(int recordingId, int recordingPartId, byte[] binary)
-    {
-        throw new NotImplementedException();
     }
 }
