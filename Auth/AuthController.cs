@@ -158,8 +158,6 @@ public class AuthController : ControllerBase
             return Ok();
         }
         
-        string jwt;
-        
         if (user is not null)
         {
             // If email is not marked as verified yet
@@ -168,23 +166,25 @@ public class AuthController : ControllerBase
                 user.IsEmailVerified = true;
             }
 
-            jwt = jwtService.GenerateToken(user.Email);
+            string jwt = jwtService.GenerateToken(user.Email);
             Logger.Log($"User '{user.Email}' logged in successfully via Google");
 
             return Ok(new { Exists = true, jwt });
         }
-        
-        jwt = jwtService.GenerateToken(user.Email);
-        Logger.Log($"User '{user.Email}' signed up successfully via Google");
-
-        return Ok(new
+        else
         {
-            Exists = false,
-            Jwt = jwt,
-            FirstName = payload.GivenName,
-            FastName = payload.FamilyName,
-            GoogleId = googleId,
-        });
+            string jwt = jwtService.GenerateToken(payload.Email);
+            Logger.Log($"User '{payload.Email}' signed up successfully via Google");
+
+            return Ok(new
+            {
+                Exists = false,
+                Jwt = jwt,
+                FirstName = payload.GivenName,
+                FastName = payload.FamilyName,
+                GoogleId = googleId,
+            });
+        }
     }
 
     [HttpPost("apple")]
@@ -222,7 +222,7 @@ public class AuthController : ControllerBase
 
         if (!exists)
         {
-            if (email is null || email == "")
+            if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("Email is required for first-time Apple sign-in");
             }
