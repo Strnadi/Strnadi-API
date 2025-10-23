@@ -300,7 +300,7 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteAsync(
                 """
-                INSERT INTO article_category_assignment(article_id, category_id, order)
+                INSERT INTO article_category_assignment(article_id, category_id, "order")
                 VALUES (@ArticleId, @CategoryId, @Order)
                 """,
                 new

@@ -13,12 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+using System.Reflection;
 using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Repository;
 using Shared.Extensions;
 using Shared.Logging;
+using Shared.Models.Database.Recordings;
 using Shared.Models.Requests.Recordings;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Recordings;
 
@@ -64,5 +69,125 @@ public class FilteredRecordingsController : ControllerBase
         return added ? 
             Ok() :
             Conflict();
+    }
+    
+    [HttpPost("post-confirmed-dialect")]
+    public async Task<IActionResult> PostConfirmedDialectAsync([FromBody] PostConfirmedDialectRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+
+        if (!await recordingsRepo.ExistsAsync(req.RecordingId))
+            return Conflict("Recording does not exist");
+
+        var part = await recordingsRepo.CreateFilteredPartAsync(
+            req.RecordingId,
+            req.StartDate,
+            req.EndDate,
+            FilteredRecordingPartState.ConfirmedManually,
+            req.Representant
+        );
+
+        var dialectId = await recordingsRepo.GetDialectCodeIdAsync(req.DialectCode);
+        if (dialectId is null)
+            return BadRequest("Invalid dialect code");
+
+        bool createdDetected = await recordingsRepo.InsertDetectedDialectAsync(part!.Id, userGuessDialectId: null, dialectId);
+        if (!createdDetected)
+        {
+            Logger.Log("FilteredRecordingsController::InsertDetectedDialectAsync returned false", LogLevel.Error);
+            return StatusCode(500);
+        }
+        
+        return Ok();
+    }
+
+    [HttpPatch("update-confirmed-dialect")]
+    public async Task<IActionResult> UpdateConfirmedDialectAsync([FromBody] UpdateConfirmedDialectRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+        
+        if (!await recordingsRepo.ExistsFilteredPartAsync(req.FilteredPartId)) 
+            return Conflict("Filtered part does not exist");
+        
+        if (req.StartDate == null && req.EndDate == null && req.Representant == null && req.ConfirmedDialectCode == null)
+            return Ok();
+
+        if (req.ConfirmedDialectCode is not null)
+        {
+            var dialectId = await recordingsRepo.GetDialectCodeIdAsync(req.ConfirmedDialectCode);
+            if (dialectId is null)
+                return BadRequest("Invalid dialect code");
+        }
+
+        if (req.Representant != null || req.StartDate != null || req.EndDate != null)
+        {
+            bool updated = await recordingsRepo.UpdateFilteredPartAsync(req.FilteredPartId, req.StartDate, req.EndDate, req.Representant);
+            Logger.Log("Updated Filtered part with id " + req.FilteredPartId);
+            if (!updated)
+            {
+                Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: UpdateFilteredPartsAsync returned false", LogLevel.Warning);
+                return StatusCode(500);
+            }
+        }
+        
+        if (req.ConfirmedDialectCode != null)
+        {
+            bool updated = await recordingsRepo.SetConfirmedDialect(req.FilteredPartId, req.ConfirmedDialectCode);
+            if (!updated)
+            {
+                Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: SetConfirmedDialect returned false", LogLevel.Warning);
+                return StatusCode(500);
+            }
+        }
+
+        return Ok();
+    }
+
+    [HttpDelete("delete-confirmed-dialect/{filteredPartId:int}")]
+    public async Task<IActionResult> DeleteConfirmedDialectAsync([FromRoute] int filteredPartId,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (!await recordingsRepo.ExistsFilteredPartAsync(filteredPartId))
+            return Conflict("Filtered part does not exist");
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+        
+        bool deleted =  await recordingsRepo.DeleteFilteredPartAsync(filteredPartId);
+
+        return deleted ? Ok() : Conflict();
     }
 }

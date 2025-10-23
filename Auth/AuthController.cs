@@ -202,8 +202,6 @@ public class AuthController : ControllerBase
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
             }
-
-
         }
         else
         {
@@ -399,7 +397,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            Logger.Log($"Failed to validate google id token: {e.Message}", LogLevel.Error);
+            Logger.Log($"Failed to validate google id token: {e}", LogLevel.Error);
             return null;
         }
     }
@@ -430,7 +428,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            Logger.Log($"Failed to validate Apple ID token: {e.Message}", LogLevel.Error);
+            Logger.Log($"Failed to validate Apple ID token: {e}", LogLevel.Error);
             return null;
         }
     }

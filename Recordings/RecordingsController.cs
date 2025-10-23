@@ -226,4 +226,10 @@ public class RecordingsController : ControllerBase
         
         return updated ? Ok() : Conflict();
     }
+
+    [HttpGet("dialects")]
+    public async Task<IActionResult> GetDialects([FromServices] RecordingsRepository recordingsRepo)
+    {
+        return Ok(await recordingsRepo.GetDialectsAsync());
+    }
 }

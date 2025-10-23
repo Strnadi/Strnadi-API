@@ -14,6 +14,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Shared.Models.Database.Recordings;
 
 public class RecordingModel
@@ -35,6 +37,8 @@ public class RecordingModel
     public string? NotePost { get; set; }
     
     public bool Deleted { get; set; }
+    
+    public double TotalSeconds { get; set; }
     
     public IEnumerable<RecordingPartModel>? Parts { get; set; }
 }
