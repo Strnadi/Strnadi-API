@@ -215,8 +215,6 @@ public class AuthController : ControllerBase
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
             }
-
-
         }
         else
         {
@@ -238,9 +236,7 @@ public class AuthController : ControllerBase
             {
                 UserModel user = (await repo.GetUserByEmailAsync(email))!;
                 
-                Logger.Log("Kokotovani zacalo");
                 await repo.AddAppleIdAsync(email, appleId);
-                Logger.Log("Kokotovani skoncilo");
 
                 if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
                 {
