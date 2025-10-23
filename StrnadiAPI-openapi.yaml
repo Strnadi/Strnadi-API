@@ -79,11 +79,13 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /auth/sign-up-google:
+  /auth/google:
     post:
       tags: [Auth]
-      summary: Sign up with Google
-      description: Creates a new account based on a Google ID token.
+      summary: Sign in with Google
+      description: |-
+        Validates a Google ID token and either logs the user in or returns additional profile
+        information that the client can use to complete sign-up.
       security: []
       requestBody:
         required: true
@@ -93,50 +95,16 @@ paths:
               $ref: '#/components/schemas/GoogleAuthRequest'
       responses:
         '200':
-          description: Signup succeeded and a JWT was issued.
+          description: Google identity was validated.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GoogleAuthResponse'
-        '401':
-          description: The provided Google ID token was invalid.
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: An account with the supplied Google email already exists.
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /auth/login-google:
-    post:
-      tags: [Auth]
-      summary: Login with Google
-      description: Authenticates a user using a Google ID token and issues a JWT.
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GoogleAuthRequest'
-      responses:
-        '200':
-          description: Authentication succeeded.
-          content:
+                $ref: '#/components/schemas/GoogleAuthNewUserResponse'
             text/plain:
               schema:
                 $ref: '#/components/schemas/JwtToken'
         '401':
-          description: The Google ID token could not be validated.
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: The Google account has not been registered in Strnadi yet.
+          description: The provided Google ID token was invalid.
           content:
             text/plain:
               schema:
@@ -160,27 +128,22 @@ paths:
               $ref: '#/components/schemas/AppleAuthRequest'
       responses:
         '200':
-          description: Apple identity was validated.
+          description: Apple identity was validated. When linking an account the response body is empty.
           content:
             application/json:
               schema:
+                nullable: true
                 oneOf:
-                  - $ref: '#/components/schemas/AppleAuthLinkResponse'
-                  - $ref: '#/components/schemas/AppleAuthSignInResponse'
+                  - $ref: '#/components/schemas/AppleAuthJwtResponse'
+                  - $ref: '#/components/schemas/AppleAuthSignupResponse'
         '400':
-          description: The request was missing either an ID token or authorization code, or the email could not be verified.
+          description: The request was missing required Apple identity fields or the email could not be verified.
           content:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: The provided Apple credentials were invalid or the caller supplied an invalid JWT while linking accounts.
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: The referenced user account does not exist when linking an Apple identity.
           content:
             text/plain:
               schema:
@@ -1134,6 +1097,21 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /recordings/dialects:
+    get:
+      tags: [Recordings]
+      summary: List available dialect definitions
+      description: Returns dialect codes that can be associated with filtered recording parts.
+      security: []
+      responses:
+        '200':
+          description: Dialect definitions available in the system.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DialectModel'
   /recordings/filtered:
     get:
       tags: [Filtered Recordings]
@@ -1750,6 +1728,46 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /utils/normalize-existing-audios:
+    get:
+      tags: [Utils]
+      summary: Normalize stored recording audio files
+      description: Iterates through all persisted recording parts and normalizes their audio levels.
+      responses:
+        '200':
+          description: Audio normalization was triggered successfully.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /utils/analyze-parts:
+    get:
+      tags: [Utils]
+      summary: Analyze stored recording parts
+      description: Logs technical metadata for each stored recording part such as duration and format.
+      responses:
+        '200':
+          description: Recording part analysis was triggered successfully.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /utils/health:
     head:
       tags: [Utils]
@@ -1807,52 +1825,69 @@ components:
         idToken:
           type: string
           description: Google ID token obtained from the client SDK.
-    GoogleAuthResponse:
+    GoogleAuthNewUserResponse:
       type: object
-      required: [jwt, firstName, lastName]
+      required: [jwt, firstName, lastName, googleId]
       properties:
         jwt:
           $ref: '#/components/schemas/JwtToken'
         firstName:
           type: string
+          nullable: true
         lastName:
           type: string
+          nullable: true
+        googleId:
+          type: string
+          description: Stable Google subject identifier returned in the ID token.
     AppleAuthRequest:
       type: object
+      required: [idToken, userIdentifier]
       properties:
-        code:
-          type: string
-          description: Authorization code returned by the Apple web flow.
         idToken:
           type: string
-          description: Apple ID token returned by native flows.
-        state:
-          type: string
-        nonce:
-          type: string
+          description: Apple ID token returned by the native or web flow.
         email:
           type: string
           format: email
-        userJson:
+          nullable: true
+        givenName:
           type: string
-          description: Raw `user` JSON returned by Apple on the first login.
-    AppleAuthLinkResponse:
-      type: object
-      description: Empty JSON object returned when an Apple ID was linked to an existing account.
-      additionalProperties: false
-    AppleAuthSignInResponse:
+          nullable: true
+        familyName:
+          type: string
+          nullable: true
+        userIdentifier:
+          type: string
+          description: Stable identifier assigned by Apple to the user.
+    AppleAuthJwtResponse:
       type: object
       required: [jwt]
       properties:
         jwt:
           $ref: '#/components/schemas/JwtToken'
+    AppleAuthSignupResponse:
+      type: object
+      required: [jwt, exists]
+      properties:
+        jwt:
+          $ref: '#/components/schemas/JwtToken'
         exists:
           type: boolean
-          description: Indicates whether the user already exists in the system.
+          description: Indicates whether the user already existed in Strnadi before this login.
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
         email:
           type: string
           format: email
-          description: Email address reported by Apple when available.
+          nullable: true
+        appleid:
+          type: string
+          description: Unique Apple identifier returned in the ID token claims.
     LoginRequest:
       type: object
       required: [email, password]
@@ -2036,6 +2071,18 @@ components:
         device:
           type: string
           nullable: true
+    DialectModel:
+      type: object
+      required: [id, dialectCode, color]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        dialectCode:
+          type: string
+        color:
+          type: string
+          description: Hex color associated with the dialect.
     FilteredRecordingPartUploadRequest:
       type: object
       required: [recordingId, startDate, endDate, dialectCode]
