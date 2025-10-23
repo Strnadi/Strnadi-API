@@ -25,7 +25,7 @@ public static class FileSystemHelper
     private const string recording_file_extension = "wav";
     
     /// <returns>Path of the generated file</returns>
-    public static async Task<string> SaveRecordingFileAsync(int recordingId, int recordingPartId, byte[] data)
+    public static async Task<string> SaveNormalizedRecordingFileAsync(int recordingId, int recordingPartId, byte[] data)
     {
         CreateRecordingsDirectoryIfNotExists(recordingId);
         
@@ -34,6 +34,8 @@ public static class FileSystemHelper
 
         return path;
     }
+    
+    public static async Task<string> SaveOriginal 
     
     public static async Task<byte[]> ReadRecordingFileAsync(int recordingId, int recordingPartId)
     {

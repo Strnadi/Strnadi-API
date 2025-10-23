@@ -25,6 +25,7 @@ using Shared.Logging;
 using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -85,6 +86,52 @@ public class AuthController : ControllerBase
 
         string newJwt = jwtService.GenerateToken(email);
         return Ok(newJwt);
+    }
+    
+    [HttpPost("sign-up-google")]
+    public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
+        if (payload is null)
+            return Unauthorized("Invalid ID token");
+
+        string email = payload.Email;
+        if (await repo.ExistsAsync(email))
+            return Conflict("User already exists");
+
+        string jwt = jwtService.GenerateToken(email);
+
+        Logger.Log($"User '{email}' signed up successfully via Google");
+
+        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName });
+    }
+
+    [HttpPost("login-google")]
+    public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
+        if (payload is null)
+            return Unauthorized("Invalid ID token");
+
+        string email = payload.Email;
+        if (!await repo.ExistsAsync(email))
+            return Conflict("User doesn't exist");
+
+        UserModel user = (await repo.GetUserByEmailAsync(email))!;
+
+        if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+        {
+            user.IsEmailVerified = true;
+        }
+
+        string jwt = jwtService.GenerateToken(email);
+        Logger.Log($"User '{email}' logged in successfully via google'");
+
+        return Ok(jwt);
     }
 
     [HttpPost("google")]
@@ -287,7 +334,7 @@ public class AuthController : ControllerBase
         // Redirect back into the Android app via intent:// deep link
         var intentUrl = $"intent://callback{query}#Intent;scheme=signinwithapple;package={androidPackage};end";
         return Redirect(intentUrl);
-}
+    }
 
     [HttpGet("has-apple-id")]
     public async Task<IActionResult> HasAppleId([FromQuery] int userId, [FromServices] UsersRepository users)

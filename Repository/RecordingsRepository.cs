@@ -209,8 +209,7 @@ public class RecordingsRepository : RepositoryBase
     private async Task SaveSoundFileAsync(int recordingId, int recordingPartId, string base64)
     {
         byte[] binary = Convert.FromBase64String(base64);
-        byte[] normalized = await FFmpegService.NormalizeAudioAsync(binary);
-        string filePath = await FileSystemHelper.SaveRecordingFileAsync(recordingId, recordingPartId, normalized);
+        string filePath = await FileSystemHelper.SaveNormalizedRecordingFileAsync(recordingId, recordingPartId, binary);
 
         await UpdateFilePathAsync(recordingPartId, filePath);
     }
