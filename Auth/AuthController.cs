@@ -28,9 +28,6 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using System.Security.Cryptography;
-using System.Security.Claims;
-using Microsoft.Extensions.Logging;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace Auth;
@@ -90,8 +87,8 @@ public class AuthController : ControllerBase
         return Ok(newJwt);
     }
 
-    [HttpPost("sign-up-google")]
-    public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
     {
@@ -99,41 +96,36 @@ public class AuthController : ControllerBase
         if (payload is null)
             return Unauthorized("Invalid ID token");
 
-        string email = payload.Email;
-        if (await repo.ExistsAsync(email))
-            return Conflict("User already exists");
+        string googleId = payload.Subject;
+        
+        UserModel? user = await repo.GetUserByGoogleId(googleId);
 
-        string jwt = jwtService.GenerateToken(email);
-
-        Logger.Log($"User '{email}' signed up successfully via Google");
-
-        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName });
-    }
-
-    [HttpPost("login-google")]
-    public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleAuthRequest req,
-        [FromServices] JwtService jwtService,
-        [FromServices] UsersRepository repo)
-    {
-        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
-        if (payload is null)
-            return Unauthorized("Invalid ID token");
-
-        string email = payload.Email;
-        if (!await repo.ExistsAsync(email))
-            return Conflict("User doesn't exist");
-
-        UserModel user = (await repo.GetUserByEmailAsync(email))!;
-
-        if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+        if (user is not null)
         {
-            user.IsEmailVerified = true;
+            // If email is not marked as verified yet
+            if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+            {
+                user.IsEmailVerified = true;
+            }
+
+            string jwt = jwtService.GenerateToken(user.Email);
+            Logger.Log($"User '{user.Email}' logged in successfully via Google");
+
+            return Ok(jwt);
         }
+        else
+        {
+            string jwt = jwtService.GenerateToken(user.Email);
+            Logger.Log($"User '{user.Email}' signed up successfully via Google");
 
-        string jwt = jwtService.GenerateToken(email);
-        Logger.Log($"User '{email}' logged in successfully via google'");
-
-        return Ok(jwt);
+            return Ok(new
+            {
+                jwt,
+                firstName = payload.GivenName,
+                lastName = payload.FamilyName,
+                googleId,
+            });
+        }
     }
 
     [HttpPost("apple")]
@@ -161,13 +153,10 @@ public class AuthController : ControllerBase
             if (req.UserIdentifier is null)
                 return BadRequest("UserIdentifier is null");
 
-            Logger.Log("Apple id in some if");
             await repo.AddAppleIdAsync(email: userEmail, appleId: req.UserIdentifier);
-            Logger.Log("Done apple id in some if");
 
             return Ok();
         }
-
 
         string? appleId = req.UserIdentifier;
         if (appleId is null) return BadRequest("UserIdentifier is null");
@@ -189,9 +178,7 @@ public class AuthController : ControllerBase
 
             if (await repo.ExistsAsync(email))
             {
-                Logger.Log("Zacala hodina debilovani");
                 await repo.AddAppleIdAsync(email, appleId);
-                Logger.Log("Skoncila hodina debilovani");
 
                 return Ok(new
                 {
@@ -330,12 +317,10 @@ public class AuthController : ControllerBase
         bool regularRegister = receivedJwt is null && request.Password is not null;
 
         bool exists = await repo.ExistsAsync(request.Email);
-
         if (exists)
             return Conflict("User already exists");
 
         bool created = await repo.CreateUserAsync(request, regularRegister);
-
         if (!created)
             return Conflict("Failed to create user");
 

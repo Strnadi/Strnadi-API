@@ -54,6 +54,14 @@ public class UsersRepository : RepositoryBase
                 "SELECT COUNT(*) FROM users WHERE id = @Id",
                 new { Id = userId }
             )) != 0;
+    
+    public async Task<bool> ExistsGoogleAsync(string googleId) => 
+        await ExecuteSafelyAsync(async () => 
+            await Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM users WHERE google_id = @GoogleId",
+                new { GoogleId = googleId }
+            )) != 0;
+    
 
     public async Task<bool> AuthorizeAsync(string email, string password) =>
         await ExecuteSafelyAsync(async () =>
@@ -90,8 +98,8 @@ public class UsersRepository : RepositoryBase
                 
             const string sql =
                 """
-                INSERT INTO users(nickname, email, password, first_name, last_name, post_code, city, consent, appleid) 
-                VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @PostCode, @City, @Consent, @AppleId)
+                INSERT INTO users(nickname, email, password, first_name, last_name, post_code, city, consent, appleid, google_id) 
+                VALUES (@Nickname, @Email, @Password, @FirstName, @LastName, @PostCode, @City, @Consent, @AppleId, @GoogleId)
                 """;
 
             string? hashedPassword = null;
@@ -111,7 +119,8 @@ public class UsersRepository : RepositoryBase
                 request.PostCode,
                 request.City,
                 request.Consent,
-                request.AppleId
+                request.AppleId,
+                request.GoogleId
             }) != 0;
         });
 
@@ -277,4 +286,25 @@ public class UsersRepository : RepositoryBase
                 user.Password = null;
             return users;
         });
+
+    public async Task<bool> AddGoogleIdAsync(string email, string googleId) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(googleId))
+                return false;
+
+            const string sql = "UPDATE users SET google_id = @GoogleId WHERE email = @Email";
+            return await Connection.ExecuteAsync(sql, new { GoogleId = googleId, Email = email }) != 0;
+        });
+
+    public async Task<UserModel?> GetUserByGoogleId(string googleId) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(googleId))
+                return null;
+            
+            const string sql = "SELECT * FROM users WHERE google_id = @GoogleId";
+            return await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { GoogleId = googleId });
+        });
+
 }
