@@ -86,6 +86,52 @@ public class AuthController : ControllerBase
         string newJwt = jwtService.GenerateToken(email);
         return Ok(newJwt);
     }
+    
+    [HttpPost("sign-up-google")]
+    public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
+        if (payload is null)
+            return Unauthorized("Invalid ID token");
+
+        string email = payload.Email;
+        if (await repo.ExistsAsync(email))
+            return Conflict("User already exists");
+
+        string jwt = jwtService.GenerateToken(email);
+
+        Logger.Log($"User '{email}' signed up successfully via Google");
+
+        return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName });
+    }
+
+    [HttpPost("login-google")]
+    public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
+        if (payload is null)
+            return Unauthorized("Invalid ID token");
+
+        string email = payload.Email;
+        if (!await repo.ExistsAsync(email))
+            return Conflict("User doesn't exist");
+
+        UserModel user = (await repo.GetUserByEmailAsync(email))!;
+
+        if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+        {
+            user.IsEmailVerified = true;
+        }
+
+        string jwt = jwtService.GenerateToken(email);
+        Logger.Log($"User '{email}' logged in successfully via google'");
+
+        return Ok(jwt);
+    }
 
     [HttpPost("google")]
     public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest req,
