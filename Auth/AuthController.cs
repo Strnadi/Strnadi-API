@@ -100,6 +100,19 @@ public class AuthController : ControllerBase
         
         UserModel? user = await repo.GetUserByGoogleId(googleId);
 
+        string? authJwt = this.GetJwt();
+        if (authJwt is not null)
+        {
+            if (!jwtService.TryValidateToken(authJwt, out string userEmail))
+                return Unauthorized("Invalid auth JWT");
+
+            await repo.AddGoogleIdAsync(email: userEmail, googleId: req.IdToken);
+
+            return Ok();
+        }
+        
+        string jwt;
+        
         if (user is not null)
         {
             // If email is not marked as verified yet
@@ -108,24 +121,22 @@ public class AuthController : ControllerBase
                 user.IsEmailVerified = true;
             }
 
-            string jwt = jwtService.GenerateToken(user.Email);
+            jwt = jwtService.GenerateToken(user.Email);
             Logger.Log($"User '{user.Email}' logged in successfully via Google");
 
             return Ok(new { jwt });
         }
-        else
-        {
-            string jwt = jwtService.GenerateToken(user.Email);
-            Logger.Log($"User '{user.Email}' signed up successfully via Google");
+        
+        jwt = jwtService.GenerateToken(user.Email);
+        Logger.Log($"User '{user.Email}' signed up successfully via Google");
 
-            return Ok(new
-            {
-                jwt,
-                firstName = payload.GivenName,
-                lastName = payload.FamilyName,
-                googleId,
-            });
-        }
+        return Ok(new
+        {
+            jwt,
+            firstName = payload.GivenName,
+            lastName = payload.FamilyName,
+            googleId,
+        });
     }
 
     [HttpPost("apple")]
@@ -143,12 +154,8 @@ public class AuthController : ControllerBase
         string? authJwt = this.GetJwt();
         if (authJwt is not null)
         {
-            if (!jwtService.TryValidateToken(authJwt, out _))
+            if (!jwtService.TryValidateToken(authJwt, out string userEmail))
                 return Unauthorized("Invalid auth JWT");
-
-            string? userEmail = jwtService.GetEmail(authJwt);
-            if (userEmail is null)
-                return BadRequest("Email is null in auth JWT");
 
             if (req.UserIdentifier is null)
                 return BadRequest("UserIdentifier is null");
@@ -285,6 +292,13 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> HasAppleId([FromQuery] int userId, [FromServices] UsersRepository users)
     {
         var has = (await users.GetUserByIdAsync(userId))?.AppleId is not null;
+        return has ? Ok() : Conflict();
+    }
+
+    [HttpGet("has-google-id")]
+    public async Task<IActionResult> HasGoogleId([FromQuery] int userId, [FromServices] UsersRepository users)
+    {
+        var has = (await users.GetUserByIdAsync(userId))?.GoogleId is not null;
         return has ? Ok() : Conflict();
     }
 

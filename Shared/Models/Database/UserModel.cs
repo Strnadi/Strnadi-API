@@ -46,7 +46,10 @@ public class UserModel
     public string? Role { get; set; }
     
     public string? AppleId { get; set; }
+    
+    public string? GoogleId { get; set; }
 
     [NotMapped] [JsonIgnore]
     public bool IsAdmin => Role == "admin";
+
 }
