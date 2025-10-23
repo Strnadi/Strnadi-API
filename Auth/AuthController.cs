@@ -111,7 +111,7 @@ public class AuthController : ControllerBase
             string jwt = jwtService.GenerateToken(user.Email);
             Logger.Log($"User '{user.Email}' logged in successfully via Google");
 
-            return Ok(jwt);
+            return Ok(new { jwt });
         }
         else
         {

@@ -159,4 +159,9 @@ public static class FileSystemHelper
         string path = CreateArticleAttachmentPath(id, fileName);
         File.Delete(path);
     }
+
+    public static async Task<string> SaveTemporaryRecordingFileAsync(int recordingId, int recordingPartId, byte[] binary)
+    {
+        throw new NotImplementedException();
+    }
 }
