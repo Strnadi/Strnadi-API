@@ -141,14 +141,11 @@ public class UsersRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE email = @UserEmail";
-            Logger.Log("Executing SQL: " + sql, LogLevel.Debug);
             var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { UserEmail = email });
 
-            Logger.Log("blabla", LogLevel.Debug);
             if (user is null)
                 return null;
             
-            Logger.Log("user is not nall", LogLevel.Debug);
             user.Password = null;
             return user;
         });

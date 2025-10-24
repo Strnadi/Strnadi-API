@@ -538,13 +538,13 @@ public class RecordingsRepository : RepositoryBase
 
         foreach (var part in parts)
         {
-            Logger.Log("Normalizing audio for part " + part.Id);
-            byte[] normalizedBadly = await File.ReadAllBytesAsync(part.FilePath);
-            await FFmpegService.NormalizeAudioAsync(normalizedBadly, outputPath: "temp");
-            byte[] normalizedContent = await File.ReadAllBytesAsync("temp");
-            await File.WriteAllBytesAsync(part.FilePath, normalizedContent);
-            File.Delete("temp");
-            Logger.Log("Normalized audio saved for part " + part.Id);
+                Logger.Log("Normalizing audio for part " + part.Id);
+                byte[] normalizedBadly = await File.ReadAllBytesAsync(part.FilePath);
+                await FFmpegService.NormalizeAudioAsync(normalizedBadly, outputPath: "temp");
+                byte[] normalizedContent = await File.ReadAllBytesAsync("temp");
+                await File.WriteAllBytesAsync(part.FilePath, normalizedContent);
+                File.Delete("temp");
+                Logger.Log("Normalized audio saved for part " + part.Id);
         }
     }
 
