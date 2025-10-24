@@ -209,9 +209,9 @@ public class RecordingsRepository : RepositoryBase
     private async Task SaveSoundFileAsync(int recordingId, int recordingPartId, string base64)
     {
         byte[] binary = Convert.FromBase64String(base64);
-        string originalPath = await FileSystemHelper.SaveOriginalRecordingFileAsync(recordingId, recordingPartId, binary);
-        byte[] normalized = await FFmpegService.NormalizeAudioAsync(originalPath);
-        string normalizedPath = await FileSystemHelper.SaveNormalizedRecordingFileAsync(recordingId, recordingPartId, normalized);
+        await FileSystemHelper.SaveOriginalRecordingFileAsync(recordingId, recordingPartId, binary);
+        string normalizedPath = FileSystemHelper.GetNormalizedRecordingFilePath(recordingId, recordingPartId);
+        await FFmpegService.NormalizeAudioAsync(binary, outputPath: normalizedPath);
 
         await UpdateFilePathAsync(recordingPartId, normalizedPath);
     }
@@ -540,8 +540,8 @@ public class RecordingsRepository : RepositoryBase
         {
             Logger.Log("Normalizing audio for part " + part.Id);
             byte[] normalizedBadly = await File.ReadAllBytesAsync(part.FilePath);
-            await File.WriteAllBytesAsync("temp", normalizedBadly);
-            byte[] normalizedContent = await FFmpegService.NormalizeAudioAsync("temp");
+            await FFmpegService.NormalizeAudioAsync(normalizedBadly, outputPath: "temp");
+            byte[] normalizedContent = await File.ReadAllBytesAsync("temp");
             await File.WriteAllBytesAsync(part.FilePath, normalizedContent);
             File.Delete("temp");
             Logger.Log("Normalized audio saved for part " + part.Id);
