@@ -25,12 +25,10 @@ using Shared.Logging;
 using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using System.Security.Cryptography;
-using System.Security.Claims;
-using Microsoft.Extensions.Logging;
 using LogLevel = Shared.Logging.LogLevel;
 
 namespace Auth;
@@ -89,7 +87,7 @@ public class AuthController : ControllerBase
         string newJwt = jwtService.GenerateToken(email);
         return Ok(newJwt);
     }
-
+    
     [HttpPost("sign-up-google")]
     public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
@@ -136,6 +134,69 @@ public class AuthController : ControllerBase
         return Ok(jwt);
     }
 
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository repo)
+    {
+        var payload = await ValidateGoogleIdTokenAsync(req.IdToken);
+        if (payload is null)
+            return Unauthorized("Invalid ID token");
+
+        string googleId = payload.Subject;
+        
+        UserModel? user = await repo.GetUserByGoogleId(googleId);
+
+        string? authJwt = this.GetJwt();
+        if (authJwt is not null)
+        {
+            if (!jwtService.TryValidateToken(authJwt, out string userEmail))
+                return Unauthorized("Invalid auth JWT");
+
+            await repo.AddGoogleIdAsync(email: userEmail, googleId: req.IdToken);
+
+            return Ok();
+        }
+        
+        if (user is not null)
+        {
+            // If email is not marked as verified yet
+            if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
+            {
+                user.IsEmailVerified = true;
+            }
+
+            string jwt = jwtService.GenerateToken(user.Email);
+            Logger.Log($"User '{user.Email}' logged in successfully via Google");
+
+            return Ok(new { Exists = true, jwt });
+        }
+        else
+        {
+            string jwt = jwtService.GenerateToken(payload.Email);
+            Logger.Log($"User '{payload.Email}' signed up successfully via Google");
+
+            if (await repo.ExistsAsync(payload.Email))
+            {
+                await repo.AddGoogleIdAsync(payload.Email, payload.Subject);
+                return Ok(new
+                {
+                    Exists = true,
+                    Jwt = jwt,
+                });
+            }
+
+            return Ok(new
+            {
+                Exists = false,
+                Jwt = jwt,
+                FirstName = payload.GivenName,
+                FastName = payload.FamilyName,
+                GoogleId = googleId,
+            });
+        }
+    }
+
     [HttpPost("apple")]
     public async Task<IActionResult> LoginViaApple([FromBody] AppleAuthRequest req,
         [FromServices] JwtService jwtService,
@@ -151,23 +212,16 @@ public class AuthController : ControllerBase
         string? authJwt = this.GetJwt();
         if (authJwt is not null)
         {
-            if (!jwtService.TryValidateToken(authJwt, out _))
+            if (!jwtService.TryValidateToken(authJwt, out string userEmail))
                 return Unauthorized("Invalid auth JWT");
-
-            string? userEmail = jwtService.GetEmail(authJwt);
-            if (userEmail is null)
-                return BadRequest("Email is null in auth JWT");
 
             if (req.UserIdentifier is null)
                 return BadRequest("UserIdentifier is null");
 
-            Logger.Log("Apple id in some if");
             await repo.AddAppleIdAsync(email: userEmail, appleId: req.UserIdentifier);
-            Logger.Log("Done apple id in some if");
 
             return Ok();
         }
-
 
         string? appleId = req.UserIdentifier;
         if (appleId is null) return BadRequest("UserIdentifier is null");
@@ -178,7 +232,7 @@ public class AuthController : ControllerBase
 
         if (!exists)
         {
-            if (email is null || email == "")
+            if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("Email is required for first-time Apple sign-in");
             }
@@ -189,9 +243,7 @@ public class AuthController : ControllerBase
 
             if (await repo.ExistsAsync(email))
             {
-                Logger.Log("Zacala hodina debilovani");
                 await repo.AddAppleIdAsync(email, appleId);
-                Logger.Log("Skoncila hodina debilovani");
 
                 return Ok(new
                 {
@@ -215,8 +267,6 @@ public class AuthController : ControllerBase
                     appleid = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
                 });
             }
-
-
         }
         else
         {
@@ -238,9 +288,7 @@ public class AuthController : ControllerBase
             {
                 UserModel user = (await repo.GetUserByEmailAsync(email))!;
                 
-                Logger.Log("Kokotovani zacalo");
                 await repo.AddAppleIdAsync(email, appleId);
-                Logger.Log("Kokotovani skoncilo");
 
                 if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
                 {
@@ -296,12 +344,19 @@ public class AuthController : ControllerBase
         // Redirect back into the Android app via intent:// deep link
         var intentUrl = $"intent://callback{query}#Intent;scheme=signinwithapple;package={androidPackage};end";
         return Redirect(intentUrl);
-}
+    }
 
     [HttpGet("has-apple-id")]
     public async Task<IActionResult> HasAppleId([FromQuery] int userId, [FromServices] UsersRepository users)
     {
         var has = (await users.GetUserByIdAsync(userId))?.AppleId is not null;
+        return has ? Ok() : Conflict();
+    }
+
+    [HttpGet("has-google-id")]
+    public async Task<IActionResult> HasGoogleId([FromQuery] int userId, [FromServices] UsersRepository users)
+    {
+        var has = (await users.GetUserByIdAsync(userId))?.GoogleId is not null;
         return has ? Ok() : Conflict();
     }
 
@@ -334,12 +389,10 @@ public class AuthController : ControllerBase
         bool regularRegister = receivedJwt is null && request.Password is not null;
 
         bool exists = await repo.ExistsAsync(request.Email);
-
         if (exists)
             return Conflict("User already exists");
 
         bool created = await repo.CreateUserAsync(request, regularRegister);
-
         if (!created)
             return Conflict("Failed to create user");
 

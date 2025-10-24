@@ -33,11 +33,10 @@ public static class ControllerExtensions
         if (request.Body.CanSeek)
         {
             request.Body.Seek(0, SeekOrigin.Begin);
-            using (var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true))
-            {
-                body = await reader.ReadToEndAsync();
-                request.Body.Seek(0, SeekOrigin.Begin);
-            }
+            using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
+            
+            body = await reader.ReadToEndAsync();
+            request.Body.Seek(0, SeekOrigin.Begin);
         }
 
         var headers = string.Join(Environment.NewLine, request.Headers.Select(h => $"{h.Key}: {h.Value}"));
