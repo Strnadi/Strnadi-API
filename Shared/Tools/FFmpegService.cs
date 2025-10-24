@@ -78,54 +78,63 @@ public static class FFmpegService
         Process ffmpeg = ExecuteFFmpeg($"-i pipe:0 -f wav -acodec pcm_s16le -ar 48000 -ac 1 \"{outputPath}\"");
         
         Logger.Log($"FFmpegService::NormalizeAudioAsync: Started FFmpeg process for audio normalization to {outputPath}");
-        
-        var stderrTask = Task.Run(async () =>
-        {
-            var sb = new StringBuilder();
-            while (!ffmpeg.StandardError.EndOfStream)
-            {
-                var line = await ffmpeg.StandardError.ReadLineAsync();
-                if (line != null)
-                    sb.AppendLine(line);
-            }
-            return sb.ToString();
-        });
-        
-        var writeTask = Task.Run(async () =>
-        {
-            try
-            {
-                await ffmpeg.StandardInput.BaseStream.WriteAsync(binary);
-                await ffmpeg.StandardInput.FlushAsync();
-                ffmpeg.StandardInput.Close();
-                Logger.Log("FFmpegService::NormalizeAudioAsync: Written input audio data to FFmpeg stdin");
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"FFmpegService::NormalizeAudioAsync: Error writing to stdin: {ex.Message}");
-                throw;
-            }
-        });
 
-        await writeTask;
-        await ffmpeg.WaitForExitAsync();
-        
-        Logger.Log("FFmpegService::NormalizeAudioAsync: FFmpeg process exited");
-
-        var errors = await stderrTask;
-        if (!string.IsNullOrWhiteSpace(errors))
-            Logger.Log($"FFmpegService::NormalizeAudioAsync: FFmpeg stderr: {errors}");
-
-        if (ffmpeg.ExitCode != 0)
+        try
         {
-            throw new Exception($"FFmpeg exited with code {ffmpeg.ExitCode}: {errors}");
+
+            var stderrTask = Task.Run(async () =>
+            {
+                var sb = new StringBuilder();
+                while (!ffmpeg.StandardError.EndOfStream)
+                {
+                    var line = await ffmpeg.StandardError.ReadLineAsync();
+                    if (line != null)
+                        sb.AppendLine(line);
+                }
+
+                return sb.ToString();
+            });
+
+            var writeTask = Task.Run(async () =>
+            {
+                try
+                {
+                    await ffmpeg.StandardInput.BaseStream.WriteAsync(binary);
+                    await ffmpeg.StandardInput.FlushAsync();
+                    ffmpeg.StandardInput.Close();
+                    Logger.Log("FFmpegService::NormalizeAudioAsync: Written input audio data to FFmpeg stdin");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FFmpegService::NormalizeAudioAsync: Error writing to stdin: {ex.Message}");
+                    throw;
+                }
+            });
+
+            await writeTask;
+            await ffmpeg.WaitForExitAsync();
+
+            Logger.Log("FFmpegService::NormalizeAudioAsync: FFmpeg process exited");
+
+            var errors = await stderrTask;
+            if (!string.IsNullOrWhiteSpace(errors))
+                Logger.Log($"FFmpegService::NormalizeAudioAsync: FFmpeg stderr: {errors}");
+
+            if (ffmpeg.ExitCode != 0)
+            {
+                throw new Exception($"FFmpeg exited with code {ffmpeg.ExitCode}: {errors}");
+            }
+
+            if (!File.Exists(outputPath))
+            {
+                throw new Exception($"FFmpeg did not create output file: {outputPath}");
+            }
+
+            Logger.Log($"FFmpegService::NormalizeAudioAsync: Successfully normalized audio to {outputPath}");
         }
-
-        if (!File.Exists(outputPath))
+        catch
         {
-            throw new Exception($"FFmpeg did not create output file: {outputPath}");
+            await ffmpeg.WaitForExitAsync();
         }
-
-        Logger.Log($"FFmpegService::NormalizeAudioAsync: Successfully normalized audio to {outputPath}");
     }
 }
