@@ -176,6 +176,9 @@ public class AuthController : ControllerBase
             string jwt = jwtService.GenerateToken(payload.Email);
             Logger.Log($"User '{payload.Email}' signed up successfully via Google");
 
+            if (await repo.ExistsAsync(payload.Email))
+                await repo.AddGoogleIdAsync(payload.Email, payload.Subject);
+
             return Ok(new
             {
                 Exists = false,
