@@ -177,7 +177,14 @@ public class AuthController : ControllerBase
             Logger.Log($"User '{payload.Email}' signed up successfully via Google");
 
             if (await repo.ExistsAsync(payload.Email))
+            {
                 await repo.AddGoogleIdAsync(payload.Email, payload.Subject);
+                return Ok(new
+                {
+                    Exists = true,
+                    Jwt = jwt,
+                });
+            }
 
             return Ok(new
             {
