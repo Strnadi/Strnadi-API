@@ -14,6 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -71,7 +72,7 @@ public class JwtService
         return tokenHandler.WriteToken(token);
     }
     
-    public bool TryValidateToken(string? token, out string email)
+    public bool TryValidateToken(string? token, [NotNullWhen(true)] out string? email)
     {
         return TryValidateToken(token, out email, GetEmail);
     }

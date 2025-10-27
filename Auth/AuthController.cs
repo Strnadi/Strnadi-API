@@ -150,7 +150,7 @@ public class AuthController : ControllerBase
         string? authJwt = this.GetJwt();
         if (authJwt is not null)
         {
-            if (!jwtService.TryValidateToken(authJwt, out string userEmail))
+            if (!jwtService.TryValidateToken(authJwt, out string? userEmail))
                 return Unauthorized("Invalid auth JWT");
 
             await repo.AddGoogleIdAsync(email: userEmail, googleId: req.IdToken);

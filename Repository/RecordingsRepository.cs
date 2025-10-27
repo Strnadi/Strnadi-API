@@ -17,6 +17,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Dapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Shared.Logging;
 using Shared.Models.Database.Dialects;
@@ -155,8 +156,8 @@ public class RecordingsRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
-                               INSERT INTO recordings(user_id, created_at, estimated_birds_count, device, by_app, note, name)
-                               VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name) 
+                               INSERT INTO recordings(user_id, created_at, estimated_birds_count, device, by_app, note, name, expected_birds_count)
+                               VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name, @ExpectedBirdsCount) 
                                RETURNING id
                                """;
             return await Connection.ExecuteScalarAsync<int?>(sql, new
@@ -167,10 +168,11 @@ public class RecordingsRepository : RepositoryBase
                 request.Device,
                 request.ByApp,
                 request.Note,
-                request.Name
+                request.Name,
+                request.ExpectedPartsCount
             });
         });
-
+    
     public async Task<int?> UploadPartAsync(RecordingPartUploadRequest request)
     {
         int? partId = await UploadPartModelToDbAsync(request);
@@ -178,7 +180,22 @@ public class RecordingsRepository : RepositoryBase
         if (partId is null)
             return null;
 
-        await SaveSoundFileAsync(request.RecordingId, partId.Value, request.DataBase64);
+        byte[] content = Convert.FromBase64String(request.DataBase64);
+        await SaveSoundFileAsync(request.RecordingId, partId.Value, content);
+
+        return partId;
+    }
+
+    public async Task<int?> UploadPartAsync(RecordingPartUploadRequest request, IFormFile file)
+    {
+        int? partId = await UploadPartModelToDbAsync(request);
+
+        if (partId is null)
+            return null;
+
+        var content = new MemoryStream();
+        await file.CopyToAsync(content);
+        await SaveSoundFileAsync(request.RecordingId, partId.Value, content.ToArray());
 
         return partId;
     }
@@ -206,12 +223,11 @@ public class RecordingsRepository : RepositoryBase
             });
         });
 
-    private async Task SaveSoundFileAsync(int recordingId, int recordingPartId, string base64)
+    private async Task SaveSoundFileAsync(int recordingId, int recordingPartId, byte[] content)
     {
-        byte[] binary = Convert.FromBase64String(base64);
-        await FileSystemHelper.SaveOriginalRecordingFileAsync(recordingId, recordingPartId, binary);
+        await FileSystemHelper.SaveOriginalRecordingFileAsync(recordingId, recordingPartId, content);
         string normalizedPath = FileSystemHelper.GetNormalizedRecordingFilePath(recordingId, recordingPartId);
-        await FFmpegService.NormalizeAudioAsync(binary, outputPath: normalizedPath);
+        await FFmpegService.NormalizeAudioAsync(content, outputPath: normalizedPath);
 
         await UpdateFilePathAsync(recordingPartId, normalizedPath);
     }
@@ -567,5 +583,22 @@ public class RecordingsRepository : RepositoryBase
             string duration = FFmpegService.GetFileDuration(part.FilePath);
             Logger.Log("File duration: " + duration + " seconds");
         }
+    }
+
+    public async Task<int[]?> GetIncompleteRecordingsAsync(int userId)
+    {
+        var incomplete = await ExecuteSafelyAsync(Connection.QueryAsync<RecordingModel>(
+            """
+            SELECT * 
+            FROM recordings r
+            WHERE r.user_id = @UserId
+            AND r.expected_parts_count != (
+                SELECT COUNT(*)
+                FROM recording_parts rp
+                WHERE rp.recording_id = r.id
+            )
+            """, new { UserId = userId }));
+        
+        return incomplete?.Select(r => r.Id).ToArray();
     }
 }

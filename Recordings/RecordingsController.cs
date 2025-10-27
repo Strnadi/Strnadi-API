@@ -15,6 +15,7 @@
  */
 
 using Auth.Services;
+using Microsoft.AspNetCore.Http;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
@@ -166,8 +167,8 @@ public class RecordingsController : ControllerBase
 
         return Ok(recordingId);
     }
-
-    [HttpPost("part/")]
+    
+    [HttpPost("part")]
     [RequestSizeLimit(int.MaxValue)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
         [FromServices] JwtService jwtService,
@@ -187,10 +188,63 @@ public class RecordingsController : ControllerBase
             ? $"Recording part {recordingPartId} has been uploaded"
             : $"Failed to upload recording part {recordingPartId}");
         
-        if (recordingPartId is null)
-            return StatusCode(500, "Failed to upload recording");
+        return recordingPartId is not null 
+            ? Ok(recordingPartId) 
+            : StatusCode(500, "Failed to upload recording");
+    }
+
+    [HttpPost("part-new")]
+    [RequestSizeLimit(int.MaxValue)]
+    public async Task<IActionResult> UploadPartAsync([FromForm] RecordingPartUploadRequest request,
+        IFormFile file,
+        [FromServices] JwtService jwtService,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
         
-        return Ok(recordingPartId);
+        if (jwt is null) 
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+        
+        int? recordingPartId = await recordingsRepo.UploadPartAsync(request, file);
+
+        Logger.Log(recordingPartId is null
+            ? $"Recording part {recordingPartId} has been uploaded"
+            : $"Failed to upload recording part {recordingPartId}");
+        
+        return recordingPartId is not null 
+            ? Ok(recordingPartId) 
+            : StatusCode(500, "Failed to upload recording");
+    }
+
+    [HttpGet("incomplete")]
+    public async Task<IActionResult> GetIncompleteRecordingsAsync([FromServices] RecordingsRepository recordingsRepo, 
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        var user = await usersRepo.GetUserByEmailAsync(email);
+        if (user is null)
+            return Unauthorized("User does not exist");
+        
+        var recordings = await recordingsRepo.GetIncompleteRecordingsAsync(user.Id);
+        
+        if (recordings is null)
+            return StatusCode(500, "Failed to get incomplete recordings");
+
+        if (recordings.Length is 0)
+            return NoContent();
+        
+        return Ok(recordings);
     }
 
     [HttpPatch("{id:int}")]
