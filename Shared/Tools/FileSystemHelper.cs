@@ -26,7 +26,7 @@ public static class FileSystemHelper
 
     public static string GetNormalizedRecordingFilePath(int recordingId, int recordingPartId)
     {
-        return _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.normalized";
+        return _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.normalized.wav";
     }
     
     /// <returns>Path of the generated file</returns>
