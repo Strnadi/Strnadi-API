@@ -5,6 +5,7 @@ services:
     container_name: strnadi-host
     networks:
       - strnadi-network
+      - proxy
     build: 
       dockerfile: /home/adm-strnad/StrnadiPROD/Strnadi-API/Host/Dockerfile
     depends_on:
@@ -17,18 +18,18 @@ services:
       - traefik.enable=true
 
       # HTTP → HTTPS redirect
-      - traefik.http.routers.myapp-http.rule=Host(`api.strnadi.cz`)
-      - traefik.http.routers.myapp-http.entrypoints=web
-      - traefik.http.routers.myapp-http.middlewares=redirect-to-https
+      - traefik.http.routers.api-http.rule=Host(`api.strnadi.cz`)
+      - traefik.http.routers.api-http.entrypoints=web
+      - traefik.http.routers.api-http.middlewares=redirect-to-https
       - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
 
       # ✅ HTTPS router (this serves the app)
-      - traefik.http.routers.myapp.rule=Host(`api.strnadi.cz`)
-      - traefik.http.routers.myapp.entrypoints=websecure
-      - traefik.http.routers.myapp.tls.certresolver=le
+      - traefik.http.routers.api.rule=Host(`api.strnadi.cz`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls.certresolver=le
 
       # Backend port inside the container
-      - traefik.http.services.myapp.loadbalancer.server.port=8080
+      - traefik.http.services.api.loadbalancer.server.port=8080
 
       # Pin the docker network Traefik should use
       - traefik.docker.network=proxy
@@ -57,3 +58,6 @@ services:
 networks:
   strnadi-network:
     driver: bridge
+  proxy:
+    external: true
+    name: proxy
