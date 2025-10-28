@@ -15,6 +15,11 @@ services:
       - /home/strnadi-adm/strnadi-rev:/app/recordings
       - /home/strnadi-adm/strnadi-art:/app/articles
       - /home/strnadi-adm/strnadi-usr:/app/users
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.myapp.rule=Host(`devapi.strnadi.cz`)
+      - traefik.http.routers.myapp.entrypoints=websecure
+      - traefik.http.routers.myapp.tls.certresolver=le
   
   strnadi-db-dev:
     image: postgres
