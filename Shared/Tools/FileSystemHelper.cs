@@ -44,7 +44,7 @@ public static class FileSystemHelper
     {
         CreateRecordingsDirectoryIfNotExists(recordingId);
 
-        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.original";
+        string path = _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.original.wav";
         await File.WriteAllBytesAsync(path, data);
 
         return path;
