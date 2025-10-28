@@ -7,14 +7,31 @@ services:
       - strnadi-network
     build: 
       dockerfile: /home/adm-strnad/StrnadiPROD/Strnadi-API/Host/Dockerfile
-    ports:
-      - "8080:8080"
     depends_on:
       - strnadi-db
     volumes:
       - /home/adm-strnad/StrnadiPROD/Strnadi-rec:/app/recordings
       - /home/adm-strnad/StrnadiPROD/Strnadi-art:/app/articles
       - /home/adm-strnad/StrnadiPROD/Strnadi-usr:/app/users
+    labels:
+      - traefik.enable=true
+
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.myapp-http.rule=Host(`api.strnadi.cz`)
+      - traefik.http.routers.myapp-http.entrypoints=web
+      - traefik.http.routers.myapp-http.middlewares=redirect-to-https
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+
+      # ✅ HTTPS router (this serves the app)
+      - traefik.http.routers.myapp.rule=Host(`api.strnadi.cz`)
+      - traefik.http.routers.myapp.entrypoints=websecure
+      - traefik.http.routers.myapp.tls.certresolver=le
+
+      # Backend port inside the container
+      - traefik.http.services.myapp.loadbalancer.server.port=8080
+
+      # Pin the docker network Traefik should use
+      - traefik.docker.network=proxy
     
   strnadi-db:
     image: postgres
