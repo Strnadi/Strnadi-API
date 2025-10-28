@@ -22,24 +22,11 @@ public static class FileSystemHelper
 {
     private static readonly string _pathToRecordingsDirectory = $"{AppDomain.CurrentDomain.BaseDirectory}recordings/";
     
-    private const string recording_file_extension = "wav";
-
     public static string GetNormalizedRecordingFilePath(int recordingId, int recordingPartId)
     {
         return _pathToRecordingsDirectory + $"{recordingId}/" + $"{recordingId}_{recordingPartId}.normalized.wav";
     }
     
-    /// <returns>Path of the generated file</returns>
-    public static async Task<string> SaveNormalizedRecordingFileAsync(int recordingId, int recordingPartId, byte[] data)
-    {
-        CreateRecordingsDirectoryIfNotExists(recordingId);
-        
-        string path = GetNormalizedRecordingFilePath(recordingId, recordingPartId);
-        await File.WriteAllBytesAsync(path, data);
-
-        return path;
-    }
-
     public static async Task<string> SaveOriginalRecordingFileAsync(int recordingId, int recordingPartId, byte[] data)
     {
         CreateRecordingsDirectoryIfNotExists(recordingId);
@@ -75,7 +62,7 @@ public static class FileSystemHelper
 
     private static string GetRecordingPartFilePath(int recordingId, int recordingPartId)
     {
-        return $"{GetRecordingsDirectoryPath(recordingId)}/{recordingId}_{recordingPartId}.{recording_file_extension}";
+        return $"{GetRecordingsDirectoryPath(recordingId)}/{recordingId}_{recordingPartId}.";
     }
 
     private static string GetRecordingPhotosDirectoryPath(int recordingId)
