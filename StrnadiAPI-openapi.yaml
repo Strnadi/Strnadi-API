@@ -2136,7 +2136,7 @@ components:
           description: File extension (for example `png`).
     RecordingUploadRequest:
       type: object
-      required: [createdAt, estimatedBirdsCount, device, byApp]
+      required: [createdAt, estimatedBirdsCount, device, deviceId, byApp]
       properties:
         createdAt:
           type: string
@@ -2146,6 +2146,8 @@ components:
           minimum: 0
         device:
           type: string
+        deviceId:
+          type: string
         byApp:
           type: boolean
         note:
@@ -2153,6 +2155,10 @@ components:
           nullable: true
         name:
           type: string
+          nullable: true
+        expectedPartsCount:
+          type: integer
+          minimum: 1
           nullable: true
     RecordingPartUploadRequest:
       type: object
