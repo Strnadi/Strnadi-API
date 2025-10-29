@@ -23,7 +23,7 @@ public class RecordingUploadRequest
 
     public string Device { get; set; }
     
-    public string DeviceId { get; set; }
+    public string? DeviceId { get; set; }
 
     public bool ByApp { get; set; }
     
