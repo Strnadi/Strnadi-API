@@ -33,4 +33,10 @@
       <PackageReference Include="Npgsql" Version="9.0.3" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Reference Include="Google.Apis.Auth">
+        <HintPath>..\..\..\..\.nuget\packages\google.apis.auth\1.69.0\lib\net6.0\Google.Apis.Auth.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
 </Project>

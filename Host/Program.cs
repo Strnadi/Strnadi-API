@@ -26,6 +26,7 @@ using Microsoft.OpenApi.Writers;
 using Photos;
 using Recordings;
 using Repository;
+using Shared.Extensions;
 using Users;
 using Utils;
 
@@ -64,6 +65,7 @@ class Program
         services.AddRepositories();
         services.AddEmailServices();
         services.AddAuthServices();
+        services.AddTools();
         services.AddCors(corsOptions =>
         {
             corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
