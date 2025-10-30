@@ -77,7 +77,7 @@ public class JwtService
         return TryValidateToken(token, out email, GetEmail);
     }
     
-    private bool TryValidateToken<T>(string? token, out T value, Func<string, T?> extractor)
+    private bool TryValidateToken<T>(string? token, [NotNullWhen(true)] out T? value, Func<string, T?> extractor)
     {
         if (token is null)
         {

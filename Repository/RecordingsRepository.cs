@@ -156,8 +156,8 @@ public class RecordingsRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = """
-                               INSERT INTO recordings(user_id, created_at, estimated_birds_count, device, by_app, note, name, expected_birds_count)
-                               VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name, @ExpectedBirdsCount) 
+                               INSERT INTO recordings(user_id, created_at, estimated_birds_count, device, by_app, note, name, expected_parts_count)
+                               VALUES (@UserId, @CreatedAt, @EstimatedBirdsCount, @Device, @ByApp, @Note, @Name, @ExpectedPartsCount) 
                                RETURNING id
                                """;
             return await Connection.ExecuteScalarAsync<int?>(sql, new
