@@ -14,13 +14,13 @@ public class FirebaseNotificationService
     private readonly GoogleCredential _credential;
     private readonly string _projectId;
     
-    
     public FirebaseNotificationService(IConfiguration configuration)
     {
         string rawJson = configuration["Firebase:ServiceAccountJson"] 
                          ?? throw new NullReferenceException("Firebase Service Account JSON is not configured.");
 
-        _credential = GoogleCredential.FromJson(rawJson).CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
+        _credential = GoogleCredential.FromJson(rawJson)
+            .CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
         
         var parsed = JsonDocument.Parse(rawJson);
         _projectId = parsed.RootElement.GetProperty("project_id").GetString()!;
