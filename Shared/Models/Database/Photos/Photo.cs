@@ -13,34 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+namespace Shared.Models.Database.Photos;
 
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace Shared.Models.Database.Recordings;
-
-public class RecordingModel
+public class Photo
 {
     public int Id { get; set; }
-    
-    public int UserId { get; set; }
-    
-    public string Name { get; set; }
-    
-    public DateTime CreatedAt { get; set; }
-    
-    public short EstimatedBirdsCount { get; set; }
 
-    public bool ByApp { get; set; }
+    public string FilePath { get; set; }
 
-    public string? Note { get; set; }
-
-    public string? NotePost { get; set; }
+    public int RecordingId { get; set; }
     
-    public bool Deleted { get; set; }
+    public string UserEmail { get; set; }
     
-    public double TotalSeconds { get; set; }
-    
-    public int ExpectedPartsCount { get; set; }
-    
-    public IEnumerable<RecordingPartModel>? Parts { get; set; }
+    public string Format { get; set; }
 }

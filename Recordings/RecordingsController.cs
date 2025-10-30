@@ -188,13 +188,13 @@ public class RecordingsController : ControllerBase
 
         var job = JobBuilder.Create<CheckRecordingJob>()
             .WithIdentity($"check_recording_{recordingId}")
-            .UsingJobData("recordingId", recordingId)
+            .UsingJobData("recordingId", recordingId.ToString())
             .UsingJobData("fcmToken", fcmToken)
             .Build();
 
         var trigger = TriggerBuilder.Create()
             .WithIdentity($"trigger_check_recording_{recordingId}")
-            .StartAt(DateBuilder.FutureDate(1, IntervalUnit.Hour))
+            .StartAt(DateBuilder.FutureDate(1, IntervalUnit.Minute))
             .Build();
 
         await scheduler.ScheduleJob(job, trigger);

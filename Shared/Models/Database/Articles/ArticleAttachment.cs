@@ -1,6 +1,6 @@
 namespace Shared.Models.Database.Articles;
 
-public class ArticleAttachmentModel
+public class ArticleAttachment
 {
     public int Id { get; set; }
 

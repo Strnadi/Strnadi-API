@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Shared.Models.Database.Articles;
 
-public class ArticleCategoryModel
+public class ArticleCategory
 {
     public int Id { get; set; }
 
@@ -12,5 +12,5 @@ public class ArticleCategoryModel
     public string Name { get; set; }
     
     [NotMapped]
-    public ArticleModel[] Articles { get; set; }
+    public Article[] Articles { get; set; }
 }

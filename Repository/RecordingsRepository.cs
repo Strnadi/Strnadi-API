@@ -36,9 +36,9 @@ public class RecordingsRepository : RepositoryBase
     {
     }
 
-    public async Task<RecordingModel[]?> GetAsync(int? userId, bool parts, bool sound)
+    public async Task<Recording[]?> GetAsync(int? userId, bool parts, bool sound)
     {
-        RecordingModel[]? recordings = (userId is not null
+        Recording[]? recordings = (userId is not null
             ? await GetByUserIdAsync(userId.Value)
             : await GetAllAsync())?.ToArray();
 
@@ -52,36 +52,36 @@ public class RecordingsRepository : RepositoryBase
         return recordings;
     }
 
-    private async Task<IEnumerable<RecordingModel>?> GetByUserIdAsync(int userId) =>
-        await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
+    private async Task<IEnumerable<Recording>?> GetByUserIdAsync(int userId) =>
+        await ExecuteSafelyAsync<IEnumerable<Recording>?>(async () =>
         {
             const string sql = """
-                               SELECT r.*,
-                                      COALESCE((
-                                          SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
-                                          FROM recording_parts rp
-                                          WHERE rp.recording_id = r.id
-                                      ), 0)::DOUBLE PRECISION AS "TotalSeconds"
+                               SELECT 
+                                   r.*,
+                                   COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS "TotalSeconds"
                                FROM recordings r
-                               WHERE r.user_id = @UserId;
+                               LEFT JOIN recording_parts rp ON rp.recording_id = r.id
+                               WHERE r.user_id = @UserId
+                               GROUP BY r.id
+                               HAVING r.expected_parts_count = COUNT(rp.id);
                                """;
-            return await Connection.QueryAsync<RecordingModel>(sql, new { UserId = userId });
+            return await Connection.QueryAsync<Recording>(sql, new { UserId = userId });
         });
 
-    private async Task<IEnumerable<RecordingModel>?> GetAllAsync() =>
-        await ExecuteSafelyAsync<IEnumerable<RecordingModel>?>(async () =>
-            await Connection.QueryAsync<RecordingModel>(
+    private async Task<IEnumerable<Recording>?> GetAllAsync() =>
+        await ExecuteSafelyAsync<IEnumerable<Recording>?>(async () =>
+            await Connection.QueryAsync<Recording>(
                 """
-                SELECT r.*,
-                       COALESCE((
-                           SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
-                           FROM recording_parts rp
-                           WHERE rp.recording_id = r.id
-                       ), 0)::DOUBLE PRECISION AS total_seconds
-                FROM recordings r;
+                SELECT 
+                    r.*,
+                    COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS total_seconds
+                FROM recordings r
+                LEFT JOIN recording_parts rp ON rp.recording_id = r.id
+                GROUP BY r.id
+                HAVING r.expected_parts_count = COUNT(rp.id);
                 """));
 
-    public async Task<RecordingModel?> GetByIdAsync(int id, bool parts, bool sound)
+    public async Task<Recording?> GetByIdAsync(int id, bool parts, bool sound)
     {
         var recording = await GetAsync(id);
 
@@ -93,19 +93,19 @@ public class RecordingsRepository : RepositoryBase
         return recording;
     }
 
-    private async Task<RecordingModel?> GetAsync(int id) =>
+    private async Task<Recording?> GetAsync(int id) =>
         await ExecuteSafelyAsync(async () =>
         {
-            var r = await Connection.QueryFirstOrDefaultAsync<RecordingModel>(
+            var r = await Connection.QueryFirstOrDefaultAsync<Recording>(
                 """
-                    SELECT r.*,
-                           COALESCE((
-                               SELECT SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date)))
-                               FROM recording_parts rp
-                               WHERE rp.recording_id = r.id
-                           ), 0)::DOUBLE PRECISION AS "TotalSeconds"
+                    SELECT 
+                        r.*,
+                        COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS "TotalSeconds"
                     FROM recordings r
-                    WHERE r.id = @Id;
+                    LEFT JOIN recording_parts rp ON rp.recording_id = r.id
+                    WHERE r.id = @Id
+                    GROUP BY r.id
+                    HAVING r.expected_parts_count = COUNT(rp.id);
                     """,
                 new
                 {
@@ -114,8 +114,8 @@ public class RecordingsRepository : RepositoryBase
             return r;
         });
 
-    public async Task<IEnumerable<RecordingPartModel>?> GetPartsAsync(int recordingId, bool sound) =>
-        await ExecuteSafelyAsync<IEnumerable<RecordingPartModel>?>(async () =>
+    public async Task<IEnumerable<RecordingPart>?> GetPartsAsync(int recordingId, bool sound) =>
+        await ExecuteSafelyAsync<IEnumerable<RecordingPart>?>(async () =>
         {
             var parts = await GetPartsAsync(recordingId);
 
@@ -125,7 +125,7 @@ public class RecordingsRepository : RepositoryBase
             if (!sound)
                 return parts;
 
-            var partsArray = parts as RecordingPartModel[] ?? parts!.ToArray();
+            var partsArray = parts as RecordingPart[] ?? parts!.ToArray();
 
             foreach (var part in partsArray)
             {
@@ -141,15 +141,15 @@ public class RecordingsRepository : RepositoryBase
             return partsArray;
         });
 
-    private async Task<IEnumerable<RecordingPartModel>?> GetPartsAsync(int recordingId) =>
-        await ExecuteSafelyAsync<IEnumerable<RecordingPartModel>?>(async () =>
+    private async Task<IEnumerable<RecordingPart>?> GetPartsAsync(int recordingId) =>
+        await ExecuteSafelyAsync<IEnumerable<RecordingPart>?>(async () =>
         {
             const string sql = """
                                SELECT *
                                FROM recording_parts 
                                WHERE recording_id = @RecordingId
                                """;
-            return await Connection.QueryAsync<RecordingPartModel>(sql, new { RecordingId = recordingId });
+            return await Connection.QueryAsync<RecordingPart>(sql, new { RecordingId = recordingId });
         });
 
     public async Task<int?> UploadAsync(int userId, RecordingUploadRequest request) =>
@@ -277,13 +277,13 @@ public class RecordingsRepository : RepositoryBase
                         {(verified ? $"{(recordingId is not null ? "AND" : "")} state IN (2, 3, 5, 7)" : "")}
                 ", new { RecordingId = recordingId }));
 
-    private async Task<DialectModel[]?> GetDialects() =>
+    private async Task<Dialect[]?> GetDialects() =>
         await ExecuteSafelyAsync(async () =>
-            (await Connection.QueryAsync<DialectModel>("SELECT * FROM dialects")).ToArray());
+            (await Connection.QueryAsync<Dialect>("SELECT * FROM dialects")).ToArray());
 
-    private async Task<DetectedDialectModel[]?> GetDetectedDialects(int filteredPartId) =>
+    private async Task<DetectedDialect[]?> GetDetectedDialects(int filteredPartId) =>
         await ExecuteSafelyAsync(async () =>
-            (await Connection.QueryAsync<DetectedDialectModel>(
+            (await Connection.QueryAsync<DetectedDialect>(
                 "SELECT * FROM detected_dialects WHERE filtered_recording_part_id = @FPartId",
                 new
                 {
@@ -507,7 +507,7 @@ public class RecordingsRepository : RepositoryBase
     public async Task FixSameDatesInPartsAsync()
     {
         var parts = await ExecuteSafelyAsync(
-            Connection.QueryAsync<RecordingPartModel>(
+            Connection.QueryAsync<RecordingPart>(
                 "SELECT * FROM recording_parts WHERE start_date = end_date"
             ));
 
@@ -537,15 +537,15 @@ public class RecordingsRepository : RepositoryBase
         }
     }
 
-    public async Task<DialectModel[]> GetDialectsAsync()
+    public async Task<Dialect[]> GetDialectsAsync()
     {
-        return (await Connection.QueryAsync<DialectModel>("SELECT * FROM dialects")).ToArray();
+        return (await Connection.QueryAsync<Dialect>("SELECT * FROM dialects")).ToArray();
     }
 
     public async Task NormalizeAudiosAsync()
     {
         var parts = await ExecuteSafelyAsync(
-            Connection.QueryAsync<RecordingPartModel>(
+            Connection.QueryAsync<RecordingPart>(
                 "SELECT * FROM recording_parts WHERE file_path IS NOT NULL"
             ));
 
@@ -567,7 +567,7 @@ public class RecordingsRepository : RepositoryBase
     public async Task AnalyzePartsAsync()
     {
         var parts = await ExecuteSafelyAsync(
-            Connection.QueryAsync<RecordingPartModel>(
+            Connection.QueryAsync<RecordingPart>(
                 "SELECT * FROM recording_parts WHERE file_path IS NOT NULL"
             ));
 
@@ -587,7 +587,7 @@ public class RecordingsRepository : RepositoryBase
 
     public async Task<int[]?> GetIncompleteRecordingsAsync(int userId)
     {
-        var incomplete = await ExecuteSafelyAsync(Connection.QueryAsync<RecordingModel>(
+        var incomplete = await ExecuteSafelyAsync(Connection.QueryAsync<Recording>(
             """
             SELECT * 
             FROM recordings r

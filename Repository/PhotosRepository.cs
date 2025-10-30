@@ -91,7 +91,7 @@ public class PhotosRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
         {   
             const string sql = "SELECT * FROM photos WHERE user_id=@UserId";
-            PhotoModel? photo = await Connection.QueryFirstOrDefaultAsync<PhotoModel>(sql, new { UserId = userId });
+            Photo? photo = await Connection.QueryFirstOrDefaultAsync<Photo>(sql, new { UserId = userId });
             if (photo is null)
                 return null;
 

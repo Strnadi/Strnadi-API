@@ -13,43 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
-namespace Shared.Models.Database;
+namespace Shared.Models.Database.Dialects;
 
-public class UserModel
+public class DetectedDialect
 {
     public int Id { get; set; }
 
-    public string? Nickname { get; set; }
+    public int UserGuessDialectId { get; set; }
 
-    public string Email { get; set; }
+    [NotMapped] 
+    public string? UserGuessDialect { get; set; }
+
+    public int ConfirmedDialectId { get; set; }
     
-    public string? Password { get; set; }
+    [NotMapped]
+    public string? ConfirmedDialect { get; set; }
     
-    public string FirstName { get; set; } 
-
-    public string LastName { get; set; }
-
-    public int? PostCode { get; set; }
-
-    public string? City { get; set; }
-
-    public DateTime CreationDate { get; set; } 
-
-    public bool? IsEmailVerified { get; set; }
-
-    public bool? Consent { get; set; }
-    
-    public string? Role { get; set; }
-    
-    public string? AppleId { get; set; }
-    
-    public string? GoogleId { get; set; }
-
-    [NotMapped] [JsonIgnore]
-    public bool IsAdmin => Role == "admin";
-
+    public int FilteredRecordingPartId { get; set; }
 }

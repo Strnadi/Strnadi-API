@@ -20,7 +20,7 @@ public class CheckRecordingJob : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        var recordingId = context.JobDetail.JobDataMap.GetInt("recordingId");
+        var recordingId = int.Parse(context.JobDetail.JobDataMap.GetString("recordingId")!);
 
         var recording = await _repository.GetByIdAsync(recordingId, true, false);
         if (recording is null)

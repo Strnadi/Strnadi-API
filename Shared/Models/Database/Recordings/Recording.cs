@@ -13,13 +13,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace Shared.Models.Database.Dialects;
 
-public class DialectModel
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Shared.Models.Database.Recordings;
+
+public class Recording
 {
     public int Id { get; set; }
-
-    public string DialectCode { get; set; }
     
-    public string Color { get; set; }
+    public int UserId { get; set; }
+    
+    public string Name { get; set; }
+    
+    public DateTime CreatedAt { get; set; }
+    
+    public short EstimatedBirdsCount { get; set; }
+
+    public bool ByApp { get; set; }
+
+    public string? Note { get; set; }
+
+    public string? NotePost { get; set; }
+    
+    public bool Deleted { get; set; }
+    
+    public double TotalSeconds { get; set; }
+    
+    public int ExpectedPartsCount { get; set; }
+    
+    public IEnumerable<RecordingPart>? Parts { get; set; }
 }
