@@ -40,5 +40,7 @@ public class RecordingModel
     
     public double TotalSeconds { get; set; }
     
+    public int ExpectedPartsCount { get; set; }
+    
     public IEnumerable<RecordingPartModel>? Parts { get; set; }
 }

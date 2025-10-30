@@ -18,6 +18,8 @@ using Auth.Services;
 using Microsoft.AspNetCore.Http;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
+using Quartz;
+using Recordings.Jobs;
 using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Requests.Recordings;
@@ -28,6 +30,13 @@ namespace Recordings;
 [Route("recordings")]
 public class RecordingsController : ControllerBase
 {
+    private readonly ISchedulerFactory _schedulerFactory;
+
+    public RecordingsController(ISchedulerFactory schedulerFactory)
+    {
+        _schedulerFactory = schedulerFactory;
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetRecordingsAsync([FromServices] RecordingsRepository repo,
         [FromQuery] int? userId = null,
@@ -85,7 +94,7 @@ public class RecordingsController : ControllerBase
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
     {
-        var recording = await repo.GetAsync(id, parts, sound);
+        var recording = await repo.GetByIdAsync(id, parts, sound);
         
         if (recording is null || recording.Deleted)
             return NoContent();
@@ -165,9 +174,32 @@ public class RecordingsController : ControllerBase
         if (recordingId is null)
             return StatusCode(409, "Failed to upload recording");
 
+        await ScheduleRecordingCheckAsync(recordingId, fcmToken: request.DeviceId);
+
         return Ok(recordingId);
     }
-    
+
+    private async Task ScheduleRecordingCheckAsync(int? recordingId, string? fcmToken)
+    {
+        if (fcmToken is null)
+            return;
+        
+        var scheduler = await _schedulerFactory.GetScheduler();
+
+        var job = JobBuilder.Create<CheckRecordingJob>()
+            .WithIdentity($"check_recording_{recordingId}")
+            .UsingJobData("recordingId", recordingId ?? 0)
+            .UsingJobData("fcmToken", fcmToken)
+            .Build();
+
+        var trigger = TriggerBuilder.Create()
+            .WithIdentity($"trigger_check_recording_{recordingId}")
+            .StartAt(DateBuilder.FutureDate(1, IntervalUnit.Hour))
+            .Build();
+
+        await scheduler.ScheduleJob(job, trigger);
+    }
+
     [HttpPost("part")]
     [RequestSizeLimit(int.MaxValue)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
@@ -266,7 +298,7 @@ public class RecordingsController : ControllerBase
         if (jwtUser is null)
             return Unauthorized("User does not exist");
 
-        var recording = await recordingsRepo.GetAsync(id, parts: false, sound: false);
+        var recording = await recordingsRepo.GetByIdAsync(id, parts: false, sound: false);
         if (recording is null)
             return NotFound("Recording not found");
 

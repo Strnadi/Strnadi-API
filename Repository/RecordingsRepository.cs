@@ -81,7 +81,7 @@ public class RecordingsRepository : RepositoryBase
                 FROM recordings r;
                 """));
 
-    public async Task<RecordingModel?> GetAsync(int id, bool parts, bool sound)
+    public async Task<RecordingModel?> GetByIdAsync(int id, bool parts, bool sound)
     {
         var recording = await GetAsync(id);
 
@@ -356,14 +356,14 @@ public class RecordingsRepository : RepositoryBase
     }
 
     public async Task<bool> ExistsAsync(int id) =>
-        await GetAsync(id, false, false) is not null;
+        await GetByIdAsync(id, false, false) is not null;
     
     public async Task<bool> IsOwnerAsync(int id, int userId)
     {
         if (!await ExistsAsync(id))
             return false;
 
-        return (await GetAsync(id, false, false))!.UserId == userId;
+        return (await GetByIdAsync(id, false, false))!.UserId == userId;
     }
 
     public async Task<bool> DeleteAsync(int id, bool final) =>
