@@ -174,21 +174,21 @@ public class RecordingsController : ControllerBase
         if (recordingId is null)
             return StatusCode(409, "Failed to upload recording");
 
-        await ScheduleRecordingCheckAsync(recordingId, fcmToken: request.DeviceId);
+        await ScheduleRecordingCheckAsync(recordingId.Value, fcmToken: request.DeviceId!);
 
         return Ok(recordingId);
     }
 
-    private async Task ScheduleRecordingCheckAsync(int? recordingId, string? fcmToken)
+    private async Task ScheduleRecordingCheckAsync(int recordingId, string fcmToken)
     {
-        if (fcmToken is null)
+        if (string.IsNullOrEmpty(fcmToken))
             return;
         
         var scheduler = await _schedulerFactory.GetScheduler();
 
         var job = JobBuilder.Create<CheckRecordingJob>()
             .WithIdentity($"check_recording_{recordingId}")
-            .UsingJobData("recordingId", recordingId ?? 0)
+            .UsingJobData("recordingId", recordingId)
             .UsingJobData("fcmToken", fcmToken)
             .Build();
 

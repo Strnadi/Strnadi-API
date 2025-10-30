@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
+using Quartz.Serialization.SystemTextJson;
 using Shared.Tools;
 
 namespace Shared.Extensions;
@@ -18,9 +19,12 @@ public static class ServiceCollectionExtensions
                 options.UseProperties = true;
                 options.UsePostgres(pg =>
                 {
-                    pg.ConnectionString = configuration.GetConnectionString("Default") ?? throw new Exception("Connection string 'Default' not found.");
+                    pg.ConnectionString = configuration.GetConnectionString("Default") ??
+                                          throw new Exception("Connection string 'Default' not found.");
                 });
             });
+            q.UseDefaultThreadPool(tp => tp.MaxConcurrency = Environment.ProcessorCount);
+            q.SetProperty("quartz.serializer.type", "json");
         });
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
     }
