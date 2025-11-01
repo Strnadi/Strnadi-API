@@ -54,6 +54,7 @@ class Program
         builder.Services.AddMemoryCache();
         builder.Services.AddLogging();
         builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddTools(configuration);
         builder.Services.AddControllers()
             .AddApplicationPart(typeof(UsersController).Assembly)
             .AddApplicationPart(typeof(AuthController).Assembly)
@@ -66,7 +67,6 @@ class Program
         builder.Services.AddRepositories();
         builder.Services.AddEmailServices();
         builder.Services.AddAuthServices();
-        builder.Services.AddTools(configuration);
         builder.Services.AddCors(corsOptions =>
         {
             corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
