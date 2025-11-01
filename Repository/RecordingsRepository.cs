@@ -105,7 +105,6 @@ public class RecordingsRepository : RepositoryBase
                     LEFT JOIN recording_parts rp ON rp.recording_id = r.id
                     WHERE r.id = @Id
                     GROUP BY r.id
-                    HAVING r.expected_parts_count = COUNT(rp.id);
                     """,
                 new
                 {
