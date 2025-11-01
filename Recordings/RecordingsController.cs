@@ -197,7 +197,9 @@ public class RecordingsController : ControllerBase
             .StartAt(DateBuilder.FutureDate(1, IntervalUnit.Minute))
             .Build();
 
+        Logger.Log("Scheduling", LogLevel.Debug);
         await scheduler.ScheduleJob(job, trigger);
+        Logger.Log("Scheduled", LogLevel.Debug);
     }
 
     [HttpPost("part")]
