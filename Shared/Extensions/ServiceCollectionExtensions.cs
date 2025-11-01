@@ -1,6 +1,8 @@
+using System.Collections.Immutable;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
+using Quartz.Impl;
 using Shared.Tools;
 
 namespace Shared.Extensions;
@@ -26,5 +28,13 @@ public static class ServiceCollectionExtensions
             q.UseDefaultThreadPool(tp => tp.MaxConcurrency = Environment.ProcessorCount);
         });
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
+        services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
+        services.AddSingleton(async provider =>
+        {
+            var factory = provider.GetRequiredService<ISchedulerFactory>();
+            var scheduler = await factory.GetScheduler();
+            await scheduler.Start();
+            return scheduler;
+        });
     }
 }
