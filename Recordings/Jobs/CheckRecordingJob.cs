@@ -31,7 +31,7 @@ public class CheckRecordingJob : IJob
             return;
         }
 
-        if (recording.ExpectedPartsCount == recording.Parts!.Count())
+        if (recording.ExpectedPartsCount != recording.Parts!.Count())
         {
             _logger.LogWarning($"Recording {recordingId} incomplete ({recording.Parts!.Count()}/{recording.ExpectedPartsCount})");
             
