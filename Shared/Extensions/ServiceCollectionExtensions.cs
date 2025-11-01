@@ -11,8 +11,8 @@ public static class ServiceCollectionExtensions
 {
     public static void AddTools(this IServiceCollection services, ConfigurationManager configuration)
     {
-        
         services.AddScoped<FirebaseNotificationService>();
+
         services.AddQuartz(q =>
         {
             q.UsePersistentStore(options =>
@@ -20,21 +20,15 @@ public static class ServiceCollectionExtensions
                 options.UseProperties = true;
                 options.UsePostgres(pg =>
                 {
-                    pg.ConnectionString = configuration.GetConnectionString("Quartz") ??
-                                          throw new Exception("Connection string 'Quartz' not found.");
+                    pg.ConnectionString = configuration.GetConnectionString("Quartz")
+                                          ?? throw new Exception("Connection string 'Quartz' not found.");
                 });
                 options.UseSystemTextJsonSerializer();
             });
+
             q.UseDefaultThreadPool(tp => tp.MaxConcurrency = Environment.ProcessorCount);
+            q.UseMicrosoftDependencyInjectionJobFactory();
         });
-        services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
-        services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
-        services.AddSingleton<IScheduler>(provider =>
-        {
-            var factory = provider.GetRequiredService<ISchedulerFactory>();
-            var scheduler = factory.GetScheduler().GetAwaiter().GetResult();
-            scheduler.Start().GetAwaiter().GetResult();
-            return scheduler;
-        });
-    }
-}
+
+        services.AddQuartzHostedService(opt => opt.WaitForJobsToComplete = true);
+    }}

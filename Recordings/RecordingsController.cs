@@ -30,11 +30,11 @@ namespace Recordings;
 [Route("recordings")]
 public class RecordingsController : ControllerBase
 {
-    private readonly IScheduler _scheduler;
+    private readonly ISchedulerFactory _schedulerFactory;
 
-    public RecordingsController([FromServices] IScheduler scheduler)
+    public RecordingsController(ISchedulerFactory schedulerFactory)
     {
-        _scheduler = scheduler;
+        _schedulerFactory = schedulerFactory;
     }
 
     [HttpGet]
@@ -183,20 +183,22 @@ public class RecordingsController : ControllerBase
     {
         if (string.IsNullOrEmpty(fcmToken))
             return;
+
+        var scheduler = await _schedulerFactory.GetScheduler();
         
         var job = JobBuilder.Create<CheckRecordingJob>()
-            .WithIdentity($"check_recording_{recordingId}")
+            .WithIdentity($"check_recording_{recordingId}", "group1")
             .UsingJobData("recordingId", recordingId.ToString())
             .UsingJobData("fcmToken", fcmToken)
             .Build();
 
         var trigger = TriggerBuilder.Create()
-            .WithIdentity($"trigger_check_recording_{recordingId}")
+            .WithIdentity($"trigger_check_recording_{recordingId}", "group1")
             .StartAt(DateBuilder.FutureDate(1, IntervalUnit.Minute))
             .Build();
 
         Logger.Log("Scheduling", LogLevel.Debug);
-        await _scheduler.ScheduleJob(job, trigger);
+        await scheduler.ScheduleJob(job, trigger);
         Logger.Log("Scheduled", LogLevel.Debug);
     }
 
