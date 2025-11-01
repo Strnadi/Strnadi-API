@@ -29,11 +29,11 @@ public static class ServiceCollectionExtensions
         });
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
         services.AddSingleton<ISchedulerFactory, StdSchedulerFactory>();
-        services.AddSingleton(async provider =>
+        services.AddSingleton<IScheduler>(provider =>
         {
             var factory = provider.GetRequiredService<ISchedulerFactory>();
-            var scheduler = await factory.GetScheduler();
-            await scheduler.Start();
+            var scheduler = factory.GetScheduler().GetAwaiter().GetResult();
+            scheduler.Start().GetAwaiter().GetResult();
             return scheduler;
         });
     }

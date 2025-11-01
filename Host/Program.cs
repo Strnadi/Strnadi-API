@@ -50,7 +50,6 @@ class Program
 
     static void ConfigureServices(WebApplicationBuilder builder, ConfigurationManager configuration)
     {
-        var openApiDocument = LoadEmbeddedOpenApiDocument();
         builder.Services.AddMemoryCache();
         builder.Services.AddLogging();
         builder.Services.AddEndpointsApiExplorer();

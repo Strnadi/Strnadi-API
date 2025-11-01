@@ -32,7 +32,7 @@ public class RecordingsController : ControllerBase
 {
     private readonly IScheduler _scheduler;
 
-    public RecordingsController(IScheduler scheduler)
+    public RecordingsController([FromServices] IScheduler scheduler)
     {
         _scheduler = scheduler;
     }
