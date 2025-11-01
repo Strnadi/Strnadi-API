@@ -21,6 +21,8 @@ public class CheckRecordingJob : IJob
     public async Task Execute(IJobExecutionContext context)
     {
         var recordingId = int.Parse(context.JobDetail.JobDataMap.GetString("recordingId")!);
+        
+        _logger.LogDebug($"Checking recording {recordingId}");;
 
         var recording = await _repository.GetByIdAsync(recordingId, true, false);
         if (recording is null)
@@ -36,5 +38,7 @@ public class CheckRecordingJob : IJob
             var fcmToken = context.JobDetail.JobDataMap.GetString("fcmToken");
             await _notifications.SendNotificationAsync(fcmToken, "Blyat", "Suka");
         }
+
+        _logger.LogDebug("Im fukin dere");
     }
 }
