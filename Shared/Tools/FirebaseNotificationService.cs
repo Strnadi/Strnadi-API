@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Shared.Logging;
 using LogLevel = Shared.Logging.LogLevel;
 

@@ -185,6 +185,7 @@ public class RecordingsController : ControllerBase
             return;
         
         var scheduler = await _schedulerFactory.GetScheduler();
+        await scheduler.Start();
 
         var job = JobBuilder.Create<CheckRecordingJob>()
             .WithIdentity($"check_recording_{recordingId}")
@@ -218,7 +219,7 @@ public class RecordingsController : ControllerBase
         
         int? recordingPartId = await recordingsRepo.UploadPartAsync(request);
 
-        Logger.Log(recordingPartId is null
+        Logger.Log(recordingPartId is not null
             ? $"Recording part {recordingPartId} has been uploaded"
             : $"Failed to upload recording part {recordingPartId}");
         
