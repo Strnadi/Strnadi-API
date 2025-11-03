@@ -1,5 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Auth.Services;
+using Google.Apis.Util;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Repository;
+using Shared.Extensions;
+using Shared.Models.Requests.Achievements;
 
 namespace Achievements;
 
@@ -21,5 +26,30 @@ public class AchievementsController : ControllerBase
         byte[]? content = await repo.GetPhotoAsync(achievementId);
         if (content is null) return NotFound();
         return File(content, "image/png");
+    }
+
+    [HttpPost]
+    [RequestSizeLimit(int.MaxValue)]
+    public async Task<IActionResult> Post([FromBody] PostAchievementRequest req,
+        IFormFile file,
+        [FromServices] JwtService jwtService, 
+        [FromServices] UsersRepository usersRepo, 
+        [FromServices] AchievementsRepository achievementsRepo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null) 
+            return BadRequest();
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return BadRequest();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized();
+
+        bool created = await achievementsRepo.CreateAchievementAsync(req, file);
+        
+        if (!created) return Conflict();
+
+        return Ok();
     }
 }

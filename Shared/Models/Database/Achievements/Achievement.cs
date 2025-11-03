@@ -7,10 +7,6 @@ public class Achievement
 {
     public int Id { get; set; }
     
-    public string Title { get; set; }
-    
-    public string Description { get; set; }
-    
     public string Sql { get; set; }
     
     [JsonIgnore]
@@ -18,4 +14,7 @@ public class Achievement
     
     [NotMapped]
     public string ImageUrl { get; set; }
+    
+    [NotMapped]
+    public AchievementContent[] Contents { get; set; }
 }

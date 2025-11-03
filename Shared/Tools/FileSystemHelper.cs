@@ -161,4 +161,15 @@ public static class FileSystemHelper
         File.Delete(path);
     }
 
+    private static string CreateAchievementImagePath(int achievementId)
+    {
+        return $"achievements/{achievementId}/image.png";
+    }
+
+    public static async Task<string> SaveAchievementImageAsync(int achievementId, byte[] content)
+    {
+        string path = CreateAchievementImagePath(achievementId);
+        await File.WriteAllBytesAsync(path, content);
+        return path;
+    }
 }
