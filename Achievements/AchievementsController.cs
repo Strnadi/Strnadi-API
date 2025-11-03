@@ -1,4 +1,5 @@
-﻿using Auth.Services;
+﻿using System.Text.Json;
+using Auth.Services;
 using Google.Apis.Util;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -37,6 +38,7 @@ public class AchievementsController : ControllerBase
         [FromServices] AchievementsRepository achievementsRepo)
     {
         string? jwt = this.GetJwt();
+        Console.WriteLine(JsonSerializer.Serialize(req));
         if (jwt is null) 
             return BadRequest();
         
