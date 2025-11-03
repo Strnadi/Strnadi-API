@@ -36,7 +36,10 @@ public class CheckRecordingJob : IJob
             _logger.LogWarning($"Recording {recordingId} incomplete ({recording.Parts!.Count()}/{recording.ExpectedPartsCount})");
             
             var fcmToken = context.JobDetail.JobDataMap.GetString("fcmToken");
-            await _notifications.SendNotificationAsync(fcmToken, "Strnadi", "Odesílání vaší nahrávky se nezdařilo.");
+            await _notifications.SendInvisibleNotificationAsync(fcmToken, new ()
+            {
+                { "msg", "recording-upload-failed" }
+            });
         }
     }
 }

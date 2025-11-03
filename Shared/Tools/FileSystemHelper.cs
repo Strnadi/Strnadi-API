@@ -37,9 +37,8 @@ public static class FileSystemHelper
         return path;
     }
     
-    public static async Task<byte[]> ReadRecordingFileAsync(int recordingId, int recordingPartId)
+    public static async Task<byte[]> ReadRecordingFileAsync(string path)
     {
-        string path = GetRecordingPartFilePath(recordingId, recordingPartId);
         return await File.ReadAllBytesAsync(path);
     }
     
