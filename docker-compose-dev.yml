@@ -57,6 +57,12 @@ services:
       - "666:8080"
     depends_on:
       - strnadi-db-dev
+    environment:
+      # put this in .env (NOT in git) as ADMINER_PERM_KEY=long_random_string
+      ADMINER_PERM_KEY: ${ADMINER_PERM_KEY}
+    volumes:
+      - ./adminer/plugins/plugin.php:/var/www/html/plugins/plugin.php:ro
+      - ./adminer/plugins-enabled/permanent-login.php:/var/www/html/plugins-enabled/permanent-login.php:ro
 
 networks:
   strnadi-network-dev:
