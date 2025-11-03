@@ -50,19 +50,19 @@ public class FirebaseNotificationService
         });
     }
     
-    public async Task SendInvisibleNotificationAsync(string fcmToken, Dictionary<string, string> data)
+    public async Task SendInvisibleNotificationAsync(string fcmToken, Dictionary<string, object> data)
     {
-        await SendNotificationBaseAsync(new FcmMessageRoot
+        await SendNotificationBaseAsync(new
         {
-            Message = new FcmMessage
+            message = new
             {
-                Token = fcmToken,
-                Data = data,
-                Android = new FcmAndroid { Priority = "HIGH" },
-                Apns = new FcmApns
+                token = fcmToken,
+                data,
+                android = new { priority = "HIGH" },
+                apns = new
                 {
-                    Headers = new Dictionary<string, string> { { "apns-priority", "5" } },
-                    Payload = new FcmApnsPayload
+                    headers = new Dictionary<string, object> { { "apns-priority", "5" } },
+                    payload = new FcmApnsPayload
                     {
                         Aps = new FcmAps { ContentAvailable = 1 }
                     }
@@ -71,7 +71,7 @@ public class FirebaseNotificationService
         });
     }
     
-    private async Task SendNotificationBaseAsync(FcmMessageRoot root)
+    private async Task SendNotificationBaseAsync(object payload)
     {
         var accessToken = await _credential.UnderlyingCredential.GetAccessTokenForRequestAsync();
 
@@ -79,7 +79,7 @@ public class FirebaseNotificationService
         http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
         
-        var json = JsonSerializer.Serialize(root);
+        var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var url = $"https://fcm.googleapis.com/v1/projects/{_projectId}/messages:send";

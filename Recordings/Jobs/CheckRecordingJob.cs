@@ -38,7 +38,7 @@ public class CheckRecordingJob : IJob
             var fcmToken = context.JobDetail.JobDataMap.GetString("fcmToken");
             await _notifications.SendInvisibleNotificationAsync(fcmToken, new ()
             {
-                { "msg", "recording-upload-failed" }
+                { "action", "recording-upload-failed" }
             });
         }
     }

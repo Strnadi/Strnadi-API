@@ -107,7 +107,7 @@ public class RecordingsController : ControllerBase
         [FromRoute] int partId,
         [FromServices] RecordingsRepository repo)
     {
-        var recordingPart = await repo.GetPartSoundAsync(recId, partId);
+        var recordingPart = await repo.GetPartSoundAsync(partId);
 
         return File(recordingPart, "audio/wav");
     }
