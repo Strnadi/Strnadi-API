@@ -50,7 +50,7 @@ public class FirebaseNotificationService
         });
     }
     
-    public async Task SendInvisibleNotificationAsync(string fcmToken, Dictionary<string, string> data)
+    public async Task SendInvisibleNotificationAsync(string fcmToken, Dictionary<string, string?> data)
     {
         await SendNotificationBaseAsync(new
         {
