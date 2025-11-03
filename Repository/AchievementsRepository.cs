@@ -78,7 +78,7 @@ public class AchievementsRepository : RepositoryBase
                         content.Description,
                         content.LanguageCode,
                         AchievementId = achievementId
-                    }, 
+                    },
                     transaction: tx);
             }
 
