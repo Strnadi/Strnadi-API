@@ -63,7 +63,7 @@ public class AchievementsRepository : RepositoryBase
     private async Task InsertAchievementContentAsync(int achievementId, params PostAchievementContentRequest[] contents) =>
         await ExecuteSafelyAsync(async () =>
         {
-            var tx = await Connection.BeginTransactionAsync();
+            await using var tx = await Connection.BeginTransactionAsync();
 
             foreach (var content in contents)
             {
