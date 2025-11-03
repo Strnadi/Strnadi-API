@@ -25,28 +25,61 @@ public class FirebaseNotificationService
         _projectId = parsed.RootElement.GetProperty("project_id").GetString()!;
     }
 
-    public async Task SendNotificationAsync(string fcmToken, string title, string body)
+    public async Task SendVisibleNotificationAsync(string fcmToken, string title, string body)
+    {
+        await SendNotificationBaseAsync(new FcmMessageRoot
+        {
+            Message = new FcmMessage
+            {
+                Token = fcmToken,
+                Notification = new FcmNotification
+                {
+                    Title = title,
+                    Body = body,
+                },
+                Android = new FcmAndroid { Priority = "HIGH" },
+                Apns = new FcmApns
+                {
+                    Headers = new Dictionary<string, string> { { "apns-priority", "5" } },
+                    Payload = new FcmApnsPayload
+                    {
+                        Aps = new FcmAps { ContentAvailable = 1 }
+                    }
+                }
+            }
+        });
+    }
+    
+    public async Task SendInvisibleNotificationAsync(string fcmToken, Dictionary<string, string> data)
+    {
+        await SendNotificationBaseAsync(new FcmMessageRoot
+        {
+            Message = new FcmMessage
+            {
+                Token = fcmToken,
+                Data = data,
+                Android = new FcmAndroid { Priority = "HIGH" },
+                Apns = new FcmApns
+                {
+                    Headers = new Dictionary<string, string> { { "apns-priority", "5" } },
+                    Payload = new FcmApnsPayload
+                    {
+                        Aps = new FcmAps { ContentAvailable = 1 }
+                    }
+                }
+            }
+        });
+    }
+    
+    private async Task SendNotificationBaseAsync(FcmMessageRoot root)
     {
         var accessToken = await _credential.UnderlyingCredential.GetAccessTokenForRequestAsync();
 
         using var http = new HttpClient();
         http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
-
-        var message = new
-        {
-            message = new
-            {
-                token = fcmToken,
-                notification = new
-                {
-                    title,
-                    body
-                }
-            }
-        };
-
-        var json = JsonSerializer.Serialize(message);
+        
+        var json = JsonSerializer.Serialize(root);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var url = $"https://fcm.googleapis.com/v1/projects/{_projectId}/messages:send";
@@ -58,7 +91,5 @@ public class FirebaseNotificationService
         {
             throw new Exception($"Firebase send error: {response.StatusCode}, {responseBody}");
         }
-
-        Logger.Log($"Sent Firebase notification '{title}' to {fcmToken}", LogLevel.Error);
     }
 }

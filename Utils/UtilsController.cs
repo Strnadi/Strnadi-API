@@ -114,7 +114,7 @@ public class UtilsController : ControllerBase
 
         foreach (var device in devices)
         {
-            await notificationService.SendNotificationAsync(device.FcmToken, req.Title, req.Body);
+            await notificationService.SendVisibleNotificationAsync(device.FcmToken, req.Title, req.Body);
         }
 
         return Ok();

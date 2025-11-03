@@ -391,10 +391,18 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
-    public async Task<byte[]> GetPartAsync(int recId, int partId)
+    private async Task<RecordingPart?> GetPartAsync(int partId) =>
+        await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync(
+            "SELECT * FROM recording_parts WHERE id = @Id",
+            new { Id = partId }));
+    
+    public async Task<byte[]?> GetPartSoundAsync(int partId)
     {
-        byte[] content = await FileSystemHelper.ReadRecordingFileAsync(recId, partId);
-        return content;
+        var part = await GetPartAsync(partId);
+        if (part?.FilePath is null)
+            return null;
+        
+        return await FileSystemHelper.ReadRecordingFileAsync(part.FilePath);
     }
 
     public async Task<FilteredRecordingPartModel?> FindFilteredPartByTimeAsync(
