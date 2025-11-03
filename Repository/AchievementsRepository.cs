@@ -31,6 +31,7 @@ public class AchievementsRepository : RepositoryBase
 
         foreach (var achievement in arr)
         {
+            achievement.ImagePath = null!;
             achievement.ImageUrl = _linkGenerator.GenerateAchievementImageUrl(achievement.Id);
             achievement.Contents = (await GetAchievementContentsAsync(achievement.Id))!;
             achievement.Sql = null!;
