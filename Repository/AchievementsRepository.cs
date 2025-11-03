@@ -40,7 +40,7 @@ public class AchievementsRepository : RepositoryBase
     }
 
     public async Task<Achievement?> GetByIdAsync(int achievementId) =>
-        await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync(
+        await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync<Achievement>(
             "SELECT * FROM achievements WHERE id = @Id", new { Id = achievementId }));
 
     public async Task<byte[]?> GetPhotoAsync(int achievementId)
