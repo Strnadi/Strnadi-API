@@ -194,7 +194,7 @@ public class RecordingsController : ControllerBase
 
         var trigger = TriggerBuilder.Create()
             .WithIdentity($"trigger_check_recording_{recordingId}", "group1")
-            .StartAt(DateBuilder.FutureDate(1, IntervalUnit.Minute))
+            .StartAt(DateBuilder.FutureDate(1, IntervalUnit.Hour))
             .Build();
 
         Logger.Log("Scheduling", LogLevel.Debug);
