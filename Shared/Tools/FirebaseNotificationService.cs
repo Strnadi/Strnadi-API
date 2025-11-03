@@ -50,7 +50,7 @@ public class FirebaseNotificationService
         });
     }
     
-    public async Task SendInvisibleNotificationAsync(string fcmToken, Dictionary<string, object> data)
+    public async Task SendInvisibleNotificationAsync(string fcmToken, Dictionary<string, string> data)
     {
         await SendNotificationBaseAsync(new
         {
@@ -61,7 +61,7 @@ public class FirebaseNotificationService
                 android = new { priority = "HIGH" },
                 apns = new
                 {
-                    headers = new Dictionary<string, object> { { "apns-priority", "5" } },
+                    headers = new Dictionary<string, string> { { "apns-priority", "5" } },
                     payload = new FcmApnsPayload
                     {
                         Aps = new FcmAps { ContentAvailable = 1 }

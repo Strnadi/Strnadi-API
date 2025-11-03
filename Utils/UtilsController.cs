@@ -114,19 +114,15 @@ public class UtilsController : ControllerBase
 
         foreach (var device in devices)
         {
-            await notificationService.SendInvisibleNotificationAsync(device.FcmToken, new Dictionary<string, object>
+            await notificationService.SendInvisibleNotificationAsync(device.FcmToken, new Dictionary<string, string>
             {
                 { "action", "custom" },
-                { "message", new Dictionary<string, object>
-                    {
-                        { "titleEn", req.TitleEn },
-                        { "bodyEn", req.BodyEn },
-                        { "titleDe", req.TitleDe },
-                        { "bodyDe", req.BodyDe },
-                        { "titleCz", req.TitleCz },
-                        { "bodyCz", req.BodyCz },
-                    }
-                }
+                { "titleEn", req.TitleEn },
+                { "bodyEn", req.BodyEn },
+                { "titleDe", req.TitleDe },
+                { "bodyDe", req.BodyDe },
+                { "titleCz", req.TitleCz },
+                { "bodyCz", req.BodyCz },
             });
         }
 
