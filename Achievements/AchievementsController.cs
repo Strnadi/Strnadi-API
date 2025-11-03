@@ -43,7 +43,7 @@ public class AchievementsController : ControllerBase
             return BadRequest();
         
         if (!jwtService.TryValidateToken(jwt, out string? email))
-            return BadRequest();
+            return Unauthorized();
 
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized();
