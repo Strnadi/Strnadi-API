@@ -160,4 +160,5 @@ public static class FileSystemHelper
         string path = CreateArticleAttachmentPath(id, fileName);
         File.Delete(path);
     }
+
 }

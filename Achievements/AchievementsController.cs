@@ -14,4 +14,12 @@ public class AchievementsController : ControllerBase
         if (achievements is null) return NotFound();
         return Ok(achievements);
     }
+
+    [HttpGet("{achievementId:int}/photo")]
+    public async Task<IActionResult> GetPhotoAsync([FromServices] AchievementsRepository repo, int achievementId)
+    {
+        byte[]? content = await repo.GetPhotoAsync(achievementId);
+        if (content is null) return NotFound();
+        return File(content, "image/png");
+    }
 }

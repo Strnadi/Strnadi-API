@@ -23,6 +23,7 @@ using Shared.Logging;
 using Shared.Models.Database;
 using Shared.Models.Requests.Photos;
 using Shared.Models.Requests.Users;
+using Shared.Tools;
 
 namespace Users;
 

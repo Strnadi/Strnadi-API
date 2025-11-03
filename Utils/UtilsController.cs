@@ -16,6 +16,7 @@
 
 using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Repository;
 using Shared.Extensions;
 using Shared.Models.Requests.Notifications;
@@ -27,6 +28,13 @@ namespace Utils;
 [Route("utils")]
 public class UtilsController : ControllerBase
 {
+    private readonly ILogger<UtilsController> _logger;
+
+    public UtilsController(ILogger<UtilsController> logger)
+    {
+        _logger = logger;
+    }
+    
     [HttpHead("health")]
     public IActionResult Health() => Ok();
 
@@ -114,16 +122,24 @@ public class UtilsController : ControllerBase
 
         foreach (var device in devices)
         {
-            await notificationService.SendInvisibleNotificationAsync(device.FcmToken, new Dictionary<string, string?>
+            try
             {
-                { "action", "custom" },
-                { "titleEn", req.TitleEn },
-                { "bodyEn", req.BodyEn },
-                { "titleDe", req.TitleDe },
-                { "bodyDe", req.BodyDe },
-                { "titleCs", req.TitleCs },
-                { "bodyCs", req.BodyCs },
-            });
+                await notificationService.SendInvisibleNotificationAsync(device.FcmToken,
+                    new Dictionary<string, string?>
+                    {
+                        { "action", "custom" },
+                        { "titleEn", req.TitleEn },
+                        { "bodyEn", req.BodyEn },
+                        { "titleDe", req.TitleDe },
+                        { "bodyDe", req.BodyDe },
+                        { "titleCs", req.TitleCs },
+                        { "bodyCs", req.BodyCs },
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending notification");
+            }
         }
 
         return Ok();
