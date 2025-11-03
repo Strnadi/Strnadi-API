@@ -7,7 +7,7 @@
  *   3) /config/adminer_perm_key (optional extra mount point)
  */
 class AdminerPermanentLogin {
-  function permanentLogin($create) {
+  function permanentLogin($create = false) {
     $secret = getenv('ADMINER_PERM_KEY');
 
     if (!$secret || strlen($secret) < 32) {
