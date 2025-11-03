@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Repository;
 
 namespace Achievements;
 
@@ -6,9 +7,11 @@ namespace Achievements;
 [Route("achievements")]
 public class AchievementsController : ControllerBase
 {
-    [HttpPost]
-    public async Task<IActionResult> PostAchievementAsync()
+    [HttpGet]
+    public async Task<ActionResult> Get([FromServices] AchievementsRepository repo)
     {
-        throw new Exception();
+        var achievements = await repo.GetAllAsync();
+        if (achievements is null) return NotFound();
+        return Ok(achievements);
     }
 }
