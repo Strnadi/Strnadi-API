@@ -30,7 +30,7 @@ public class AchievementsController : ControllerBase
 
     [HttpPost]
     [RequestSizeLimit(int.MaxValue)]
-    public async Task<IActionResult> Post([FromBody] PostAchievementRequest req,
+    public async Task<IActionResult> Post([FromForm] PostAchievementRequest req,
         IFormFile file,
         [FromServices] JwtService jwtService, 
         [FromServices] UsersRepository usersRepo, 
