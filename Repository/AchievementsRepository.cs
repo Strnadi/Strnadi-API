@@ -23,7 +23,6 @@ public class AchievementsRepository : RepositoryBase
 
     public async Task<Achievement[]?> GetAllAsync()
     {
-        
         var achievements = await ExecuteSafelyAsync(Connection.QueryAsync<Achievement>(
             "SELECT * FROM achievements"));
         if (achievements is null) return null;
@@ -34,6 +33,7 @@ public class AchievementsRepository : RepositoryBase
         {
             achievement.ImageUrl = _linkGenerator.GenerateAchievementImageUrl(achievement.Id);
             achievement.Contents = (await GetAchievementContentsAsync(achievement.Id))!;
+            achievement.Sql = null!;
         }
              
         return arr;
@@ -63,8 +63,6 @@ public class AchievementsRepository : RepositoryBase
     private async Task InsertAchievementContentAsync(int achievementId, params PostAchievementContentRequest[] contents) =>
         await ExecuteSafelyAsync(async () =>
         {
-            await using var tx = await Connection.BeginTransactionAsync();
-
             foreach (var content in contents)
             {
                 await Connection.ExecuteAsync(
@@ -78,11 +76,8 @@ public class AchievementsRepository : RepositoryBase
                         content.Description,
                         content.LanguageCode,
                         AchievementId = achievementId
-                    },
-                    transaction: tx);
+                    });
             }
-
-            await tx.CommitAsync();
         });
 
     public async Task<bool> CreateAchievementAsync(PostAchievementRequest req, IFormFile file)
