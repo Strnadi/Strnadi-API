@@ -58,7 +58,7 @@ public class AchievementsRepository : RepositoryBase
     private async Task UpdatePathAsync(int id, string path) =>
         await ExecuteSafelyAsync(
             Connection.ExecuteAsync(
-                "UPDATE achievement SET image_path = @Path WHERE id = @Id", new { Id = id, Path = path }));
+                "UPDATE achievements SET image_path = @Path WHERE id = @Id", new { Id = id, Path = path }));
 
     private async Task InsertAchievementContentAsync(int achievementId, params PostAchievementContentRequest[] contents) =>
         await ExecuteSafelyAsync(async () =>
