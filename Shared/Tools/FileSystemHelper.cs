@@ -161,6 +161,11 @@ public static class FileSystemHelper
         File.Delete(path);
     }
 
+    private static string CreateAchievementsDirectoryPath(int achievementId)
+    {
+        return $"achievements/{achievementId}";
+    }
+
     private static string CreateAchievementImagePath(int achievementId)
     {
         return $"achievements/{achievementId}/image.png";
@@ -168,6 +173,9 @@ public static class FileSystemHelper
 
     public static async Task<string> SaveAchievementImageAsync(int achievementId, byte[] content)
     {
+        string dirPath = CreateAchievementsDirectoryPath(achievementId);
+        if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
+        
         string path = CreateAchievementImagePath(achievementId);
         await File.WriteAllBytesAsync(path, content);
         return path;
