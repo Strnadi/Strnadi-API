@@ -12,7 +12,7 @@ public class SendNotificationRequest
     
     public string? BodyDe { get; set; }
     
-    public string? TitleCz { get; set; }
+    public string? TitleCs { get; set; }
     
-    public string? BodyCz { get; set; }
+    public string? BodyCs { get; set; }
 }

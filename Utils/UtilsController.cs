@@ -121,8 +121,8 @@ public class UtilsController : ControllerBase
                 { "bodyEn", req.BodyEn },
                 { "titleDe", req.TitleDe },
                 { "bodyDe", req.BodyDe },
-                { "titleCz", req.TitleCz },
-                { "bodyCz", req.BodyCz },
+                { "titleCs", req.TitleCs },
+                { "bodyCs", req.BodyCs },
             });
         }
 

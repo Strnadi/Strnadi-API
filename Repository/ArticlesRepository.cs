@@ -157,7 +157,6 @@ public class ArticlesRepository : RepositoryBase
     public async Task<byte[]> GetAsync(int id, string fileName)
     {
         byte[] content = await FileSystemHelper.ReadArticleFileAsync(id, fileName);
-
         return content;
     }
 
