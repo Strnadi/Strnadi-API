@@ -1,6 +1,6 @@
 namespace Shared.Models.Requests.Achievements;
 
-public struct PostAchievementContentRequest
+public class PostAchievementContentRequest
 {
     public string LanguageCode { get; set; }
     

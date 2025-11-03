@@ -1,6 +1,6 @@
 namespace Shared.Models.Requests.Achievements;
 
-public struct PostAchievementRequest
+public class PostAchievementRequest
 {
     public string Sql { get; set; }
     
