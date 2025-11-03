@@ -64,6 +64,7 @@ public class AchievementsRepository : RepositoryBase
     private async Task InsertAchievementContentAsync(int achievementId, params PostAchievementContentRequest[] contents) =>
         await ExecuteSafelyAsync(async () =>
         {
+            await using var transaction = await Connection.BeginTransactionAsync();
             foreach (var content in contents)
             {
                 await Connection.ExecuteAsync(
@@ -77,8 +78,11 @@ public class AchievementsRepository : RepositoryBase
                         content.Description,
                         content.LanguageCode,
                         AchievementId = achievementId
-                    });
+                    },
+                    transaction);
             }
+
+            await transaction.CommitAsync();
         });
 
     public async Task<bool> CreateAchievementAsync(PostAchievementRequest req, IFormFile file)
