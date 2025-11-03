@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using Auth.Services;
-using Google.Apis.Util;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Repository;
@@ -31,14 +30,15 @@ public class AchievementsController : ControllerBase
 
     [HttpPost]
     [RequestSizeLimit(int.MaxValue)]
-    public async Task<IActionResult> Post([FromForm] PostAchievementRequest req,
+    public async Task<IActionResult> Post(
+        [FromForm] string sql,
+        [FromForm] string contents,
         IFormFile file,
         [FromServices] JwtService jwtService, 
         [FromServices] UsersRepository usersRepo, 
         [FromServices] AchievementsRepository achievementsRepo)
     {
         string? jwt = this.GetJwt();
-        Console.WriteLine(JsonSerializer.Serialize(req));
         if (jwt is null) 
             return BadRequest();
         
@@ -47,6 +47,26 @@ public class AchievementsController : ControllerBase
 
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized();
+
+        PostAchievementContentRequest[]? contentsArray;
+        try 
+        {
+            contentsArray = JsonSerializer.Deserialize<PostAchievementContentRequest[]>(contents);
+            if (contentsArray is null || contentsArray.Length == 0)
+                return BadRequest("Contents is required");
+        }
+        catch (JsonException ex)
+        {
+            return BadRequest($"Invalid Contents format: {ex.Message}");
+        }
+        
+        var req = new PostAchievementRequest 
+        { 
+            Sql = sql, 
+            Contents = contentsArray 
+        };
+        
+        Console.WriteLine(JsonSerializer.Serialize(req));
 
         bool created = await achievementsRepo.CreateAchievementAsync(req, file);
         
