@@ -53,6 +53,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Achievements\Achievements.csproj" />
       <ProjectReference Include="..\Articles\Articles.csproj" />
       <ProjectReference Include="..\Auth\Auth.csproj" />
       <ProjectReference Include="..\Devices\Devices.csproj" />

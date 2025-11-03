@@ -16,6 +16,7 @@
 
 using System.Reflection;
 using System.Text;
+using Achievements;
 using Articles;
 using Auth;
 using Devices;
@@ -62,7 +63,8 @@ class Program
             .AddApplicationPart(typeof(UtilsController).Assembly)
             .AddApplicationPart(typeof(PhotosController).Assembly)
             .AddApplicationPart(typeof(ArticlesController).Assembly)
-            .AddApplicationPart(typeof(DictionaryController).Assembly);
+            .AddApplicationPart(typeof(DictionaryController).Assembly)
+            .AddApplicationPart(typeof(AchievementsController).Assembly);
         builder.Services.AddRepositories();
         builder.Services.AddEmailServices();
         builder.Services.AddAuthServices();
