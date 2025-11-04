@@ -29,7 +29,6 @@ public class AiModelConnector
 
         try
         {
-
             _logger.LogInformation("Starting classificatiotn");
             var response = await _httpClient.PostAsync("http://classification:8000/classify", form);
             var responseText = await response.Content.ReadAsStringAsync();
