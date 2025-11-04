@@ -34,10 +34,23 @@ public class AchievementsRepository : RepositoryBase
             achievement.ImagePath = null!;
             achievement.ImageUrl = _linkGenerator.GenerateAchievementImageUrl(achievement.Id);
             achievement.Contents = (await GetAchievementContentsAsync(achievement.Id))!;
-            achievement.Sql = null!;
         }
              
         return arr;
+    }
+
+    public async Task<Achievement[]?> GetByUserIdAsync(int userId)
+    {
+        var achievements = await ExecuteSafelyAsync(Connection.QueryAsync<Achievement>(
+            """
+            SELECT a.* 
+            FROM achievements a
+            JOIN user_achievement ua ON a.id = ua.achievement_id
+            WHERE ua.user_id = @UserId
+            """,
+            new { UserId = userId }));
+
+        return achievements?.ToArray();
     }
 
     public async Task<Achievement?> GetByIdAsync(int achievementId) =>

@@ -20,6 +20,16 @@ public class AchievementsController : ControllerBase
         return Ok(achievements);
     }
 
+    [HttpGet("{userId:int}")]
+    public async Task<IActionResult> Get([FromRoute] int userId, [FromServices] AchievementsRepository repo)
+    {
+        var achievement = await repo.GetByUserIdAsync(userId);
+        if (achievement is null) 
+            return NotFound();
+        
+        return Ok(achievement);
+    }
+
     [HttpGet("{achievementId:int}/photo")]
     public async Task<IActionResult> GetPhotoAsync([FromServices] AchievementsRepository repo, int achievementId)
     {
