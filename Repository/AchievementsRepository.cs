@@ -20,7 +20,7 @@ public class AchievementsRepository : RepositoryBase
         (await ExecuteSafelyAsync(Connection.QueryAsync<AchievementContent>(
             "SELECT * FROM achievement_content WHERE achievement_id = @Id",
             new { Id = achievementId })))?.ToArray();
-
+    
     public async Task<Achievement[]?> GetAllAsync()
     {
         var achievements = await ExecuteSafelyAsync(Connection.QueryAsync<Achievement>(
@@ -49,8 +49,20 @@ public class AchievementsRepository : RepositoryBase
             WHERE ua.user_id = @UserId
             """,
             new { UserId = userId }));
+        
+        if (achievements is null)
+            return null;
+        
+        var arr = achievements.ToArray();
 
-        return achievements?.ToArray();
+        foreach (var achievement in arr)
+        {
+            achievement.ImagePath = null!;
+            achievement.ImageUrl = _linkGenerator.GenerateAchievementImageUrl(achievement.Id);
+            achievement.Contents = (await GetAchievementContentsAsync(achievement.Id))!;
+        }
+             
+        return arr;
     }
 
     public async Task<Achievement?> GetByIdAsync(int achievementId) =>
