@@ -669,13 +669,6 @@ public class RecordingsRepository : RepositoryBase
 
     public async Task ProcessPredictionAsync(int recordingPartId, PredicationResult result)
     {
-        // создать filtered recording для каждого обьекта Segment
-        // .время_начало = interval[0]
-        // .время_конец = interval[1]
-        // .состояние = DetectedByAi
-        // к этому filtered recording создать detected_dialect
-        // .predicted_dialect_id = select from dialects where
-
         var part = await GetPartAsync(recordingPartId);
         if (part is null) return;
 
@@ -699,6 +692,8 @@ public class RecordingsRepository : RepositoryBase
                     filteredPart.Id,
                     predictedDialectCode: segment.Label
                 );
+                
+                _logger.LogInformation("New filtered parts and detected dialects from predication result have been successfully created");
             }
             catch (Exception ex)
             {

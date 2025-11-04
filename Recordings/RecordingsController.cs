@@ -287,6 +287,7 @@ public class RecordingsController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "Failed to classify audio");
             // Ignore
         }
     }
