@@ -233,13 +233,16 @@ public class RecordingsRepository : RepositoryBase
 
     private async Task UpdateFilePathAsync(int recordingId,
         string filePath) =>
-        await ExecuteSafelyAsync(async () => await Connection.ExecuteAsync(
-            "UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id",
-            new
-            {
-                FilePath = filePath,
-                Id = recordingId
-            }));
+        await ExecuteSafelyAsync(
+            Connection.ExecuteAsync(
+                "UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id",
+                new
+                {
+                    FilePath = filePath,
+                    Id = recordingId
+                }
+            )
+        );
 
     public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int? recordingId, bool verified)
     {

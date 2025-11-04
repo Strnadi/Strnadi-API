@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     public static void AddTools(this IServiceCollection services, ConfigurationManager configuration)
     {
         services.AddScoped<FirebaseNotificationService>();
-
+        services.AddScoped<AiModelConnector>();
         services.AddQuartz(q =>
         {
             q.UsePersistentStore(options =>

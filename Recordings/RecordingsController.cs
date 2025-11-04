@@ -23,6 +23,8 @@ using Recordings.Jobs;
 using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Requests.Recordings;
+using Shared.Tools;
+using System.Text.Json;
 
 namespace Recordings;
 
@@ -232,7 +234,8 @@ public class RecordingsController : ControllerBase
     public async Task<IActionResult> UploadPartAsync([FromForm] RecordingPartUploadRequest request,
         IFormFile file,
         [FromServices] JwtService jwtService,
-        [FromServices] RecordingsRepository recordingsRepo)
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromServices] AiModelConnector modelConnector)
     {
         string? jwt = this.GetJwt();
         
@@ -244,13 +247,25 @@ public class RecordingsController : ControllerBase
         
         int? recordingPartId = await recordingsRepo.UploadPartAsync(request, file);
 
-        Logger.Log(recordingPartId is null
+        Logger.Log(recordingPartId is not null
             ? $"Recording part {recordingPartId} has been uploaded"
             : $"Failed to upload recording part {recordingPartId}");
         
-        return recordingPartId is not null 
-            ? Ok(recordingPartId) 
-            : StatusCode(500, "Failed to upload recording");
+        if (recordingPartId is null)
+            return StatusCode(500, "Failed to upload recording");
+
+        SendRecordingToClassificationAsync(recordingPartId.Value, recordingsRepo, modelConnector);
+        return Ok(recordingPartId);
+    }
+
+    private async void SendRecordingToClassificationAsync(int recordingPartId, RecordingsRepository repo, AiModelConnector modelConnector)
+    {
+        var part = await repo.GetPartSoundAsync(recordingPartId);
+        if (part is null)
+            return;
+        
+        var result = await modelConnector.ClassifyAsync(part);
+        Logger.Log("Classification result: " + JsonSerializer.Serialize(result));
     }
 
     [HttpGet("incomplete")]
