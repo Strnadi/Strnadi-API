@@ -27,6 +27,7 @@ public class AiModelConnector
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         form.Add(fileContent, "file");
 
+        _logger.LogInformation("Starting classificatiotn");
         var response = await _httpClient.PostAsync("http://strnadi-ai:8000/classify", form);
         var responseText = await response.Content.ReadAsStringAsync();
 

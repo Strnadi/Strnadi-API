@@ -264,8 +264,11 @@ public class RecordingsController : ControllerBase
         {
             var part = await repo.GetPartSoundAsync(recordingPartId);
             if (part is null)
+            {
+                Logger.Log("SendRecordingToClassificationAsync: part is null");
                 return;
-        
+            }
+            
             var result = await modelConnector.ClassifyAsync(part);
             Logger.Log("Classification result: " + JsonSerializer.Serialize(result));
         }
