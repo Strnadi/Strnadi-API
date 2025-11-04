@@ -19,6 +19,7 @@ using System.Reflection;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Shared.Logging;
 using Shared.Models.Database.Dialects;
 using Shared.Models.Database.Recordings;
@@ -32,9 +33,11 @@ namespace Repository;
 public class RecordingsRepository : RepositoryBase
 {
     private readonly TimeSpan _timeMatchTolerance = TimeSpan.FromSeconds(1);
+    private readonly ILogger<RecordingsRepository> _logger;
     
-    public RecordingsRepository(IConfiguration configuration) : base(configuration)
+    public RecordingsRepository(ILogger<RecordingsRepository> logger, IConfiguration configuration) : base(configuration)
     {
+        _logger = logger;
     }
 
     public async Task<Recording[]?> GetAsync(int? userId, bool parts, bool sound)
@@ -679,21 +682,28 @@ public class RecordingsRepository : RepositoryBase
         int recordingId = part.RecordingId;
         foreach (var segment in result.Segments)
         {
-            var startDate = part.StartDate + TimeSpan.FromSeconds(segment.Interval[0]);
-            var endDate = part.EndDate + TimeSpan.FromSeconds(segment.Interval[1]);
-            
-            var filteredPart = await CreateFilteredPartAsync(recordingId, 
-                startDate, 
-                endDate, 
-                FilteredRecordingPartState.DetectedByAi, 
-                representant: false);
+            try
+            {
+                var startDate = part.StartDate + TimeSpan.FromSeconds(segment.Interval[0]);
+                var endDate = part.EndDate + TimeSpan.FromSeconds(segment.Interval[1]);
 
-            if (filteredPart is null) continue;
-            
-            await UpsertDetectedDialectAsync(
-                filteredPart.Id,
-                predictedDialectCode: segment.Label  
-            );
+                var filteredPart = await CreateFilteredPartAsync(recordingId,
+                    startDate,
+                    endDate,
+                    FilteredRecordingPartState.DetectedByAi,
+                    representant: false);
+
+                if (filteredPart is null) continue;
+
+                await UpsertDetectedDialectAsync(
+                    filteredPart.Id,
+                    predictedDialectCode: segment.Label
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to automatically classify the dialect");
+            }
         }
     }
 }
