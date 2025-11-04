@@ -15,7 +15,7 @@
  */
 namespace Shared.Models.Database.Recordings;
 
-public class RecordingPartModel
+public class RecordingPart
 {
     public int Id { get; set; }
     

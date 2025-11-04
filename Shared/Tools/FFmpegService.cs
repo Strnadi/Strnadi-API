@@ -134,6 +134,7 @@ public static class FFmpegService
         }
         catch
         {
+            Logger.Log("Neco se pokazilo v NormalizeAudioAsync", LogLevel.Warning);
             await ffmpeg.WaitForExitAsync();
         }
     }

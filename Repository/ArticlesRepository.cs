@@ -15,7 +15,7 @@ public class ArticlesRepository : RepositoryBase
     {
     }
 
-    public async Task<ArticleModel[]?> GetAsync()
+    public async Task<Article[]?> GetAsync()
     {
         var articles = await GetArticlesAsync();
         
@@ -35,17 +35,17 @@ public class ArticlesRepository : RepositoryBase
         return articles;
     }
 
-    private async Task<ArticleModel[]?> GetArticlesAsync() =>
+    private async Task<Article[]?> GetArticlesAsync() =>
         await ExecuteSafelyAsync(async () =>
-            (await Connection.QueryAsync<ArticleModel>("SELECT * FROM articles")).ToArray());
+            (await Connection.QueryAsync<Article>("SELECT * FROM articles")).ToArray());
 
-    private async Task<ArticleModel[]?> GetArticlesByCategoryAsync(int categoryId)
+    private async Task<Article[]?> GetArticlesByCategoryAsync(int categoryId)
     {
         var assignments = await GetCategoryAssignmentsByCategoryAsync(categoryId);
         if (assignments is null)
             return null;
 
-        var articles = new ArticleModel[assignments.Length];
+        var articles = new Article[assignments.Length];
         for (int i = 0; i < articles.Length; i++)
         {
             var article = await GetArticleAsync(assignments[i].ArticleId);
@@ -57,21 +57,21 @@ public class ArticlesRepository : RepositoryBase
         return articles;
     }
     
-    private async Task<ArticleAttachmentModel[]?> GetArticleFilesAsync(int articleId) => 
+    private async Task<ArticleAttachment[]?> GetArticleFilesAsync(int articleId) => 
         await ExecuteSafelyAsync(async () => 
-            (await Connection.QueryAsync<ArticleAttachmentModel>("SELECT * FROM article_attachments WHERE article_id = @ArticleId",
+            (await Connection.QueryAsync<ArticleAttachment>("SELECT * FROM article_attachments WHERE article_id = @ArticleId",
                 new
                 {
                     ArticleId = articleId
                 })).ToArray());
 
-    public async Task<ArticleModel[]?> GetAsync(string categoryName)
+    public async Task<Article[]?> GetAsync(string categoryName)
     {
         var assignments = await GetCategoryAssignmentsByCategoryAsync(categoryName);
         if (assignments is null)
             return null;
 
-        var articles = new ArticleModel?[assignments.Length];
+        var articles = new Article?[assignments.Length];
         for (int i = 0; i < articles.Length; i++)
         {
             articles[i] = await GetAsync(assignments[i].ArticleId);
@@ -94,7 +94,7 @@ public class ArticlesRepository : RepositoryBase
                 )
                 """, new { CategoryName = categoryName })).ToArray());
 
-    public async Task<ArticleModel?> GetAsync(int id)
+    public async Task<Article?> GetAsync(int id)
     {
         var article = await GetArticleAsync(id);
         if (article is null)
@@ -111,18 +111,18 @@ public class ArticlesRepository : RepositoryBase
         return article;
     }
 
-    private async Task<ArticleModel?> GetArticleAsync(int id) =>
+    private async Task<Article?> GetArticleAsync(int id) =>
         await ExecuteSafelyAsync(async () =>
-            await Connection.QueryFirstOrDefaultAsync<ArticleModel>(
+            await Connection.QueryFirstOrDefaultAsync<Article>(
                 "SELECT * FROM articles WHERE id = @Id", new { Id = id }));
 
-    private async Task<ArticleCategoryModel[]?> GetCategoriesByArticleAsync(int articleId)
+    private async Task<ArticleCategory[]?> GetCategoriesByArticleAsync(int articleId)
     {
         var assignments = await GetCategoryAssignmentsByArticleAsync(articleId);
         if (assignments is null)
             return null;
         
-        var categories = new ArticleCategoryModel[assignments.Length];
+        var categories = new ArticleCategory[assignments.Length];
         for (int i = 0; i < categories.Length; i++)
         {
             categories[i] = (await GetCategoryAsync(assignments[i].CategoryId))!;
@@ -148,16 +148,15 @@ public class ArticlesRepository : RepositoryBase
                     ArticleId = articleId
                 })).ToArray());
 
-    private async Task<ArticleCategoryModel?> GetCategoryAsync(int categoryId) =>
+    private async Task<ArticleCategory?> GetCategoryAsync(int categoryId) =>
         await ExecuteSafelyAsync(async () =>
-            await Connection.QueryFirstOrDefaultAsync<ArticleCategoryModel>(
+            await Connection.QueryFirstOrDefaultAsync<ArticleCategory>(
                 "SELECT * FROM article_categories WHERE id = @CategoryId", 
                 new { CategoryId = categoryId }));
 
     public async Task<byte[]> GetAsync(int id, string fileName)
     {
         byte[] content = await FileSystemHelper.ReadArticleFileAsync(id, fileName);
-
         return content;
     }
 
@@ -252,12 +251,12 @@ public class ArticlesRepository : RepositoryBase
             0); 
     }
 
-    public async Task<ArticleCategoryModel[]?> GetCategoriesAsync() =>
+    public async Task<ArticleCategory[]?> GetCategoriesAsync() =>
         await ExecuteSafelyAsync(async () => 
-            (await Connection.QueryAsync<ArticleCategoryModel>(
+            (await Connection.QueryAsync<ArticleCategory>(
                 "SELECT * FROM article_categories")).ToArray());
     
-    public async Task<ArticleCategoryModel[]?> GetCategoriesWithArticlesAsync()
+    public async Task<ArticleCategory[]?> GetCategoriesWithArticlesAsync()
     {
         var categories = await GetCategoriesAsync();
         if (categories is null)
@@ -282,9 +281,9 @@ public class ArticlesRepository : RepositoryBase
                 VALUES (@Label, @Name);
                 """, new { req.Label, req.Name })) != 0;
 
-    private async Task<ArticleCategoryModel?> GetCategoryModelAsync(string categoryName) =>
+    private async Task<ArticleCategory?> GetCategoryModelAsync(string categoryName) =>
         await ExecuteSafelyAsync(async () =>
-            await Connection.QueryFirstOrDefaultAsync<ArticleCategoryModel>(
+            await Connection.QueryFirstOrDefaultAsync<ArticleCategory>(
                 "SELECT * FROM article_categories WHERE name = @Name", new { Name = categoryName }));
     
     public async Task<bool> AssignArticleToCategoryAsync(string categoryName, AssignArticleToCategoryRequest request)

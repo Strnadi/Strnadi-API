@@ -8,3 +8,4 @@ endpoints
 */appsettings.json 
 strnadi-db-script.sql
 *.sh
+firebase-service-account.json

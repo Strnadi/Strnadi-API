@@ -38,6 +38,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Quartz.Extensions.Hosting" Version="3.15.1" />
+      <PackageReference Include="Quartz.Serialization.Json" Version="3.15.1" />
       <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="7.3.1" />
       <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.1" />
       <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.3.1" />
@@ -51,6 +53,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Achievements\Achievements.csproj" />
       <ProjectReference Include="..\Articles\Articles.csproj" />
       <ProjectReference Include="..\Auth\Auth.csproj" />
       <ProjectReference Include="..\Devices\Devices.csproj" />

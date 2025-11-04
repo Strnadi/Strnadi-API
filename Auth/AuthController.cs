@@ -121,7 +121,7 @@ public class AuthController : ControllerBase
         if (!await repo.ExistsAsync(email))
             return Conflict("User doesn't exist");
 
-        UserModel user = (await repo.GetUserByEmailAsync(email))!;
+        User user = (await repo.GetUserByEmailAsync(email))!;
 
         if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
         {
@@ -145,12 +145,12 @@ public class AuthController : ControllerBase
 
         string googleId = payload.Subject;
         
-        UserModel? user = await repo.GetUserByGoogleId(googleId);
+        User? user = await repo.GetUserByGoogleId(googleId);
 
         string? authJwt = this.GetJwt();
         if (authJwt is not null)
         {
-            if (!jwtService.TryValidateToken(authJwt, out string userEmail))
+            if (!jwtService.TryValidateToken(authJwt, out string? userEmail))
                 return Unauthorized("Invalid auth JWT");
 
             await repo.AddGoogleIdAsync(email: userEmail, googleId: req.IdToken);
@@ -272,7 +272,7 @@ public class AuthController : ControllerBase
         {
             if (string.IsNullOrEmpty(email))
             {
-                UserModel user = (await repo.GetUserByAppleIdAsync(appleId))!;
+                User user = (await repo.GetUserByAppleIdAsync(appleId))!;
 
                 if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
                 {
@@ -286,7 +286,7 @@ public class AuthController : ControllerBase
             }
             else
             {
-                UserModel user = (await repo.GetUserByEmailAsync(email))!;
+                User user = (await repo.GetUserByEmailAsync(email))!;
                 
                 await repo.AddAppleIdAsync(email, appleId);
 

@@ -16,8 +16,11 @@
 
 using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Repository;
 using Shared.Extensions;
+using Shared.Models.Requests.Notifications;
+using Shared.Tools;
 
 namespace Utils;
 
@@ -25,6 +28,13 @@ namespace Utils;
 [Route("utils")]
 public class UtilsController : ControllerBase
 {
+    private readonly ILogger<UtilsController> _logger;
+
+    public UtilsController(ILogger<UtilsController> logger)
+    {
+        _logger = logger;
+    }
+    
     [HttpHead("health")]
     public IActionResult Health() => Ok();
 
@@ -85,6 +95,53 @@ public class UtilsController : ControllerBase
             return Unauthorized("User is not admin");
 
         await recordingsRepo.AnalyzePartsAsync();
+        return Ok();
+    }
+
+    [HttpPost("send-notification")]
+    public async Task<IActionResult> SendNotification([FromBody] SendNotificationRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] DevicesRepository devicesRepo,
+        [FromServices] FirebaseNotificationService notificationService)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+
+        var devices = await devicesRepo.GetAllByUserIdAsync(req.UserId);
+        if (devices is null)
+            return Conflict();
+
+        foreach (var device in devices)
+        {
+            try
+            {
+                await notificationService.SendInvisibleNotificationAsync(device.FcmToken,
+                    new Dictionary<string, string?>
+                    {
+                        { "action", "custom" },
+                        { "titleEn", req.TitleEn },
+                        { "bodyEn", req.BodyEn },
+                        { "titleDe", req.TitleDe },
+                        { "bodyDe", req.BodyDe },
+                        { "titleCs", req.TitleCs },
+                        { "bodyCs", req.BodyCs },
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending notification");
+            }
+        }
+
         return Ok();
     }
 }

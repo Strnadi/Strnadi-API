@@ -16,6 +16,7 @@
 
 using System.Reflection;
 using System.Text;
+using Achievements;
 using Articles;
 using Auth;
 using Devices;
@@ -26,6 +27,7 @@ using Microsoft.OpenApi.Writers;
 using Photos;
 using Recordings;
 using Repository;
+using Shared.Extensions;
 using Users;
 using Utils;
 
@@ -38,7 +40,7 @@ class Program
         var builder = WebApplication.CreateBuilder(args);
         var configuration = builder.Configuration;
 
-        ConfigureServices(builder.Services, configuration);
+        ConfigureServices(builder, configuration);
         
         var app = builder.Build();
 
@@ -47,12 +49,13 @@ class Program
         app.Run();
     }
 
-    static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    static void ConfigureServices(WebApplicationBuilder builder, ConfigurationManager configuration)
     {
-        var openApiDocument = LoadEmbeddedOpenApiDocument();
-        services.AddMemoryCache();
-        services.AddEndpointsApiExplorer();
-        services.AddControllers()
+        builder.Services.AddMemoryCache();
+        builder.Services.AddLogging();
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddTools(configuration);
+        builder.Services.AddControllers()
             .AddApplicationPart(typeof(UsersController).Assembly)
             .AddApplicationPart(typeof(AuthController).Assembly)
             .AddApplicationPart(typeof(RecordingsController).Assembly)
@@ -60,11 +63,12 @@ class Program
             .AddApplicationPart(typeof(UtilsController).Assembly)
             .AddApplicationPart(typeof(PhotosController).Assembly)
             .AddApplicationPart(typeof(ArticlesController).Assembly)
-            .AddApplicationPart(typeof(DictionaryController).Assembly);
-        services.AddRepositories();
-        services.AddEmailServices();
-        services.AddAuthServices();
-        services.AddCors(corsOptions =>
+            .AddApplicationPart(typeof(DictionaryController).Assembly)
+            .AddApplicationPart(typeof(AchievementsController).Assembly);
+        builder.Services.AddRepositories();
+        builder.Services.AddEmailServices();
+        builder.Services.AddAuthServices();
+        builder.Services.AddCors(corsOptions =>
         {
             corsOptions.AddPolicy(configuration["CORS:Default"], policyBuilder =>
             {

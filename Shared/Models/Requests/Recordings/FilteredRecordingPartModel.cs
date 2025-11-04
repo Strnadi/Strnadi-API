@@ -36,7 +36,7 @@ public class FilteredRecordingPartModel
     public int? ParentId { get; set; }
     
     [NotMapped]
-    public List<DetectedDialectModel> DetectedDialects { get; set; }
+    public List<DetectedDialect> DetectedDialects { get; set; }
 
     public FilteredRecordingPartModel()
     {

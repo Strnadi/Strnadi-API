@@ -109,6 +109,72 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /auth/sign-up-google:
+    post:
+      tags: [Auth]
+      summary: Prepare a new account using Google Sign-In
+      description: |
+        Validates a Google ID token for a user that is not yet registered in Strnadi and returns
+        the profile information required to finish onboarding together with a provisional JWT.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Google identity token was accepted and onboarding can continue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleAuthSignupResponse'
+        '401':
+          description: The provided Google ID token was invalid.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The e-mail address already belongs to an existing Strnadi account.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/login-google:
+    post:
+      tags: [Auth]
+      summary: Sign in an existing account using Google Sign-In
+      description: |
+        Validates a Google ID token for an existing Strnadi user and returns a freshly issued JWT
+        when the account is found. Email verification is marked as completed automatically.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Google identity was validated and the caller received a JWT.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/JwtToken'
+        '401':
+          description: The provided Google ID token was invalid.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: No Strnadi account is associated with the Google identity.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /auth/apple:
     post:
       tags: [Auth]
@@ -234,6 +300,23 @@ paths:
           description: The specified user has an Apple ID linked to the account.
         '409':
           description: The user has no linked Apple ID or does not exist.
+  /auth/has-google-id:
+    get:
+      tags: [Auth]
+      summary: Check whether a user has a linked Google identity
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: The specified user has a Google ID linked to the account.
+        '409':
+          description: The user has no linked Google identity or does not exist.
   /auth/login:
     post:
       tags: [Auth]
@@ -1097,6 +1180,45 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /recordings/part-new:
+    post:
+      tags: [Recordings]
+      summary: Upload a recording part using multipart form data
+      description: |
+        Alternative upload flow that accepts the raw audio file via `multipart/form-data` instead
+        of requiring a Base64 encoded payload.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecordingPartUploadFormRequest'
+      responses:
+        '200':
+          description: Identifier of the created recording part.
+          content:
+            application/json:
+              schema:
+                type: integer
+                minimum: 1
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The recording part could not be stored.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /recordings/dialects:
     get:
       tags: [Recordings]
@@ -1840,6 +1962,18 @@ components:
         googleId:
           type: string
           description: Stable Google subject identifier returned in the ID token.
+    GoogleAuthSignupResponse:
+      type: object
+      required: [jwt, firstName, lastName]
+      properties:
+        jwt:
+          $ref: '#/components/schemas/JwtToken'
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
     AppleAuthRequest:
       type: object
       required: [idToken, userIdentifier]
@@ -1926,6 +2060,9 @@ components:
         appleId:
           type: string
           nullable: true
+        googleId:
+          type: string
+          nullable: true
     AddDeviceRequest:
       type: object
       required: [userId, fcmToken, devicePlatform, deviceModel]
@@ -1999,7 +2136,7 @@ components:
           description: File extension (for example `png`).
     RecordingUploadRequest:
       type: object
-      required: [createdAt, estimatedBirdsCount, device, byApp]
+      required: [createdAt, estimatedBirdsCount, device, deviceId, byApp]
       properties:
         createdAt:
           type: string
@@ -2009,6 +2146,8 @@ components:
           minimum: 0
         device:
           type: string
+        deviceId:
+          type: string
         byApp:
           type: boolean
         note:
@@ -2016,6 +2155,10 @@ components:
           nullable: true
         name:
           type: string
+          nullable: true
+        expectedPartsCount:
+          type: integer
+          minimum: 1
           nullable: true
     RecordingPartUploadRequest:
       type: object
@@ -2053,6 +2196,48 @@ components:
         dataBase64:
           type: string
           format: byte
+    RecordingPartUploadFormRequest:
+      type: object
+      required:
+        - recordingId
+        - startDate
+        - endDate
+        - gpsLatitudeStart
+        - gpsLongitudeStart
+        - gpsLatitudeEnd
+        - gpsLongitudeEnd
+        - file
+      properties:
+        recordingId:
+          type: integer
+          minimum: 1
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        gpsLatitudeStart:
+          type: number
+          format: double
+        gpsLatitudeEnd:
+          type: number
+          format: double
+        gpsLongitudeStart:
+          type: number
+          format: double
+        gpsLongitudeEnd:
+          type: number
+          format: double
+        dataBase64:
+          type: string
+          format: byte
+          nullable: true
+          description: Optional Base64 encoded audio payload when not supplying the `file` part.
+        file:
+          type: string
+          format: binary
+          description: Raw audio file uploaded as part of the multipart form.
     UpdateRecordingRequest:
       type: object
       properties:

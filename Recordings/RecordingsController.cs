@@ -15,8 +15,11 @@
  */
 
 using Auth.Services;
+using Microsoft.AspNetCore.Http;
 using Repository;
 using Microsoft.AspNetCore.Mvc;
+using Quartz;
+using Recordings.Jobs;
 using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Requests.Recordings;
@@ -27,6 +30,13 @@ namespace Recordings;
 [Route("recordings")]
 public class RecordingsController : ControllerBase
 {
+    private readonly ISchedulerFactory _schedulerFactory;
+
+    public RecordingsController(ISchedulerFactory schedulerFactory)
+    {
+        _schedulerFactory = schedulerFactory;
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetRecordingsAsync([FromServices] RecordingsRepository repo,
         [FromQuery] int? userId = null,
@@ -84,7 +94,7 @@ public class RecordingsController : ControllerBase
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
     {
-        var recording = await repo.GetAsync(id, parts, sound);
+        var recording = await repo.GetByIdAsync(id, parts, sound);
         
         if (recording is null || recording.Deleted)
             return NoContent();
@@ -97,7 +107,7 @@ public class RecordingsController : ControllerBase
         [FromRoute] int partId,
         [FromServices] RecordingsRepository repo)
     {
-        var recordingPart = await repo.GetPartAsync(recId, partId);
+        var recordingPart = await repo.GetPartSoundAsync(partId);
 
         return File(recordingPart, "audio/wav");
     }
@@ -164,10 +174,35 @@ public class RecordingsController : ControllerBase
         if (recordingId is null)
             return StatusCode(409, "Failed to upload recording");
 
+        await ScheduleRecordingCheckAsync(recordingId.Value, fcmToken: request.DeviceId!);
+
         return Ok(recordingId);
     }
 
-    [HttpPost("part/")]
+    private async Task ScheduleRecordingCheckAsync(int recordingId, string fcmToken)
+    {
+        if (string.IsNullOrEmpty(fcmToken))
+            return;
+
+        var scheduler = await _schedulerFactory.GetScheduler();
+        
+        var job = JobBuilder.Create<CheckRecordingJob>()
+            .WithIdentity($"check_recording_{recordingId}", "group1")
+            .UsingJobData("recordingId", recordingId.ToString())
+            .UsingJobData("fcmToken", fcmToken)
+            .Build();
+
+        var trigger = TriggerBuilder.Create()
+            .WithIdentity($"trigger_check_recording_{recordingId}", "group1")
+            .StartAt(DateBuilder.FutureDate(1, IntervalUnit.Hour))
+            .Build();
+
+        Logger.Log("Scheduling", LogLevel.Debug);
+        await scheduler.ScheduleJob(job, trigger);
+        Logger.Log("Scheduled", LogLevel.Debug);
+    }
+
+    [HttpPost("part")]
     [RequestSizeLimit(int.MaxValue)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
         [FromServices] JwtService jwtService,
@@ -183,14 +218,67 @@ public class RecordingsController : ControllerBase
         
         int? recordingPartId = await recordingsRepo.UploadPartAsync(request);
 
+        Logger.Log(recordingPartId is not null
+            ? $"Recording part {recordingPartId} has been uploaded"
+            : $"Failed to upload recording part {recordingPartId}");
+        
+        return recordingPartId is not null 
+            ? Ok(recordingPartId) 
+            : StatusCode(500, "Failed to upload recording");
+    }
+
+    [HttpPost("part-new")]
+    [RequestSizeLimit(int.MaxValue)]
+    public async Task<IActionResult> UploadPartAsync([FromForm] RecordingPartUploadRequest request,
+        IFormFile file,
+        [FromServices] JwtService jwtService,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null) 
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+        
+        int? recordingPartId = await recordingsRepo.UploadPartAsync(request, file);
+
         Logger.Log(recordingPartId is null
             ? $"Recording part {recordingPartId} has been uploaded"
             : $"Failed to upload recording part {recordingPartId}");
         
-        if (recordingPartId is null)
-            return StatusCode(500, "Failed to upload recording");
+        return recordingPartId is not null 
+            ? Ok(recordingPartId) 
+            : StatusCode(500, "Failed to upload recording");
+    }
+
+    [HttpGet("incomplete")]
+    public async Task<IActionResult> GetIncompleteRecordingsAsync([FromServices] RecordingsRepository recordingsRepo, 
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
         
-        return Ok(recordingPartId);
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        var user = await usersRepo.GetUserByEmailAsync(email);
+        if (user is null)
+            return Unauthorized("User does not exist");
+        
+        var recordings = await recordingsRepo.GetIncompleteRecordingsAsync(user.Id);
+        
+        if (recordings is null)
+            return StatusCode(500, "Failed to get incomplete recordings");
+
+        if (recordings.Length is 0)
+            return NoContent();
+        
+        return Ok(recordings);
     }
 
     [HttpPatch("{id:int}")]
@@ -212,7 +300,7 @@ public class RecordingsController : ControllerBase
         if (jwtUser is null)
             return Unauthorized("User does not exist");
 
-        var recording = await recordingsRepo.GetAsync(id, parts: false, sound: false);
+        var recording = await recordingsRepo.GetByIdAsync(id, parts: false, sound: false);
         if (recording is null)
             return NotFound("Recording not found");
 

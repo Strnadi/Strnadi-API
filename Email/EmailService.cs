@@ -15,6 +15,7 @@
  */
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Shared.Tools;
 
 namespace Email;
 

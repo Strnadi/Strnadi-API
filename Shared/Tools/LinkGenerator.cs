@@ -14,11 +14,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System.Net;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
-namespace Email;
+namespace Shared.Tools;
 
 public class LinkGenerator
 {
@@ -47,5 +45,12 @@ public class LinkGenerator
     public string GeneratePasswordResetLink(int userId, string jwt)
     {
         return $"{_webRootPath}/ucet/obnova-hesla?token={jwt}&userId={userId}";
+    }
+
+    public string GenerateAchievementImageUrl(int id)
+    {
+        string host = _configuration["Host"] ?? throw new NullReferenceException("Failed to get Host from configuration");
+        string link = $"{host}/achievements/{id}/photo";
+        return link;
     }
 }

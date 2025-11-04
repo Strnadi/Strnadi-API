@@ -37,9 +37,8 @@ public static class FileSystemHelper
         return path;
     }
     
-    public static async Task<byte[]> ReadRecordingFileAsync(int recordingId, int recordingPartId)
+    public static async Task<byte[]> ReadRecordingFileAsync(string path)
     {
-        string path = GetRecordingPartFilePath(recordingId, recordingPartId);
         return await File.ReadAllBytesAsync(path);
     }
     
@@ -160,5 +159,25 @@ public static class FileSystemHelper
     {
         string path = CreateArticleAttachmentPath(id, fileName);
         File.Delete(path);
+    }
+
+    private static string CreateAchievementsDirectoryPath(int achievementId)
+    {
+        return $"achievements/{achievementId}";
+    }
+
+    private static string CreateAchievementImagePath(int achievementId)
+    {
+        return $"achievements/{achievementId}/image.png";
+    }
+
+    public static async Task<string> SaveAchievementImageAsync(int achievementId, byte[] content)
+    {
+        string dirPath = CreateAchievementsDirectoryPath(achievementId);
+        if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
+        
+        string path = CreateAchievementImagePath(achievementId);
+        await File.WriteAllBytesAsync(path, content);
+        return path;
     }
 }

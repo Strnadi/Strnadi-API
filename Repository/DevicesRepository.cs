@@ -15,6 +15,7 @@
  */
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using Shared.Models.Database;
 using Shared.Models.Requests.Devices;
 
 namespace Repository;
@@ -90,4 +91,11 @@ public class DevicesRepository : RepositoryBase
                            OldFcmToken = oldFcmToken
                        }) != 0;
         });
+
+    public async Task<IEnumerable<Device>?> GetAllByUserIdAsync(int userId) =>
+        await ExecuteSafelyAsync(Connection.QueryAsync<Device>(
+            "SELECT * FROM devices WHERE user_id = @UserId",
+            new { UserId = userId }
+        ));
+
 }

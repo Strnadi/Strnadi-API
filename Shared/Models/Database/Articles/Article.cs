@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Shared.Models.Database.Articles;
 
-public class ArticleModel
+public class Article
 {
     public int Id { get; set; }
     
@@ -11,8 +11,8 @@ public class ArticleModel
     public string Description { get; set; }
     
     [NotMapped]
-    public ArticleAttachmentModel[] Files { get; set; }
+    public ArticleAttachment[] Files { get; set; }
     
     [NotMapped]
-    public ArticleCategoryModel[] Categories { get; set; }
+    public ArticleCategory[] Categories { get; set; }
 }

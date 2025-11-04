@@ -13,17 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-namespace Shared.Models.Database.Photos;
+namespace Shared.Models.Database.Dialects;
 
-public class PhotoModel
+public class Dialect
 {
     public int Id { get; set; }
 
-    public string FilePath { get; set; }
-
-    public int RecordingId { get; set; }
+    public string DialectCode { get; set; }
     
-    public string UserEmail { get; set; }
-    
-    public string Format { get; set; }
+    public string Color { get; set; }
 }

@@ -124,11 +124,11 @@ public class UsersRepository : RepositoryBase
             }) != 0;
         });
 
-    public async Task<UserModel?> GetUserByIdAsync(int userId) =>
+    public async Task<User?> GetUserByIdAsync(int userId) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE id = @UserId;";
-            var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { UserId = userId });
+            var user = await Connection.QueryFirstOrDefaultAsync<User>(sql, new { UserId = userId });
 
             if (user is null)
                 return null;
@@ -137,11 +137,11 @@ public class UsersRepository : RepositoryBase
             return user;
         });
     
-    public async Task<UserModel?> GetUserByEmailAsync(string email) =>
+    public async Task<User?> GetUserByEmailAsync(string email) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE email = @UserEmail";
-            var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { UserEmail = email });
+            var user = await Connection.QueryFirstOrDefaultAsync<User>(sql, new { UserEmail = email });
 
             if (user is null)
                 return null;
@@ -150,11 +150,11 @@ public class UsersRepository : RepositoryBase
             return user;
         });
     
-    public async Task<UserModel?> GetUserByAppleIdAsync(string appleId) =>
+    public async Task<User?> GetUserByAppleIdAsync(string appleId) =>
         await ExecuteSafelyAsync(async () =>
         {
             const string sql = "SELECT * FROM users WHERE appleid = @AppleId";
-            var user = await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { AppleId = appleId });
+            var user = await Connection.QueryFirstOrDefaultAsync<User>(sql, new { AppleId = appleId });
 
             if (user is null)
                 return null;
@@ -275,10 +275,10 @@ public class UsersRepository : RepositoryBase
         });
     }
 
-    public async Task<UserModel[]?> GetUsers() =>
+    public async Task<User[]?> GetUsers() =>
         await ExecuteSafelyAsync(async () =>
         {
-            var users = (await Connection.QueryAsync<UserModel>("SELECT * FROM users")).ToArray();
+            var users = (await Connection.QueryAsync<User>("SELECT * FROM users")).ToArray();
             foreach (var user in users)
                 user.Password = null;
             return users;
@@ -290,18 +290,18 @@ public class UsersRepository : RepositoryBase
             if (string.IsNullOrWhiteSpace(googleId))
                 return false;
 
-            const string sql = "UPDATE users SET google_id = @GoogleId WHERE email = @Email";
+            const string sql = "UPDATE users SET google_id = @GoogleId, is_email_verified = true WHERE email = @Email";
             return await Connection.ExecuteAsync(sql, new { GoogleId = googleId, Email = email }) != 0;
         });
 
-    public async Task<UserModel?> GetUserByGoogleId(string googleId) =>
+    public async Task<User?> GetUserByGoogleId(string googleId) =>
         await ExecuteSafelyAsync(async () =>
         {
             if (string.IsNullOrWhiteSpace(googleId))
                 return null;
             
             const string sql = "SELECT * FROM users WHERE google_id = @GoogleId";
-            return await Connection.QueryFirstOrDefaultAsync<UserModel>(sql, new { GoogleId = googleId });
+            return await Connection.QueryFirstOrDefaultAsync<User>(sql, new { GoogleId = googleId });
         });
 
 }

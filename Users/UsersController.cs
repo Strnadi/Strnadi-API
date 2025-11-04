@@ -23,6 +23,7 @@ using Shared.Logging;
 using Shared.Models.Database;
 using Shared.Models.Requests.Photos;
 using Shared.Models.Requests.Users;
+using Shared.Tools;
 
 namespace Users;
 
@@ -75,7 +76,7 @@ public class UsersController : ControllerBase
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        UserModel? user;
+        User? user;
         if (string.IsNullOrEmpty(jwt))
         {
             user = await usersRepo.GetUserByIdAsync(userId);

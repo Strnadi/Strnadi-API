@@ -31,5 +31,5 @@ public class RecordingPartUploadRequest
     
     public decimal GpsLongitudeEnd { get; set; }
     
-    public string DataBase64 { get; set; }
+    public string? DataBase64 { get; set; }
 }
