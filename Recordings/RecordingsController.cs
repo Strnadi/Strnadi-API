@@ -260,12 +260,19 @@ public class RecordingsController : ControllerBase
 
     private async void SendRecordingToClassificationAsync(int recordingPartId, RecordingsRepository repo, AiModelConnector modelConnector)
     {
-        var part = await repo.GetPartSoundAsync(recordingPartId);
-        if (part is null)
-            return;
+        try
+        {
+            var part = await repo.GetPartSoundAsync(recordingPartId);
+            if (part is null)
+                return;
         
-        var result = await modelConnector.ClassifyAsync(part);
-        Logger.Log("Classification result: " + JsonSerializer.Serialize(result));
+            var result = await modelConnector.ClassifyAsync(part);
+            Logger.Log("Classification result: " + JsonSerializer.Serialize(result));
+        }
+        catch (Exception e)
+        {
+            // Ignore
+        }
     }
 
     [HttpGet("incomplete")]
