@@ -17,7 +17,7 @@ public class AiModelConnector
         _logger = logger;
     }
 
-    public async Task<ClassificationResult[]?> ClassifyAsync(byte[] normalizedWav)
+    public async Task<PredicationResult?> Classify(byte[] normalizedWav)
     {
         _httpClient.Timeout = TimeSpan.FromSeconds(3600);
         
@@ -33,7 +33,7 @@ public class AiModelConnector
             _logger.LogInformation("Starting classificatiotn");
             var response = await _httpClient.PostAsync("http://classification:8000/classify", form);
             var responseText = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<ClassificationResult[]>(responseText);
+            return JsonSerializer.Deserialize<PredicationResult>(responseText);
         }
         catch (Exception e)
         {

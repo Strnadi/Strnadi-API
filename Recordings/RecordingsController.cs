@@ -26,7 +26,9 @@ using Shared.Models.Requests.Recordings;
 using Shared.Tools;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Shared.BackgroundServices.AudioProcessing;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Recordings;
 
@@ -35,10 +37,12 @@ namespace Recordings;
 public class RecordingsController : ControllerBase
 {
     private readonly ISchedulerFactory _schedulerFactory;
+    private readonly ILogger<RecordingsController> _logger;
 
-    public RecordingsController(ISchedulerFactory schedulerFactory)
+    public RecordingsController(ISchedulerFactory schedulerFactory, ILogger<RecordingsController> logger)
     {
         _schedulerFactory = schedulerFactory;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -258,7 +262,7 @@ public class RecordingsController : ControllerBase
             return StatusCode(500, "Failed to upload recording");
         
         await audioProcessingQueue.Enqueue(async sp => 
-            await SendRecordingToClassificationAsync(recordingPartId.Value, 
+            await ClassifyAudioAsync(recordingPartId.Value, 
                 sp.GetRequiredService<RecordingsRepository>(), 
                 sp.GetRequiredService<AiModelConnector>()
             ));
@@ -266,19 +270,20 @@ public class RecordingsController : ControllerBase
         return Ok(recordingPartId);
     }
 
-    private async Task SendRecordingToClassificationAsync(int recordingPartId, RecordingsRepository repo, AiModelConnector modelConnector)
+    private async Task ClassifyAudioAsync(int recordingPartId, RecordingsRepository repo, AiModelConnector modelConnector)
     {
         try
         {
             var part = await repo.GetPartSoundAsync(recordingPartId);
             if (part is null)
-            {
-                Logger.Log("SendRecordingToClassificationAsync: part is null");
                 return;
-            }
             
-            var result = await modelConnector.ClassifyAsync(part);
+            var result = await modelConnector.Classify(part);
+            if (result is null)
+                return;
+            
             Logger.Log("Classification result: " + JsonSerializer.Serialize(result));
+            await repo.ProcessPredictionAsync(recordingPartId, result);
         }
         catch (Exception e)
         {

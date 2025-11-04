@@ -22,14 +22,18 @@ public class DetectedDialect
     public int Id { get; set; }
 
     public int UserGuessDialectId { get; set; }
-
     [NotMapped] 
     public string? UserGuessDialect { get; set; }
 
     public int ConfirmedDialectId { get; set; }
-    
     [NotMapped]
     public string? ConfirmedDialect { get; set; }
+    
+    
+    public int PredictedDialectId { get; set; }
+    [NotMapped]
+    public string? PredictedDialect { get; set; }
+    
     
     public int FilteredRecordingPartId { get; set; }
 }

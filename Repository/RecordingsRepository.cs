@@ -22,6 +22,7 @@ using Microsoft.Extensions.Configuration;
 using Shared.Logging;
 using Shared.Models.Database.Dialects;
 using Shared.Models.Database.Recordings;
+using Shared.Models.Requests.Ai;
 using Shared.Models.Requests.Recordings;
 using Shared.Tools;
 using LogLevel = Shared.Logging.LogLevel;
@@ -478,21 +479,69 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
-    public async Task<bool> SetConfirmedDialect(int filteredPartId, string confirmedDialectCode)
+    public async Task<bool> UpsertDetectedDialectAsync(
+        int filteredPartId,
+        string? userGuessDialectCode = null,
+        string? confirmedDialectCode = null,
+        string? predictedDialectCode = null)
     {
-        int? dialectId = await GetDialectCodeIdAsync(confirmedDialectCode);
-        if (dialectId == null)
+        if (userGuessDialectCode is null && confirmedDialectCode is null && predictedDialectCode is null)
+        {
+            Logger.Log("RecordingsRepository::UpsertDetectedDialectAsync: All dialect codes are null.", LogLevel.Warning);
+            return false;
+        }
+
+        var dialectIds = new Dictionary<string, int?>
+        {
+            ["userGuess"] = userGuessDialectCode is not null ? await GetDialectCodeIdAsync(userGuessDialectCode) : null,
+            ["confirmed"] = confirmedDialectCode is not null ? await GetDialectCodeIdAsync(confirmedDialectCode) : null,
+            ["predicted"] = predictedDialectCode is not null ? await GetDialectCodeIdAsync(predictedDialectCode) : null
+        };
+
+        var setClauses = new List<string>();
+        var parameters = new DynamicParameters();
+        parameters.Add("FilteredPartId", filteredPartId);
+
+        if (dialectIds["userGuess"] is not null)
+        {
+            setClauses.Add("user_guess_dialect_id = @UserGuessDialectId");
+            parameters.Add("UserGuessDialectId", dialectIds["userGuess"]);
+        }
+
+        if (dialectIds["confirmed"] is not null)
+        {
+            setClauses.Add("confirmed_dialect_id = @ConfirmedDialectId");
+            parameters.Add("ConfirmedDialectId", dialectIds["confirmed"]);
+        }
+
+        if (dialectIds["predicted"] is not null)
+        {
+            setClauses.Add("predicted_dialect_id = @PredictedDialectId");
+            parameters.Add("PredictedDialectId", dialectIds["predicted"]);
+        }
+
+        if (setClauses.Count == 0)
             return false;
 
-        return await ExecuteSafelyAsync(
-            Connection.ExecuteAsync(sql:
-                "UPDATE detected_dialects SET confirmed_dialect_id = @DialectId WHERE filtered_recording_part_id = @PartId ",
-                new
-                {
-                    DialectId = dialectId,
-                    PartId = filteredPartId
-                }
-            )) != 0;
+        string sql = $"""
+            INSERT INTO detected_dialects (
+                filtered_recording_part_id, 
+                user_guess_dialect_id, 
+                confirmed_dialect_id, 
+                predicted_dialect_id
+            )
+            VALUES (
+                @FilteredPartId,
+                @UserGuessDialectId,
+                @ConfirmedDialectId,
+                @PredictedDialectId
+            )
+            ON CONFLICT (filtered_recording_part_id) 
+            DO UPDATE SET 
+                {string.Join(", ", setClauses)}
+            """;
+
+        return await ExecuteSafelyAsync(Connection.ExecuteAsync(sql, parameters)) != 0;
     }
 
     public async Task<bool> DeleteFilteredPartAsync(int filteredPartId) =>
@@ -564,13 +613,16 @@ public class RecordingsRepository : RepositoryBase
 
         foreach (var part in parts)
         {
-                Logger.Log("Normalizing audio for part " + part.Id);
-                byte[] normalizedBadly = await File.ReadAllBytesAsync(part.FilePath);
-                await FFmpegService.NormalizeAudioAsync(normalizedBadly, outputPath: "temp");
-                byte[] normalizedContent = await File.ReadAllBytesAsync("temp");
-                await File.WriteAllBytesAsync(part.FilePath, normalizedContent);
-                File.Delete("temp");
-                Logger.Log("Normalized audio saved for part " + part.Id);
+            Logger.Log("Normalizing audio for part " + part.Id);
+            
+            byte[] normalizedBadly = await File.ReadAllBytesAsync(part.FilePath);
+            await FFmpegService.NormalizeAudioAsync(normalizedBadly, outputPath: "temp");
+            
+            byte[] normalizedContent = await File.ReadAllBytesAsync("temp");
+            await File.WriteAllBytesAsync(part.FilePath, normalizedContent);
+            
+            File.Delete("temp");
+            Logger.Log("Normalized audio saved for part " + part.Id);
         }
     }
 
@@ -610,5 +662,38 @@ public class RecordingsRepository : RepositoryBase
             """, new { UserId = userId }));
         
         return incomplete?.Select(r => r.Id).ToArray();
+    }
+
+    public async Task ProcessPredictionAsync(int recordingPartId, PredicationResult result)
+    {
+        // создать filtered recording для каждого обьекта Segment
+        // .время_начало = interval[0]
+        // .время_конец = interval[1]
+        // .состояние = DetectedByAi
+        // к этому filtered recording создать detected_dialect
+        // .predicted_dialect_id = select from dialects where
+
+        var part = await GetPartAsync(recordingPartId);
+        if (part is null) return;
+
+        int recordingId = part.RecordingId;
+        foreach (var segment in result.Segments)
+        {
+            var startDate = part.StartDate + TimeSpan.FromSeconds(segment.Interval[0]);
+            var endDate = part.EndDate + TimeSpan.FromSeconds(segment.Interval[1]);
+            
+            var filteredPart = await CreateFilteredPartAsync(recordingId, 
+                startDate, 
+                endDate, 
+                FilteredRecordingPartState.DetectedByAi, 
+                representant: false);
+
+            if (filteredPart is null) continue;
+            
+            await UpsertDetectedDialectAsync(
+                filteredPart.Id,
+                predictedDialectCode: segment.Label  
+            );
+        }
     }
 }
