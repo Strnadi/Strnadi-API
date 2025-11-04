@@ -6,6 +6,7 @@ services:
     networks:
       - strnadi-network-dev
       - proxy
+      - strnadi-ai
     build:
       dockerfile: /home/adm-strnad/Strnadi-API/Host/Dockerfile
     depends_on:
@@ -70,3 +71,6 @@ networks:
   proxy:
     external: true
     name: proxy
+  strnadi-ai:
+    external: true
+    
