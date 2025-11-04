@@ -31,6 +31,12 @@ public class AiModelConnector
         {
             _logger.LogInformation("Starting classificatiotn");
             var response = await _httpClient.PostAsync("http://classification:8000/classify", form);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Failed to classify: {response.StatusCode.ToString()}");
+                return null;
+            }
+            
             var responseText = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<PredicationResult>(responseText);
         }
