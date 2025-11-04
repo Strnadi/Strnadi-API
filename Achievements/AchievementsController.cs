@@ -15,6 +15,9 @@ public class AchievementsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> Get([FromQuery] int? userId, [FromServices] AchievementsRepository repo)
     {
+        if (userId is not null)
+            await repo.CheckAndAwardAchievements();
+        
         var achievements = userId is null 
             ? await repo.GetAllAsync() 
             : await repo.GetByUserIdAsync(userId.Value);

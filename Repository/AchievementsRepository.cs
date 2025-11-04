@@ -124,4 +124,33 @@ public class AchievementsRepository : RepositoryBase
         await InsertAchievementContentAsync(insertedId.Value, req.Contents);
         return true;
     }
+
+    public async Task CheckAndAwardAchievements()
+    {
+        var achievements = await GetAllAsync();
+        if (achievements is null) return;
+
+        foreach (var achievement in achievements)
+        {
+            string sql = achievement.Sql;
+            // SELECT user_id
+            // FROM recordings
+            // GROUP BY user_id
+            // HAVING COUNT(*) > 1; 
+            
+            var userIds = (await ExecuteSafelyAsync(Connection.QueryAsync<int>(sql)))?.ToArray();
+            if (userIds is null) continue;
+            
+            foreach (var userId in userIds)
+            {
+                await ExecuteSafelyAsync(Connection.ExecuteAsync(
+                    """
+                    INSERT INTO user_achievement (user_id, achievement_id)
+                    VALUES (@UserId, @AchievementId)
+                    ON CONFLICT (user_id, achievement_id) DO NOTHING
+                    """,
+                    new { UserId = userId, AchievementId = achievement.Id }));
+            }
+        }
+    }
 }
