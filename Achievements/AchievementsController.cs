@@ -13,25 +13,18 @@ namespace Achievements;
 public class AchievementsController : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult> Get([FromServices] AchievementsRepository repo)
+    public async Task<ActionResult> Get([FromQuery] int? userId, [FromServices] AchievementsRepository repo)
     {
-        var achievements = await repo.GetAllAsync();
+        var achievements = userId is null 
+            ? await repo.GetAllAsync() 
+            : await repo.GetByUserIdAsync(userId.Value);
+        
         if (achievements is null) return NotFound();
         return Ok(achievements);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] int userId, [FromServices] AchievementsRepository repo)
-    {
-        var achievement = await repo.GetByUserIdAsync(userId);
-        if (achievement is null) 
-            return NotFound();
-        
-        return Ok(achievement);
-    }
-
     [HttpGet("{achievementId:int}/photo")]
-    public async Task<IActionResult> GetPhotoAsync([FromServices] AchievementsRepository repo, int achievementId)
+    public async Task<IActionResult> GetPhotoAsync([FromRoute] int achievementId, [FromServices] AchievementsRepository repo)
     {
         byte[]? content = await repo.GetPhotoAsync(achievementId);
         if (content is null) return NotFound();
