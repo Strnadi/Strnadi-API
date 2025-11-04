@@ -77,7 +77,6 @@ public class AchievementsController : ControllerBase
         bool created = await achievementsRepo.CreateAchievementAsync(req, file);
         
         if (!created) return Conflict();
-
         return Ok();
     }
 }
