@@ -290,7 +290,7 @@ public class UsersRepository : RepositoryBase
             if (string.IsNullOrWhiteSpace(googleId))
                 return false;
 
-            const string sql = "UPDATE users SET google_id = @GoogleId WHERE email = @Email";
+            const string sql = "UPDATE users SET google_id = @GoogleId, is_email_verified = true WHERE email = @Email";
             return await Connection.ExecuteAsync(sql, new { GoogleId = googleId, Email = email }) != 0;
         });
 
