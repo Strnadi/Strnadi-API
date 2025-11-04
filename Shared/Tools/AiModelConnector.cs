@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -33,16 +32,17 @@ public class AiModelConnector
             var response = await _httpClient.PostAsync("http://classification:8000/classify", form);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to classify: {response.StatusCode.ToString()}");
+                _logger.LogError($"Failed to request classification: {response.StatusCode.ToString()}");
                 return null;
             }
             
             var responseText = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation($"Response: {responseText}");
             return JsonSerializer.Deserialize<PredicationResult>(responseText);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, "Failed to request classification");
             return null;
         }
     }
