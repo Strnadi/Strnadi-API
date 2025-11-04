@@ -38,7 +38,7 @@ public class AiModelConnector
             
             var responseText = await response.Content.ReadAsStringAsync();
             _logger.LogInformation($"Response: {responseText}");
-            return JsonSerializer.Deserialize<PredicationResult>(responseText);
+            return JsonSerializer.Deserialize<PredicationResult>(responseText, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
         }
         catch (Exception e)
         {
