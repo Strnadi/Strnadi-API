@@ -274,11 +274,16 @@ public class RecordingsController : ControllerBase
     {
         try
         {
-            var part = await repo.GetPartSoundAsync(recordingPartId);
+            var part = await repo.GetPartAsync(recordingPartId);
             if (part is null)
                 return;
             
-            var result = await modelConnector.Classify(part);
+            
+            var audio = await repo.GetPartSoundAsync(recordingPartId);
+            if (audio is null)
+                return;
+            
+            var result = await modelConnector.Classify(audio, part.FilePath);
             if (result is null)
                 return;
             

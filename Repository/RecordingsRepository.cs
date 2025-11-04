@@ -398,7 +398,7 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
-    private async Task<RecordingPart?> GetPartAsync(int partId) =>
+    public async Task<RecordingPart?> GetPartAsync(int partId) =>
         await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync<RecordingPart>(
             "SELECT * FROM recording_parts WHERE id = @Id",
             new { Id = partId }));

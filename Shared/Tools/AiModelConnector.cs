@@ -17,7 +17,7 @@ public class AiModelConnector
         _logger = logger;
     }
 
-    public async Task<PredicationResult?> Classify(byte[] normalizedWav)
+    public async Task<PredicationResult?> Classify(byte[] normalizedWav, string filePath)
     {
         _httpClient.Timeout = TimeSpan.FromSeconds(3600);
         
@@ -25,7 +25,7 @@ public class AiModelConnector
         using var fileContent = new ByteArrayContent(normalizedWav);
 
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
-        form.Add(fileContent, "file");
+        form.Add(fileContent, "file", Path.GetFileName(filePath));
 
         try
         {
