@@ -71,6 +71,6 @@ networks:
   proxy:
     external: true
     name: proxy
-  strnadi-ai:
+  classification:
     external: true
     

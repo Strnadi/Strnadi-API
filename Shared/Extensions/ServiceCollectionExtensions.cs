@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using Quartz.Impl;
+using Shared.BackgroundServices.AudioProcessing;
 using Shared.Tools;
 
 namespace Shared.Extensions;
@@ -13,6 +14,9 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<FirebaseNotificationService>();
         services.AddScoped<AiModelConnector>();
+        services.AddSingleton<AudioProcessingQueue>();
+        services.AddHostedService<AudioProcessingService>();
+        
         services.AddQuartz(q =>
         {
             q.UsePersistentStore(options =>

@@ -25,6 +25,8 @@ using Shared.Logging;
 using Shared.Models.Requests.Recordings;
 using Shared.Tools;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Shared.BackgroundServices.AudioProcessing;
 
 namespace Recordings;
 
@@ -235,7 +237,8 @@ public class RecordingsController : ControllerBase
         IFormFile file,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo,
-        [FromServices] AiModelConnector modelConnector)
+        [FromServices] AiModelConnector modelConnector,
+        [FromServices] AudioProcessingQueue audioProcessingQueue)
     {
         string? jwt = this.GetJwt();
         
@@ -253,12 +256,17 @@ public class RecordingsController : ControllerBase
         
         if (recordingPartId is null)
             return StatusCode(500, "Failed to upload recording");
+        
+        await audioProcessingQueue.Enqueue(async sp => 
+            await SendRecordingToClassificationAsync(recordingPartId.Value, 
+                sp.GetRequiredService<RecordingsRepository>(), 
+                sp.GetRequiredService<AiModelConnector>()
+            ));
 
-        SendRecordingToClassificationAsync(recordingPartId.Value, recordingsRepo, modelConnector);
         return Ok(recordingPartId);
     }
 
-    private async void SendRecordingToClassificationAsync(int recordingPartId, RecordingsRepository repo, AiModelConnector modelConnector)
+    private async Task SendRecordingToClassificationAsync(int recordingPartId, RecordingsRepository repo, AiModelConnector modelConnector)
     {
         try
         {
