@@ -26,6 +26,8 @@ tags:
     description: Machine filtered recording parts and detected dialects.
   - name: Photos
     description: Upload and retrieval of user and recording images.
+  - name: Achievements
+    description: User achievements, award processing and media assets.
   - name: Articles
     description: Public knowledge base articles and categories.
   - name: Utils
@@ -956,25 +958,9 @@ paths:
     get:
       tags: [Recordings]
       summary: List soft-deleted recordings
-      parameters:
-        - name: userId
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-        - name: parts
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
-        - name: sound
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
+      description: |-
+        Returns recordings that were soft-deleted. The caller must be an administrator and the
+        endpoint does not accept any additional filters.
       responses:
         '200':
           description: Deleted recordings (admin only).
@@ -985,7 +971,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/RecordingModel'
         '204':
-          description: No deleted recordings matched the filters.
+          description: No deleted recordings are available.
         '400':
           description: Missing bearer token.
           content:
@@ -1437,6 +1423,109 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /achievements:
+    get:
+      tags: [Achievements]
+      summary: List achievements or fetch awards for a user
+      description: |-
+        Returns every achievement configured in the system. When `userId` is supplied the
+        backend re-evaluates achievement conditions and only returns achievements that were
+        awarded to the specified user.
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          description: Filter the response to achievements that belong to the specified user.
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: Achievements currently configured in the system.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AchievementModel'
+        '404':
+          description: No achievements could be found.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Achievements]
+      summary: Create a new achievement
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [sql, contents, file]
+              properties:
+                sql:
+                  type: string
+                  description: SQL query that selects user identifiers to award.
+                contents:
+                  type: string
+                  description: JSON array of localized content objects.
+                file:
+                  type: string
+                  format: binary
+                  description: PNG image that represents the achievement badge.
+            encoding:
+              contents:
+                contentType: application/json
+      responses:
+        '200':
+          description: Achievement created.
+        '400':
+          description: Missing bearer token or invalid request payload.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The achievement could not be stored.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /achievements/{achievementId}/photo:
+    get:
+      tags: [Achievements]
+      summary: Download an achievement badge image
+      parameters:
+        - name: achievementId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: Binary PNG badge.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Achievement image not found.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /articles:
     get:
       tags: [Articles]
@@ -1830,6 +1919,37 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /utils/send-notification:
+    post:
+      tags: [Utils]
+      summary: Send a custom push notification to a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendNotificationRequest'
+      responses:
+        '200':
+          description: Notification was queued for delivery to all user devices.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The user has no registered devices or the notification failed.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /utils/fix-same-dates:
     get:
       tags: [Utils]
@@ -2134,6 +2254,66 @@ components:
         format:
           type: string
           description: File extension (for example `png`).
+    AchievementContentModel:
+      type: object
+      required: [id, title, description, languageCode, achievementId]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        description:
+          type: string
+        languageCode:
+          type: string
+          description: ISO language code that identifies the localized content block.
+        achievementId:
+          type: integer
+          minimum: 1
+    AchievementModel:
+      type: object
+      required: [id, sql, imageUrl, contents]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        sql:
+          type: string
+          description: SQL query that is evaluated to award the achievement.
+        imageUrl:
+          type: string
+          format: uri
+          description: Public URL that serves the achievement badge image.
+        contents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AchievementContentModel'
+    SendNotificationRequest:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: integer
+          minimum: 1
+        titleEn:
+          type: string
+          nullable: true
+        bodyEn:
+          type: string
+          nullable: true
+        titleDe:
+          type: string
+          nullable: true
+        bodyDe:
+          type: string
+          nullable: true
+        titleCs:
+          type: string
+          nullable: true
+        bodyCs:
+          type: string
+          nullable: true
     RecordingUploadRequest:
       type: object
       required: [createdAt, estimatedBirdsCount, device, deviceId, byApp]
