@@ -19,9 +19,11 @@ using System.Reflection;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Shared.Logging;
 using Shared.Models.Database.Dialects;
 using Shared.Models.Database.Recordings;
+using Shared.Models.Requests.Ai;
 using Shared.Models.Requests.Recordings;
 using Shared.Tools;
 using LogLevel = Shared.Logging.LogLevel;
@@ -31,9 +33,11 @@ namespace Repository;
 public class RecordingsRepository : RepositoryBase
 {
     private readonly TimeSpan _timeMatchTolerance = TimeSpan.FromSeconds(1);
+    private readonly ILogger<RecordingsRepository> _logger;
     
-    public RecordingsRepository(IConfiguration configuration) : base(configuration)
+    public RecordingsRepository(ILogger<RecordingsRepository> logger, IConfiguration configuration) : base(configuration)
     {
+        _logger = logger;
     }
 
     public async Task<Recording[]?> GetAsync(int? userId, bool parts, bool sound)
@@ -61,7 +65,7 @@ public class RecordingsRepository : RepositoryBase
                                    COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS "TotalSeconds"
                                FROM recordings r
                                LEFT JOIN recording_parts rp ON rp.recording_id = r.id
-                               WHERE r.user_id = @UserId
+                               WHERE r.user_id = @UserId AND (r.deleted IS FALSE OR r.deleted IS NULL)
                                GROUP BY r.id
                                HAVING r.expected_parts_count = COUNT(rp.id);
                                """;
@@ -77,9 +81,25 @@ public class RecordingsRepository : RepositoryBase
                     COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS total_seconds
                 FROM recordings r
                 LEFT JOIN recording_parts rp ON rp.recording_id = r.id
+                WHERE r.deleted IS FALSE OR r.deleted IS NULL
                 GROUP BY r.id
                 HAVING r.expected_parts_count = COUNT(rp.id);
                 """));
+
+    public async Task<IEnumerable<Recording>?> GetDeletedAsync() =>
+        await ExecuteSafelyAsync(
+            Connection.QueryAsync<Recording>(
+                """
+                SELECT 
+                    r.*,
+                    COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS total_seconds
+                FROM recordings r
+                LEFT JOIN recording_parts rp ON rp.recording_id = r.id
+                WHERE r.deleted = TRUE
+                GROUP BY r.id
+                HAVING r.expected_parts_count = COUNT(rp.id);
+                """));
+    
 
     public async Task<Recording?> GetByIdAsync(int id, bool parts, bool sound)
     {
@@ -233,13 +253,16 @@ public class RecordingsRepository : RepositoryBase
 
     private async Task UpdateFilePathAsync(int recordingId,
         string filePath) =>
-        await ExecuteSafelyAsync(async () => await Connection.ExecuteAsync(
-            "UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id",
-            new
-            {
-                FilePath = filePath,
-                Id = recordingId
-            }));
+        await ExecuteSafelyAsync(
+            Connection.ExecuteAsync(
+                "UPDATE recording_parts SET file_path = @FilePath WHERE id = @Id",
+                new
+                {
+                    FilePath = filePath,
+                    Id = recordingId
+                }
+            )
+        );
 
     public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int? recordingId, bool verified)
     {
@@ -259,6 +282,7 @@ public class RecordingsRepository : RepositoryBase
             {
                 dialect.UserGuessDialect = dialects.FirstOrDefault(d => d.Id == dialect.UserGuessDialectId)?.DialectCode;
                 dialect.ConfirmedDialect = dialects.FirstOrDefault(d => d.Id == dialect.ConfirmedDialectId)?.DialectCode;
+                dialect.PredictedDialect = dialects.FirstOrDefault(d => d.Id == dialect.PredictedDialectId)?.DialectCode;
             }
             part.DetectedDialects.AddRange(partDialects);
         }
@@ -391,7 +415,7 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
-    private async Task<RecordingPart?> GetPartAsync(int partId) =>
+    public async Task<RecordingPart?> GetPartAsync(int partId) =>
         await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync<RecordingPart>(
             "SELECT * FROM recording_parts WHERE id = @Id",
             new { Id = partId }));
@@ -475,21 +499,61 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
-    public async Task<bool> SetConfirmedDialect(int filteredPartId, string confirmedDialectCode)
+    public async Task<bool> UpsertDetectedDialectAsync(
+        int filteredPartId,
+        string? userGuessDialectCode = null,
+        string? confirmedDialectCode = null,
+        string? predictedDialectCode = null)
     {
-        int? dialectId = await GetDialectCodeIdAsync(confirmedDialectCode);
-        if (dialectId == null)
+        if (userGuessDialectCode is null && confirmedDialectCode is null && predictedDialectCode is null)
+        {
+            Logger.Log("RecordingsRepository::UpsertDetectedDialectAsync: All dialect codes are null.", LogLevel.Warning);
+            return false;
+        }
+
+        var dialectIds = new Dictionary<string, int?>
+        {
+            ["userGuess"] = userGuessDialectCode is not null ? await GetDialectCodeIdAsync(userGuessDialectCode) : null,
+            ["confirmed"] = confirmedDialectCode is not null ? await GetDialectCodeIdAsync(confirmedDialectCode) : null,
+            ["predicted"] = predictedDialectCode is not null ? await GetDialectCodeIdAsync(predictedDialectCode) : null
+        };
+
+        var setClauses = new List<string>();
+        var parameters = new DynamicParameters();
+
+        parameters.Add("FilteredPartId", filteredPartId);
+        parameters.Add("UserGuessDialectId", dialectIds["userGuess"]);
+        parameters.Add("ConfirmedDialectId", dialectIds["confirmed"]);
+        parameters.Add("PredictedDialectId", dialectIds["predicted"]);
+
+        if (dialectIds["userGuess"] is not null)
+            setClauses.Add("user_guess_dialect_id = EXCLUDED.user_guess_dialect_id");
+        if (dialectIds["confirmed"] is not null)
+            setClauses.Add("confirmed_dialect_id = EXCLUDED.confirmed_dialect_id");
+        if (dialectIds["predicted"] is not null)
+            setClauses.Add("predicted_dialect_id = EXCLUDED.predicted_dialect_id");
+
+        if (setClauses.Count == 0)
             return false;
 
-        return await ExecuteSafelyAsync(
-            Connection.ExecuteAsync(sql:
-                "UPDATE detected_dialects SET confirmed_dialect_id = @DialectId WHERE filtered_recording_part_id = @PartId ",
-                new
-                {
-                    DialectId = dialectId,
-                    PartId = filteredPartId
-                }
-            )) != 0;
+        string sql = $"""
+                      INSERT INTO detected_dialects (
+                          filtered_recording_part_id, 
+                          user_guess_dialect_id, 
+                          confirmed_dialect_id, 
+                          predicted_dialect_id
+                      )
+                      VALUES (
+                          @FilteredPartId,
+                          @UserGuessDialectId,
+                          @ConfirmedDialectId,
+                          @PredictedDialectId
+                      )
+                      ON CONFLICT (filtered_recording_part_id)
+                      DO UPDATE SET {string.Join(", ", setClauses)};
+                      """;
+
+        return await ExecuteSafelyAsync(Connection.ExecuteAsync(sql, parameters)) != 0;    
     }
 
     public async Task<bool> DeleteFilteredPartAsync(int filteredPartId) =>
@@ -561,13 +625,16 @@ public class RecordingsRepository : RepositoryBase
 
         foreach (var part in parts)
         {
-                Logger.Log("Normalizing audio for part " + part.Id);
-                byte[] normalizedBadly = await File.ReadAllBytesAsync(part.FilePath);
-                await FFmpegService.NormalizeAudioAsync(normalizedBadly, outputPath: "temp");
-                byte[] normalizedContent = await File.ReadAllBytesAsync("temp");
-                await File.WriteAllBytesAsync(part.FilePath, normalizedContent);
-                File.Delete("temp");
-                Logger.Log("Normalized audio saved for part " + part.Id);
+            Logger.Log("Normalizing audio for part " + part.Id);
+            
+            byte[] normalizedBadly = await File.ReadAllBytesAsync(part.FilePath);
+            await FFmpegService.NormalizeAudioAsync(normalizedBadly, outputPath: "temp");
+            
+            byte[] normalizedContent = await File.ReadAllBytesAsync("temp");
+            await File.WriteAllBytesAsync(part.FilePath, normalizedContent);
+            
+            File.Delete("temp");
+            Logger.Log("Normalized audio saved for part " + part.Id);
         }
     }
 
@@ -607,5 +674,43 @@ public class RecordingsRepository : RepositoryBase
             """, new { UserId = userId }));
         
         return incomplete?.Select(r => r.Id).ToArray();
+    }
+
+    public async Task ProcessPredictionAsync(int recordingPartId, PredicationResult result)
+    {
+        var part = await GetPartAsync(recordingPartId);
+        if (part is null) return;
+
+        int recordingId = part.RecordingId;
+        int representantSegmentId = result.RepresentantId;
+        for (var i = 0; i < result.Segments.Length; i++)
+        {
+            var segment = result.Segments[i];
+            try
+            {
+                var startDate = part.StartDate + TimeSpan.FromSeconds(segment.Interval[0]);
+                var endDate = part.StartDate + TimeSpan.FromSeconds(segment.Interval[1]);
+
+                var filteredPart = await CreateFilteredPartAsync(recordingId,
+                    startDate,
+                    endDate,
+                    FilteredRecordingPartState.DetectedByAi,
+                    representant: representantSegmentId == i);
+
+                if (filteredPart is null) continue;
+
+                await UpsertDetectedDialectAsync(
+                    filteredPart.Id,
+                    predictedDialectCode: segment.Label
+                );
+
+                _logger.LogInformation(
+                    "New filtered parts and detected dialects from predication result have been successfully created");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to automatically classify the dialect");
+            }
+        }
     }
 }

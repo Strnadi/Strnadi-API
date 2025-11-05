@@ -23,6 +23,12 @@ using Recordings.Jobs;
 using Shared.Extensions;
 using Shared.Logging;
 using Shared.Models.Requests.Recordings;
+using Shared.Tools;
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Shared.BackgroundServices.AudioProcessing;
+using LogLevel = Shared.Logging.LogLevel;
 
 namespace Recordings;
 
@@ -31,10 +37,12 @@ namespace Recordings;
 public class RecordingsController : ControllerBase
 {
     private readonly ISchedulerFactory _schedulerFactory;
+    private readonly ILogger<RecordingsController> _logger;
 
-    public RecordingsController(ISchedulerFactory schedulerFactory)
+    public RecordingsController(ISchedulerFactory schedulerFactory, ILogger<RecordingsController> logger)
     {
         _schedulerFactory = schedulerFactory;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -57,10 +65,7 @@ public class RecordingsController : ControllerBase
     [HttpGet("deleted")]
     public async Task<IActionResult> GetDeletedAsync([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
-        [FromServices] RecordingsRepository recordingsRepo,
-        [FromQuery] int? userId = null,
-        [FromQuery] bool parts = false,
-        [FromQuery] bool sound = false)
+        [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
 
@@ -77,12 +82,12 @@ public class RecordingsController : ControllerBase
         if (!user.IsAdmin)
             return Unauthorized("User is not an admin");
 
-        var recordings = await recordingsRepo.GetAsync(userId, parts, sound);
+        var recordings = await recordingsRepo.GetDeletedAsync();
         
         if (recordings is null)
             return StatusCode(500, "Failed to get recordings");
 
-        if (recordings.Length is 0)
+        if (recordings.Count() is 0)
             return NoContent();
         
         return Ok(recordings);
@@ -232,7 +237,9 @@ public class RecordingsController : ControllerBase
     public async Task<IActionResult> UploadPartAsync([FromForm] RecordingPartUploadRequest request,
         IFormFile file,
         [FromServices] JwtService jwtService,
-        [FromServices] RecordingsRepository recordingsRepo)
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromServices] AiModelConnector modelConnector,
+        [FromServices] AudioProcessingQueue audioProcessingQueue)
     {
         string? jwt = this.GetJwt();
         
@@ -244,13 +251,47 @@ public class RecordingsController : ControllerBase
         
         int? recordingPartId = await recordingsRepo.UploadPartAsync(request, file);
 
-        Logger.Log(recordingPartId is null
+        Logger.Log(recordingPartId is not null
             ? $"Recording part {recordingPartId} has been uploaded"
             : $"Failed to upload recording part {recordingPartId}");
         
-        return recordingPartId is not null 
-            ? Ok(recordingPartId) 
-            : StatusCode(500, "Failed to upload recording");
+        if (recordingPartId is null)
+            return StatusCode(500, "Failed to upload recording");
+        
+        await audioProcessingQueue.Enqueue(async sp => 
+            await ClassifyAudioAsync(recordingPartId.Value, 
+                sp.GetRequiredService<RecordingsRepository>(), 
+                sp.GetRequiredService<AiModelConnector>()
+            ));
+
+        return Ok(recordingPartId);
+    }
+
+    private async Task ClassifyAudioAsync(int recordingPartId, RecordingsRepository repo, AiModelConnector modelConnector)
+    {
+        try
+        {
+            var part = await repo.GetPartAsync(recordingPartId);
+            if (part is null)
+                return;
+            
+            
+            var audio = await repo.GetPartSoundAsync(recordingPartId);
+            if (audio is null)
+                return;
+            
+            var result = await modelConnector.Classify(audio, part.FilePath);
+            if (result is null)
+                return;
+            
+            Logger.Log("Classification result: " + JsonSerializer.Serialize(result));
+            await repo.ProcessPredictionAsync(recordingPartId, result);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to classify audio");
+            // Ignore
+        }
     }
 
     [HttpGet("incomplete")]

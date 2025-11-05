@@ -53,6 +53,7 @@ class Program
     {
         builder.Services.AddMemoryCache();
         builder.Services.AddLogging();
+        builder.Services.AddHttpClient();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddTools(configuration);
         builder.Services.AddControllers()

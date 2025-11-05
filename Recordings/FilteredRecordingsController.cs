@@ -156,7 +156,10 @@ public class FilteredRecordingsController : ControllerBase
         
         if (req.ConfirmedDialectCode != null)
         {
-            bool updated = await recordingsRepo.SetConfirmedDialect(req.FilteredPartId, req.ConfirmedDialectCode);
+            bool updated = await recordingsRepo.UpsertDetectedDialectAsync(
+                req.FilteredPartId, 
+                confirmedDialectCode: req.ConfirmedDialectCode);
+            
             if (!updated)
             {
                 Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: SetConfirmedDialect returned false", LogLevel.Warning);
