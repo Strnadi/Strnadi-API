@@ -65,7 +65,7 @@ public class RecordingsRepository : RepositoryBase
                                    COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS "TotalSeconds"
                                FROM recordings r
                                LEFT JOIN recording_parts rp ON rp.recording_id = r.id
-                               WHERE r.user_id = @UserId
+                               WHERE r.user_id = @UserId AND r.deleted = 0
                                GROUP BY r.id
                                HAVING r.expected_parts_count = COUNT(rp.id);
                                """;
@@ -81,6 +81,7 @@ public class RecordingsRepository : RepositoryBase
                     COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS total_seconds
                 FROM recordings r
                 LEFT JOIN recording_parts rp ON rp.recording_id = r.id
+                WHERE r.deleted = 0
                 GROUP BY r.id
                 HAVING r.expected_parts_count = COUNT(rp.id);
                 """));
