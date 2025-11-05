@@ -503,48 +503,40 @@ public class RecordingsRepository : RepositoryBase
 
         var setClauses = new List<string>();
         var parameters = new DynamicParameters();
+
         parameters.Add("FilteredPartId", filteredPartId);
+        parameters.Add("UserGuessDialectId", dialectIds["userGuess"]);
+        parameters.Add("ConfirmedDialectId", dialectIds["confirmed"]);
+        parameters.Add("PredictedDialectId", dialectIds["predicted"]);
 
         if (dialectIds["userGuess"] is not null)
-        {
-            setClauses.Add("user_guess_dialect_id = @UserGuessDialectId");
-            parameters.Add("UserGuessDialectId", dialectIds["userGuess"]);
-        }
-
+            setClauses.Add("user_guess_dialect_id = EXCLUDED.user_guess_dialect_id");
         if (dialectIds["confirmed"] is not null)
-        {
-            setClauses.Add("confirmed_dialect_id = @ConfirmedDialectId");
-            parameters.Add("ConfirmedDialectId", dialectIds["confirmed"]);
-        }
-
+            setClauses.Add("confirmed_dialect_id = EXCLUDED.confirmed_dialect_id");
         if (dialectIds["predicted"] is not null)
-        {
-            setClauses.Add("predicted_dialect_id = @PredictedDialectId");
-            parameters.Add("PredictedDialectId", dialectIds["predicted"]);
-        }
+            setClauses.Add("predicted_dialect_id = EXCLUDED.predicted_dialect_id");
 
         if (setClauses.Count == 0)
             return false;
 
         string sql = $"""
-            INSERT INTO detected_dialects (
-                filtered_recording_part_id, 
-                user_guess_dialect_id, 
-                confirmed_dialect_id, 
-                predicted_dialect_id
-            )
-            VALUES (
-                @FilteredPartId,
-                @UserGuessDialectId,
-                @ConfirmedDialectId,
-                @PredictedDialectId
-            )
-            ON CONFLICT (filtered_recording_part_id) 
-            DO UPDATE SET 
-                {string.Join(", ", setClauses)}
-            """;
+                      INSERT INTO detected_dialects (
+                          filtered_recording_part_id, 
+                          user_guess_dialect_id, 
+                          confirmed_dialect_id, 
+                          predicted_dialect_id
+                      )
+                      VALUES (
+                          @FilteredPartId,
+                          @UserGuessDialectId,
+                          @ConfirmedDialectId,
+                          @PredictedDialectId
+                      )
+                      ON CONFLICT (filtered_recording_part_id)
+                      DO UPDATE SET {string.Join(", ", setClauses)};
+                      """;
 
-        return await ExecuteSafelyAsync(Connection.ExecuteAsync(sql, parameters)) != 0;
+        return await ExecuteSafelyAsync(Connection.ExecuteAsync(sql, parameters)) != 0;    
     }
 
     public async Task<bool> DeleteFilteredPartAsync(int filteredPartId) =>
