@@ -689,7 +689,7 @@ public class RecordingsRepository : RepositoryBase
             try
             {
                 var startDate = part.StartDate + TimeSpan.FromSeconds(segment.Interval[0]);
-                var endDate = part.EndDate + TimeSpan.FromSeconds(segment.Interval[1]);
+                var endDate = startDate + TimeSpan.FromSeconds(segment.Interval[1]);
 
                 var filteredPart = await CreateFilteredPartAsync(recordingId,
                     startDate,
