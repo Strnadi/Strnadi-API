@@ -65,10 +65,7 @@ public class RecordingsController : ControllerBase
     [HttpGet("deleted")]
     public async Task<IActionResult> GetDeletedAsync([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
-        [FromServices] RecordingsRepository recordingsRepo,
-        [FromQuery] int? userId = null,
-        [FromQuery] bool parts = false,
-        [FromQuery] bool sound = false)
+        [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
 
@@ -85,12 +82,12 @@ public class RecordingsController : ControllerBase
         if (!user.IsAdmin)
             return Unauthorized("User is not an admin");
 
-        var recordings = await recordingsRepo.GetAsync(userId, parts, sound);
+        var recordings = await recordingsRepo.GetDeletedAsync();
         
         if (recordings is null)
             return StatusCode(500, "Failed to get recordings");
 
-        if (recordings.Length is 0)
+        if (recordings.Count() is 0)
             return NoContent();
         
         return Ok(recordings);

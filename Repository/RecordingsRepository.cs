@@ -65,7 +65,7 @@ public class RecordingsRepository : RepositoryBase
                                    COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS "TotalSeconds"
                                FROM recordings r
                                LEFT JOIN recording_parts rp ON rp.recording_id = r.id
-                               WHERE r.user_id = @UserId AND r.deleted = FALSE
+                               WHERE r.user_id = @UserId AND (r.deleted IS FALSE OR r.deleted IS NULL)
                                GROUP BY r.id
                                HAVING r.expected_parts_count = COUNT(rp.id);
                                """;
@@ -81,10 +81,25 @@ public class RecordingsRepository : RepositoryBase
                     COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS total_seconds
                 FROM recordings r
                 LEFT JOIN recording_parts rp ON rp.recording_id = r.id
-                WHERE r.deleted = FALSE
+                WHERE r.deleted IS FALSE OR r.deleted IS NULL
                 GROUP BY r.id
                 HAVING r.expected_parts_count = COUNT(rp.id);
                 """));
+
+    public async Task<IEnumerable<Recording>?> GetDeletedAsync() =>
+        await ExecuteSafelyAsync(
+            Connection.QueryAsync<Recording>(
+                """
+                SELECT 
+                    r.*,
+                    COALESCE(SUM(EXTRACT(EPOCH FROM (rp.end_date - rp.start_date))), 0)::DOUBLE PRECISION AS total_seconds
+                FROM recordings r
+                LEFT JOIN recording_parts rp ON rp.recording_id = r.id
+                WHERE r.deleted = TRUE
+                GROUP BY r.id
+                HAVING r.expected_parts_count = COUNT(rp.id);
+                """));
+    
 
     public async Task<Recording?> GetByIdAsync(int id, bool parts, bool sound)
     {
