@@ -665,8 +665,10 @@ public class RecordingsRepository : RepositoryBase
         if (part is null) return;
 
         int recordingId = part.RecordingId;
-        foreach (var segment in result.Segments)
+        int representantSegmentId = result.RepresentantId;
+        for (var i = 0; i < result.Segments.Length; i++)
         {
+            var segment = result.Segments[i];
             try
             {
                 var startDate = part.StartDate + TimeSpan.FromSeconds(segment.Interval[0]);
@@ -676,7 +678,7 @@ public class RecordingsRepository : RepositoryBase
                     startDate,
                     endDate,
                     FilteredRecordingPartState.DetectedByAi,
-                    representant: false);
+                    representant: representantSegmentId == i);
 
                 if (filteredPart is null) continue;
 
@@ -684,8 +686,9 @@ public class RecordingsRepository : RepositoryBase
                     filteredPart.Id,
                     predictedDialectCode: segment.Label
                 );
-                
-                _logger.LogInformation("New filtered parts and detected dialects from predication result have been successfully created");
+
+                _logger.LogInformation(
+                    "New filtered parts and detected dialects from predication result have been successfully created");
             }
             catch (Exception ex)
             {

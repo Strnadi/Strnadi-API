@@ -11,9 +11,7 @@ public class PredicationResult
         public Dictionary<string, double> FullPrediction { get; set; }
     }
     
-    public string? Representant { get; set; }
-    
-    public float Confidence { get; set; }
+    public int RepresentantId { get; set; }
     
     public Segment[] Segments { get; set; }
 }
