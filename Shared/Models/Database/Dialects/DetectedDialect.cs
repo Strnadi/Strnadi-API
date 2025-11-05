@@ -29,7 +29,6 @@ public class DetectedDialect
     [NotMapped]
     public string? ConfirmedDialect { get; set; }
     
-    
     public int PredictedDialectId { get; set; }
     [NotMapped]
     public string? PredictedDialect { get; set; }

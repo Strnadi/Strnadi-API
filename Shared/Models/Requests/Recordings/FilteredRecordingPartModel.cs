@@ -16,6 +16,7 @@
 
 using System.ComponentModel.DataAnnotations.Schema;
 using Shared.Models.Database.Dialects;
+using Shared.Models.Database.Recordings;
 
 namespace Shared.Models.Requests.Recordings;
 
@@ -27,7 +28,7 @@ public class FilteredRecordingPartModel
     
     public DateTime EndDate { get; set; }
 
-    public short State { get; set; }
+    public FilteredRecordingPartState State { get; set; }
 
     public int RecordingId { get; set; }
     

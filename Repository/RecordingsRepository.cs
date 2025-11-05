@@ -266,6 +266,7 @@ public class RecordingsRepository : RepositoryBase
             {
                 dialect.UserGuessDialect = dialects.FirstOrDefault(d => d.Id == dialect.UserGuessDialectId)?.DialectCode;
                 dialect.ConfirmedDialect = dialects.FirstOrDefault(d => d.Id == dialect.ConfirmedDialectId)?.DialectCode;
+                dialect.PredictedDialect = dialects.FirstOrDefault(d => d.Id == dialect.PredictedDialectId)?.DialectCode;
             }
             part.DetectedDialects.AddRange(partDialects);
         }
