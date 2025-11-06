@@ -105,17 +105,13 @@ public class RecordingsRepository : RepositoryBase
         var recordings = await ExecuteSafelyAsync(
             Connection.QueryAsync<Recording>(
                 """
-                SELECT
-                    r.id,
-                    r.name
-                FROM recordings r
-                WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM filtered_recording_parts frp
-                    WHERE frp.recording_id = r.id
-                      AND frp.state IN (2, 3, 5, 6, 7)
+                SELECT id 
+                FROM recordings 
+                WHERE id NOT IN (
+                    SELECT recording_id 
+                    FROM filtered_recording_parts 
+                    WHERE state IN (2,3,5,6,7)
                 )
-                ORDER BY r.id
                 """
             ));
         
