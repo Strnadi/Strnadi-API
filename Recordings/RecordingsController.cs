@@ -107,14 +107,26 @@ public class RecordingsController : ControllerBase
         return Ok(recording);
     }
 
+    [Obsolete("use part/{partId:int} GET instead")]
     [HttpGet("part/{recId:int}/{partId:int}/sound")]
     public async Task<IActionResult> GetSound([FromRoute] int recId,
         [FromRoute] int partId,
         [FromServices] RecordingsRepository repo)
     {
-        var recordingPart = await repo.GetPartSoundAsync(partId);
+        var part = await repo.GetPartAsync(partId);
+        if (part?.FilePath is null)
+            return NotFound();
+        return PhysicalFile(part.FilePath, "audio/wav", enableRangeProcessing: true);
+    }
+    
+    [HttpGet("part/{partId:int}/sound")]
+    public async Task<IActionResult> GetSound([FromRoute] int partId, [FromServices] RecordingsRepository repo)
+    {
+        var part = await repo.GetPartAsync(partId);
+        if (part?.FilePath is null)
+            return NotFound();
 
-        return File(recordingPart, "audio/wav");
+        return PhysicalFile(part.FilePath, "audio/wav", enableRangeProcessing: true);
     }
 
     [HttpDelete("{id:int}")]
@@ -258,7 +270,7 @@ public class RecordingsController : ControllerBase
         if (recordingPartId is null)
             return StatusCode(500, "Failed to upload recording");
         
-        await audioProcessingQueue.Enqueue(async sp => 
+        await audioProcessingQueue.EnqueueAsync(async sp => 
             await ClassifyAudioAsync(recordingPartId.Value, 
                 sp.GetRequiredService<RecordingsRepository>(), 
                 sp.GetRequiredService<AiModelConnector>()
