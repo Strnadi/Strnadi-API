@@ -112,9 +112,12 @@ public class RecordingsController : ControllerBase
         [FromRoute] int partId,
         [FromServices] RecordingsRepository repo)
     {
-        var recordingPart = await repo.GetPartSoundAsync(partId);
+        var part = await repo.GetPartAsync(partId);
+        if (part?.FilePath is null)
+            return NotFound();
 
-        return File(recordingPart, "audio/wav");
+        using FileStream fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return File(fs, "audio/wav", enableRangeProcessing: true);
     }
 
     [HttpDelete("{id:int}")]
