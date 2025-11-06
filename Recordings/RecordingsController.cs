@@ -116,9 +116,7 @@ public class RecordingsController : ControllerBase
         var part = await repo.GetPartAsync(partId);
         if (part?.FilePath is null)
             return NotFound();
-
-        await using FileStream fs = new FileStream(part.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return File(fs, "audio/wav", enableRangeProcessing: true);
+        return PhysicalFile(part.FilePath, "audio/wav", enableRangeProcessing: true);
     }
     
     [HttpGet("part/{partId:int}/sound")]
@@ -128,8 +126,7 @@ public class RecordingsController : ControllerBase
         if (part?.FilePath is null)
             return NotFound();
 
-        await using FileStream fs = new FileStream(part.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return File(fs, "audio/wav", enableRangeProcessing: true);
+        return PhysicalFile(part.FilePath, "audio/wav", enableRangeProcessing: true);
     }
 
     [HttpDelete("{id:int}")]
