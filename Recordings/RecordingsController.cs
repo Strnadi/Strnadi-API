@@ -114,7 +114,7 @@ public class RecordingsController : ControllerBase
     {
         var part = await repo.GetPartAsync(partId);
         if (part?.FilePath is null)
-            return null;
+            return NotFound();
 
         using FileStream fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         return File(fs, "audio/wav", enableRangeProcessing: true);
