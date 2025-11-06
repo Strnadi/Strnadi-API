@@ -102,7 +102,6 @@ public class RecordingsRepository : RepositoryBase
 
     public async Task<Recording[]?> GetPreparedForClassificationAsync()
     {
-        List<Recording> result = [];
         var recordings = await ExecuteSafelyAsync(
             Connection.QueryAsync<Recording>(
                 """
@@ -132,7 +131,7 @@ public class RecordingsRepository : RepositoryBase
             recording.Parts = parts;
         }
 
-        return result.ToArray();
+        return recordings.ToArray();
     }
 
     public async Task<Recording?> GetByIdAsync(int id, bool parts, bool sound)
