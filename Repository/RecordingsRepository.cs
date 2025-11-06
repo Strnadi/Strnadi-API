@@ -103,29 +103,33 @@ public class RecordingsRepository : RepositoryBase
     public async Task<Recording[]?> GetPreparedForClassificationAsync()
     {
         List<Recording> result = [];
+        var recordings = await ExecuteSafelyAsync(
+            Connection.QueryAsync<Recording>(
+                """
+                SELECT
+                    r.id,
+                    r.name
+                FROM recordings r
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM filtered_recording_parts frp
+                    WHERE frp.recording_id = r.id
+                      AND frp.state IN (2, 3, 5, 6, 7)
+                )
+                ORDER BY r.id
+                """
+            ));
         
-        var all = await GetAsync(userId: null, parts: true, sound: false);
-        if (all is null)
+        if (recordings is null)
             return null;
 
-        foreach (var recording in all)
+        foreach (var recording in recordings)
         {
-            var filteredParts = await ExecuteSafelyAsync(
-                Connection.QueryAsync<FilteredRecordingPartModel>(
-                    """
-                    SELECT *
-                    FROM filtered_recording_parts
-                    WHERE
-                        recording_id = @RecordingId
-                        AND state IN (2, 3, 5, 6, 7)
-                    """,
-                    new { RecordingId = recording.Id }
-                ));
-
-            if (filteredParts is null || !filteredParts.Any())
+            var parts = await GetPartsAsync(recording.Id, false);
+            if (parts is null)
                 continue;
             
-            result.Add(recording);
+            recording.Parts = parts;
         }
 
         return result.ToArray();
