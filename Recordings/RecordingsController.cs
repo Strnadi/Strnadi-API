@@ -116,7 +116,7 @@ public class RecordingsController : ControllerBase
         if (part?.FilePath is null)
             return NotFound();
 
-        using FileStream fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using FileStream fs = new FileStream(part.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return File(fs, "audio/wav", enableRangeProcessing: true);
     }
 
