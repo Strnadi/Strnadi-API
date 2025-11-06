@@ -107,6 +107,7 @@ public class RecordingsController : ControllerBase
         return Ok(recording);
     }
 
+    [Obsolete("use part/{partId:int} GET instead")]
     [HttpGet("part/{recId:int}/{partId:int}/sound")]
     public async Task<IActionResult> GetSound([FromRoute] int recId,
         [FromRoute] int partId,
@@ -116,7 +117,18 @@ public class RecordingsController : ControllerBase
         if (part?.FilePath is null)
             return NotFound();
 
-        using FileStream fs = new FileStream(part.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using FileStream fs = new FileStream(part.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return File(fs, "audio/wav", enableRangeProcessing: true);
+    }
+    
+    [HttpGet("part/{partId:int}/sound")]
+    public async Task<IActionResult> GetSound([FromRoute] int partId, [FromServices] RecordingsRepository repo)
+    {
+        var part = await repo.GetPartAsync(partId);
+        if (part?.FilePath is null)
+            return NotFound();
+
+        await using FileStream fs = new FileStream(part.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return File(fs, "audio/wav", enableRangeProcessing: true);
     }
 

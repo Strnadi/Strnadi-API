@@ -18,6 +18,7 @@ using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using Repository;
 using Shared.BackgroundServices.AudioProcessing;
 using Shared.Extensions;
@@ -167,25 +168,32 @@ public class UtilsController : ControllerBase
         var recordings = await recordingsRepo.GetPreparedForClassificationAsync();
         if (recordings is null)
             return Conflict();
-
-        // foreach (var recording in recordings)
-        // {
-        //     if (recording.Parts is null)
-        //         continue;
-        //     
-        //     foreach (var part in recording.Parts)
-        //     {
-        //         
-        //     }
-        // }
-        //
-        // await queue.EnqueueAsync(async sp =>
-        // {
-        //     var recordingsRepo = sp.GetRequiredService<RecordingsRepository>();
-        //     var connector = sp.GetRequiredService<AiModelConnector>();
-        //     connector.Classify();
-        //     await recordingsRepo.ProcessPredictionAsync()
-        // });
+        
+        foreach (var recording in recordings)
+        {
+            if (recording.Parts is null)
+                continue;
+            
+            foreach (var part in recording.Parts)
+            {
+                if (part.FilePath is null) continue;
+                
+                byte[] content = await System.IO.File.ReadAllBytesAsync(part.FilePath);
+                await queue.EnqueueAsync(async sp =>
+                {
+                    var connector = sp.GetRequiredService<AiModelConnector>();
+                    var logger = sp.GetRequiredService<ILogger<AudioProcessingService>>();
+                    logger.LogInformation("Starting audio processing for recording part " + part.Id);
+                    var result = await connector.Classify(content, part.FilePath);
+                    if (result is null)
+                        return;
+                    
+                    var repo = sp.GetRequiredService<RecordingsRepository>();
+                    await repo.ProcessPredictionAsync(part.Id, result);
+                    logger.LogInformation($"Finished audio processing for recording part {part.Id}\nPrediction result: " + JsonSerializer.Serialize(result));
+                });
+            }
+        }
 
         return Ok(recordings);
     }
