@@ -707,6 +707,12 @@ public class RecordingsRepository : RepositoryBase
 
     public async Task ProcessPredictionAsync(int recordingPartId, PredicationResult result)
     {
+        if (result is { RepresentantId: -1, Segments.Length: 0 })
+        {
+            _logger.LogWarning($"Prediction for {recordingPartId} returned null");
+            return;
+        }
+        
         var part = await GetPartAsync(recordingPartId);
         if (part is null) return;
 
