@@ -99,7 +99,37 @@ public class RecordingsRepository : RepositoryBase
                 GROUP BY r.id
                 HAVING r.expected_parts_count = COUNT(rp.id);
                 """));
-    
+
+    public async Task<Recording[]?> GetPreparedForClassificationAsync()
+    {
+        List<Recording> result = [];
+        
+        var all = await GetAsync(userId: null, parts: true, sound: false);
+        if (all is null)
+            return null;
+
+        foreach (var recording in all)
+        {
+            var filteredParts = await ExecuteSafelyAsync(
+                Connection.QueryAsync<FilteredRecordingPartModel>(
+                    """
+                    SELECT *
+                    FROM filtered_recording_parts
+                    WHERE
+                        recording_id = @RecordingId
+                        AND state IN (2, 3, 5, 6, 7)
+                    """,
+                    new { RecordingId = recording.Id }
+                ));
+
+            if (filteredParts is null || !filteredParts.Any())
+                continue;
+            
+            result.Add(recording);
+        }
+
+        return result.ToArray();
+    }
 
     public async Task<Recording?> GetByIdAsync(int id, bool parts, bool sound)
     {

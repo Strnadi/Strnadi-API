@@ -29,7 +29,7 @@ public class AudioProcessingService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
+                _logger.LogError(ex, "Failed to execute work item in audio processing service");
             }
         }
     }}

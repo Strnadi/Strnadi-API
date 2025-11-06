@@ -258,7 +258,7 @@ public class RecordingsController : ControllerBase
         if (recordingPartId is null)
             return StatusCode(500, "Failed to upload recording");
         
-        await audioProcessingQueue.Enqueue(async sp => 
+        await audioProcessingQueue.EnqueueAsync(async sp => 
             await ClassifyAudioAsync(recordingPartId.Value, 
                 sp.GetRequiredService<RecordingsRepository>(), 
                 sp.GetRequiredService<AiModelConnector>()
