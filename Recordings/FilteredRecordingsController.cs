@@ -244,7 +244,7 @@ public class FilteredRecordingsController : ControllerBase
         return created ? Created() : Conflict();
     }
 
-    [HttpPatch("detected/{ddId:int}")]
+    [HttpPatch("detected/")]
     public async Task<IActionResult> PatchDetectedDialectsAsync([FromBody] UpdateDetectedDialectRequest req,
         [FromServices] UsersRepository usersRepo,
         [FromServices] JwtService jwtService,
