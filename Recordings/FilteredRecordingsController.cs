@@ -14,10 +14,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System.Reflection;
 using Auth.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Repository;
 using Shared.Extensions;
 using Shared.Logging;
@@ -45,6 +43,13 @@ public class FilteredRecordingsController : ControllerBase
             return NoContent();
 
         return Ok(filtered);
+    }
+
+    [HttpGet("{fpId:int}")]
+    public async Task<IActionResult> GetFilteredPartAsync([FromRoute] int fpId, [FromServices] RecordingsRepository recordingsRepo)
+    {
+        var fp = await recordingsRepo.GetFilteredPartAsync(fpId);
+        return fp is not null ? Ok(fp) : Conflict();
     }
 
     [HttpPost]
@@ -103,7 +108,7 @@ public class FilteredRecordingsController : ControllerBase
         if (dialectId is null)
             return BadRequest("Invalid dialect code");
 
-        bool createdDetected = await recordingsRepo.InsertDetectedDialectAsync(part!.Id, userGuessDialectId: null, dialectId);
+        bool createdDetected = await recordingsRepo.InsertDetectedDialectAsync(part!.Id, userGuessDialectId: null, confirmedDialectId: dialectId, predictedDialectId: null);
         if (!createdDetected)
         {
             Logger.Log("FilteredRecordingsController::InsertDetectedDialectAsync returned false", LogLevel.Error);
@@ -170,11 +175,21 @@ public class FilteredRecordingsController : ControllerBase
         return Ok();
     }
 
+    [Obsolete("Use /recordings/filtered/{fpId} DELETE instead")]
     [HttpDelete("delete-confirmed-dialect/{filteredPartId:int}")]
     public async Task<IActionResult> DeleteConfirmedDialectAsync([FromRoute] int filteredPartId,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
+    {
+        return await DeleteFilteredPartAsync(filteredPartId, recordingsRepo, usersRepo, jwtService);
+    }
+
+    [HttpDelete("{fpId:int}")]
+    public async Task<IActionResult> DeleteFilteredPartAsync([FromRoute] int fpId, 
+        [FromServices] RecordingsRepository recordingsRepo, 
+        [FromServices] UsersRepository usersRepo, 
+        [FromServices] JwtService jwtService)
     {
         string? jwt = this.GetJwt();
         if (jwt is null)
@@ -183,14 +198,91 @@ public class FilteredRecordingsController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
-        if (!await recordingsRepo.ExistsFilteredPartAsync(filteredPartId))
+        if (!await recordingsRepo.ExistsFilteredPartAsync(fpId))
             return Conflict("Filtered part does not exist");
         
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
         
-        bool deleted =  await recordingsRepo.DeleteFilteredPartAsync(filteredPartId);
+        bool deleted =  await recordingsRepo.DeleteFilteredPartAsync(fpId);
 
+        return deleted ? Ok() : Conflict();
+    }
+
+    [HttpGet("detected/")]
+    public async Task<IActionResult> GetDetectedDialectsAsync([FromServices] RecordingsRepository repo)
+    {
+        var detected = await repo.GetDetectedDialectsAsync();
+        return detected is not null ? Ok(detected) : Conflict();
+    }
+
+    [HttpGet("detected/{ddId:int}")]
+    public async Task<IActionResult> GetDetectedDialectAsync([FromRoute] int ddId, [FromServices] RecordingsRepository repo)
+    {
+        var detected = await repo.GetDetectedDialectsAsync(ddId);
+        return detected is not null ? Ok(detected) : Conflict();
+    }
+
+    [HttpPost("detected/")]
+    public async Task<IActionResult> PostDetectedDialectAsync([FromBody] DetectedDialectUploadRequest req,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] JwtService jwtService,
+        [FromServices] RecordingsRepository repo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+        
+        bool created = await repo.InsertDetectedDialectAsync(req.FilteredPartId, req.UserGuessDialectId, req.ConfirmedDialectId, req.PredictedDialectId);
+
+        return created ? Created() : Conflict();
+    }
+
+    [HttpPatch("detected/{ddId:int}")]
+    public async Task<IActionResult> PatchDetectedDialectsAsync([FromBody] UpdateDetectedDialectRequest req,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] JwtService jwtService,
+        [FromServices] RecordingsRepository repo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+
+        bool updated = await repo.UpdateDetectedDialectAsync(req);
+        
+        return updated ? Ok() : Conflict();
+    }
+
+    [HttpDelete("detected/{ddId:int}")]
+    public async Task<IActionResult> DeleteDetectedDialectsAsync([FromRoute] int ddId,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] JwtService jwtService,
+        [FromServices] RecordingsRepository repo)
+    {   
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+        
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+        
+        if (await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+
+        bool deleted = await repo.DeleteDetectedDialectAsync(ddId);
+        
         return deleted ? Ok() : Conflict();
     }
 }

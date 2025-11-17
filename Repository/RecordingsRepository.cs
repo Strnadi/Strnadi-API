@@ -306,7 +306,7 @@ public class RecordingsRepository : RepositoryBase
 
         foreach (var part in filteredParts)
         {
-            var partDialects = await GetDetectedDialects(part.Id) ?? [];
+            var partDialects = await GetDetectedDialectsByFpIdAsync(part.Id) ?? [];
             foreach (var dialect in partDialects)
             {
                 dialect.UserGuessDialect = dialects.FirstOrDefault(d => d.Id == dialect.UserGuessDialectId)?.DialectCode;
@@ -332,8 +332,19 @@ public class RecordingsRepository : RepositoryBase
     private async Task<Dialect[]?> GetDialects() =>
         await ExecuteSafelyAsync(async () =>
             (await Connection.QueryAsync<Dialect>("SELECT * FROM dialects")).ToArray());
+    
+    public async Task<DetectedDialect[]?> GetDetectedDialectsAsync() =>
+        await ExecuteSafelyAsync(async () => (
+                await Connection.QueryAsync<DetectedDialect>("SELECT * FROM detected_dialects")).ToArray()
+        );
+    
+    public async Task<DetectedDialect[]?> GetDetectedDialectsAsync(int ddId) =>
+        await ExecuteSafelyAsync(async () => (
+                await Connection.QueryAsync<DetectedDialect>("SELECT * FROM detected_dialects WHERE id = @Id",
+                    new { Id = ddId })).ToArray()
+        );
 
-    private async Task<DetectedDialect[]?> GetDetectedDialects(int filteredPartId) =>
+    private async Task<DetectedDialect[]?> GetDetectedDialectsByFpIdAsync(int filteredPartId) =>
         await ExecuteSafelyAsync(async () =>
             (await Connection.QueryAsync<DetectedDialect>(
                 "SELECT * FROM detected_dialects WHERE filtered_recording_part_id = @FPartId",
@@ -387,9 +398,10 @@ public class RecordingsRepository : RepositoryBase
             })) != 0;
 
     public async Task<bool> InsertDetectedDialectAsync(int filteredPartId, int? userGuessDialectId,
-        int? confirmedDialectId)
+        int? confirmedDialectId,
+        int? predictedDialectId)
     {
-        if (userGuessDialectId is null && confirmedDialectId is null)
+        if (userGuessDialectId is null && confirmedDialectId is null && predictedDialectId is null)
         {
             Logger.Log("RecordingsRepository::InsertDetectedDialectAsync: Both user guess and confirmed dialect IDs are null. Cannot insert detected dialect.", LogLevel.Warning);
             return false;
@@ -397,13 +409,14 @@ public class RecordingsRepository : RepositoryBase
         
         return await ExecuteSafelyAsync(Connection.ExecuteAsync(sql:
             """
-            INSERT INTO detected_dialects(filtered_recording_part_id, user_guess_dialect_id, confirmed_dialect_id) 
-            VALUES (@FilteredPartId, @UserGuessDialectId, @ConfirmedDialectId)
+            INSERT INTO detected_dialects(filtered_recording_part_id, user_guess_dialect_id, confirmed_dialect_id, predicted_dialect_id) 
+            VALUES (@FilteredPartId, @UserGuessDialectId, @ConfirmedDialectId, @PredictedDialectId)
             """, new
             {
                 FilteredPartId = filteredPartId,
                 UserGuessDialectId = userGuessDialectId,
-                ConfirmedDialectId = confirmedDialectId
+                ConfirmedDialectId = confirmedDialectId,
+                PredictedDialectId = predictedDialectId
             })) != 0;
     }
 
@@ -709,7 +722,7 @@ public class RecordingsRepository : RepositoryBase
     {
         if (result is { RepresentantId: -1, Segments.Length: 0 })
         {
-            _logger.LogWarning($"Prediction for {recordingPartId} returned null");
+            Logger.Log($"Prediction for {recordingPartId} returned null", LogLevel.Warning);
             return;
         }
         
@@ -739,7 +752,7 @@ public class RecordingsRepository : RepositoryBase
                     predictedDialectCode: segment.Label
                 );
 
-                _logger.LogInformation(
+                Logger.Log(
                     "New filtered parts and detected dialects from predication result have been successfully created");
             }
             catch (Exception ex)
@@ -748,4 +761,45 @@ public class RecordingsRepository : RepositoryBase
             }
         }
     }
+
+    public async Task<FilteredRecordingPartModel?> GetFilteredPartAsync(int fpId) =>
+        await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync<FilteredRecordingPartModel>(
+            "SELECT * FROM filtered_recording_parts WHERE id = @Id", new { Id = fpId }));
+
+    public async Task<bool> UpdateDetectedDialectAsync(UpdateDetectedDialectRequest req) =>
+        await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", req.Id);
+
+            if (req.UserGuessDialectId is not null)
+            {
+                updateFields.Add("user_guess_dialect_id = @UserGuessDialectId");
+                parameters.Add("UserGuessDialectId", req.UserGuessDialectId);
+            }
+
+            if (req.ConfirmedDialectId is not null)
+            {
+                updateFields.Add("confirmed_dialect_id = @ConfirmedDialectId");
+                parameters.Add("ConfirmedDialectId", req.ConfirmedDialectId);
+            }
+
+            if (req.PredictedDialectId is not null)
+            {
+                updateFields.Add("predicted_dialect_id = @PredictedDialectId");
+                parameters.Add("PredictedDialectId", req.PredictedDialectId);
+            }
+
+            if (updateFields.Count == 0)
+                return false;
+
+            var sql = $"UPDATE detected_dialects SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+
+    public async Task<bool> DeleteDetectedDialectAsync(int ddId) =>
+        await ExecuteSafelyAsync(async () => await Connection.ExecuteScalarAsync<int>(
+            "DELETE FROM detected_dialects WHERE id = @Id", new { Id = ddId }) == 0);
 }
