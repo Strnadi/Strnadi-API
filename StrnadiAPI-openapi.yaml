@@ -1256,6 +1256,62 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /recordings/filtered/{fpId}:
+    get:
+      tags: [Filtered Recordings]
+      summary: Get a filtered recording part by id
+      parameters:
+        - name: fpId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: Filtered part that matches the supplied identifier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilteredRecordingPartModel'
+        '409':
+          description: The filtered part could not be loaded.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Filtered Recordings]
+      summary: Delete a filtered recording part
+      parameters:
+        - name: fpId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Filtered part deleted successfully.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The filtered part does not exist or could not be deleted.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags: [Filtered Recordings]
       summary: Upload a filtered recording part
@@ -1382,6 +1438,142 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/filtered/detected:
+    get:
+      tags: [Filtered Recordings]
+      summary: List detected dialect entries
+      security: []
+      responses:
+        '200':
+          description: Detected dialect entries available in the system.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DetectedDialectModel'
+        '409':
+          description: The detected dialect entries could not be loaded.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Filtered Recordings]
+      summary: Create a detected dialect entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetectedDialectUploadRequest'
+      responses:
+        '201':
+          description: Detected dialect entry created.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The detected dialect entry could not be created.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [Filtered Recordings]
+      summary: Update a detected dialect entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDetectedDialectRequest'
+      responses:
+        '200':
+          description: Detected dialect entry updated.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The detected dialect entry does not exist or could not be updated.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recordings/filtered/detected/{ddId}:
+    get:
+      tags: [Filtered Recordings]
+      summary: Get a detected dialect entry by id
+      parameters:
+        - name: ddId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security: []
+      responses:
+        '200':
+          description: Detected dialect entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetectedDialectModel'
+        '409':
+          description: The detected dialect entry could not be loaded.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Filtered Recordings]
+      summary: Delete a detected dialect entry
+      parameters:
+        - name: ddId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Detected dialect entry deleted.
+        '400':
+          description: Missing bearer token.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid JWT supplied or the caller is not an administrator.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The detected dialect entry does not exist or could not be deleted.
           content:
             text/plain:
               schema:
@@ -2501,6 +2693,44 @@ components:
         representant:
           type: boolean
           nullable: true
+    DetectedDialectUploadRequest:
+      type: object
+      required: [filteredPartId]
+      properties:
+        filteredPartId:
+          type: integer
+          minimum: 1
+        userGuessDialectId:
+          type: integer
+          minimum: 1
+          nullable: true
+        confirmedDialectId:
+          type: integer
+          minimum: 1
+          nullable: true
+        predictedDialectId:
+          type: integer
+          minimum: 1
+          nullable: true
+    UpdateDetectedDialectRequest:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        userGuessDialectId:
+          type: integer
+          minimum: 1
+          nullable: true
+        confirmedDialectId:
+          type: integer
+          minimum: 1
+          nullable: true
+        predictedDialectId:
+          type: integer
+          minimum: 1
+          nullable: true
     FilteredRecordingPartModel:
       type: object
       required:
@@ -2559,6 +2789,13 @@ components:
           minimum: 1
           nullable: true
         confirmedDialect:
+          type: string
+          nullable: true
+        predictedDialectId:
+          type: integer
+          minimum: 1
+          nullable: true
+        predictedDialect:
           type: string
           nullable: true
         filteredRecordingPartId:
