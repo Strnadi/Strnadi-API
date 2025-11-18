@@ -1578,12 +1578,6 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: The filtered part does not exist or could not be deleted.
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /photos/upload/recording-photo:
     post:
       tags: [Photos]
