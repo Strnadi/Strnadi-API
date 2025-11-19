@@ -236,7 +236,7 @@ public class FilteredRecordingsController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
-        if (await usersRepo.IsAdminAsync(email))
+        if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
         
         bool created = await repo.InsertDetectedDialectAsync(req.FilteredPartId, req.UserGuessDialectId, req.ConfirmedDialectId, req.PredictedDialectId);
@@ -257,7 +257,7 @@ public class FilteredRecordingsController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
-        if (await usersRepo.IsAdminAsync(email))
+        if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
 
         bool updated = await repo.UpdateDetectedDialectAsync(req);
@@ -278,7 +278,7 @@ public class FilteredRecordingsController : ControllerBase
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
         
-        if (await usersRepo.IsAdminAsync(email))
+        if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
 
         bool deleted = await repo.DeleteDetectedDialectAsync(ddId);
