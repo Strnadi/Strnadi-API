@@ -796,6 +796,7 @@ public class RecordingsRepository : RepositoryBase
 
             var sql = $"UPDATE detected_dialects SET {string.Join(", ", updateFields)} WHERE id = @Id";
             
+            Logger.Log(sql);
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
