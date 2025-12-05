@@ -150,7 +150,15 @@ public class FilteredRecordingsController : ControllerBase
 
         if (req.Representant != null || req.StartDate != null || req.EndDate != null)
         {
-            bool updated = await recordingsRepo.UpdateFilteredPartAsync(req.FilteredPartId, req.StartDate, req.EndDate, req.Representant);
+            bool updated = await recordingsRepo.UpdateFilteredPartAsync(
+                req.FilteredPartId, 
+                req.StartDate, 
+                req.EndDate, 
+                req.Representant, 
+                state: null, 
+                recordingId: null, 
+                parentId: null
+            );
             Logger.Log("Updated Filtered part with id " + req.FilteredPartId);
             if (!updated)
             {
@@ -173,6 +181,45 @@ public class FilteredRecordingsController : ControllerBase
         }
 
         return Ok();
+    }
+    
+    [HttpPatch("{fpId:int}")]
+    public async Task<IActionResult> PatchFilteredPartAsync([FromRoute] int fpId,
+        [FromBody] FilteredRecordingPartUpdateRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
+        [FromServices] RecordingsRepository recordingsRepo)
+    {
+        string? jwt = this.GetJwt();
+        
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+        
+        if (!await recordingsRepo.ExistsFilteredPartAsync(fpId)) 
+            return Conflict("Filtered part does not exist");
+        
+        if (req.StartDate == null && req.EndDate == null && 
+            req.Representant == null && req.RecordingId == null &&
+            req.ParentId == null && req.State == null)
+            return Ok();
+
+        bool updated = await recordingsRepo.UpdateFilteredPartAsync(
+            fpId, 
+            req.StartDate, 
+            req.EndDate, 
+            req.Representant, 
+            req.State, 
+            req.RecordingId, 
+            req.ParentId
+        );
+        
+        return updated ? Ok() : StatusCode(500);
     }
 
     [Obsolete("Use /recordings/filtered/{fpId} DELETE instead")]

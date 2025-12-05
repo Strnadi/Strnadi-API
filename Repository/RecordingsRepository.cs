@@ -511,7 +511,7 @@ public class RecordingsRepository : RepositoryBase
             ));
 
     public async Task<bool> UpdateFilteredPartAsync(int filteredPartId, DateTime? start, DateTime? end,
-        bool? representant) =>
+        bool? representant, FilteredRecordingPartState? state, int? recordingId, int? parentId) =>
         await ExecuteSafelyAsync(async () =>
         {
             var updateFields = new List<string>();
@@ -534,6 +534,24 @@ public class RecordingsRepository : RepositoryBase
             {
                 updateFields.Add("representant_flag = @Representant");
                 parameters.Add("@Representant", representant.Value);
+            }
+
+            if (state != null)
+            {
+                updateFields.Add("state = @State");
+                parameters.Add("@State", state.Value);
+            }
+
+            if (recordingId != null)
+            {
+                updateFields.Add("recording_id = @RecordingId");
+                parameters.Add("@RecordingId", recordingId);
+            }
+
+            if (parentId != null)
+            {
+                updateFields.Add("parent_id = @ParentId");
+                parameters.Add("@ParentId", parentId);
             }
 
             var sql = $"UPDATE filtered_recording_parts SET {string.Join(", ", updateFields)} WHERE id = @Id";
