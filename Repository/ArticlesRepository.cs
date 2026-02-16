@@ -185,7 +185,7 @@ public class ArticlesRepository : RepositoryBase
 
     private async Task<bool> ExistsAsync(int id) =>
         await ExecuteSafelyAsync(async () =>
-            await Connection.ExecuteScalarAsync<int>("SELECT * FROM articles WHERE id = @Id", new { Id = id }) != 0);
+            await Connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM articles WHERE id = @Id", new { Id = id }) != 0);
 
     public async Task<bool> UpdateArticleAsync(int id, ArticleUpdateRequest req)
     {
