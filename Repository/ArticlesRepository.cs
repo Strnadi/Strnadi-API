@@ -154,10 +154,17 @@ public class ArticlesRepository : RepositoryBase
                 "SELECT * FROM article_categories WHERE id = @CategoryId", 
                 new { CategoryId = categoryId }));
 
-    public async Task<byte[]> GetAsync(int id, string fileName)
+    public async Task<byte[]?> GetAsync(int id, string fileName)
     {
-        byte[] content = await FileSystemHelper.ReadArticleFileAsync(id, fileName);
-        return content;
+        try
+        {
+            byte[] content = await FileSystemHelper.ReadArticleFileAsync(id, fileName);
+            return content;
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
     }
 
     public async Task<int?> SaveArticleAsync(ArticleUploadRequest req) =>
