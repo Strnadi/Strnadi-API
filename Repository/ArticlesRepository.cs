@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using Microsoft.VisualBasic;
 using Shared.Models.Database.Articles;
 using Shared.Models.Requests;
 using Shared.Models.Requests.Articles;
@@ -154,8 +155,11 @@ public class ArticlesRepository : RepositoryBase
                 "SELECT * FROM article_categories WHERE id = @CategoryId", 
                 new { CategoryId = categoryId }));
 
-    public async Task<byte[]> GetAsync(int id, string fileName)
+    public async Task<byte[]?> GetAsync(int id, string fileName)
     {
+        if (FileSystemHelper.ArticleFileExists(id, fileName))
+            return null;
+        
         byte[] content = await FileSystemHelper.ReadArticleFileAsync(id, fileName);
         return content;
     }
