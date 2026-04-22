@@ -738,7 +738,7 @@ public class RecordingsRepository : RepositoryBase
 
     public async Task ProcessPredictionAsync(int recordingPartId, PredicationResult result)
     {
-        if (result is { RepresentantId: -1, Segments.Length: 0 })
+        if (result is { Segments.Length: 0 })
         {
             Logger.Log($"Prediction for {recordingPartId} returned null", LogLevel.Warning);
             return;
@@ -748,7 +748,7 @@ public class RecordingsRepository : RepositoryBase
         if (part is null) return;
 
         int recordingId = part.RecordingId;
-        int representantSegmentId = result.RepresentantId;
+        // int representantSegmentId = result.RepresentantId.HasValue ? result.RepresentantId : result.Segme;
         for (var i = 0; i < result.Segments.Length; i++)
         {
             var segment = result.Segments[i];
@@ -761,7 +761,7 @@ public class RecordingsRepository : RepositoryBase
                     startDate,
                     endDate,
                     FilteredRecordingPartState.DetectedByAi,
-                    representant: representantSegmentId == i);
+                    representant: segment.IsRepresentant);
 
                 if (filteredPart is null) continue;
 
