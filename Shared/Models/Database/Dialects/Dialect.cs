@@ -22,4 +22,6 @@ public class Dialect
     public string DialectCode { get; set; }
     
     public string Color { get; set; }
+    
+    public int HintOrder { get; set; }
 }
