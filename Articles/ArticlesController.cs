@@ -76,8 +76,9 @@ public class ArticlesController : ControllerBase
 
             return File(article, MimeHelper.GetMimeType(FileSystemHelper.CreateArticleAttachmentPath(id, fileName)));
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log(ex.Message, LogLevel.Error);
             return NotFound();
         }
     }

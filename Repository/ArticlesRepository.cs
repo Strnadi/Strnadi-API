@@ -2,9 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
-using Microsoft.VisualBasic;
 using Shared.Models.Database.Articles;
-using Shared.Models.Requests;
 using Shared.Models.Requests.Articles;
 using Shared.Tools;
 
