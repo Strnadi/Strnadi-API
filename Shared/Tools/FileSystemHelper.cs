@@ -154,6 +154,12 @@ public static class FileSystemHelper
         byte[] content = Convert.FromBase64String(base64);
         await File.WriteAllBytesAsync(path, content);
     }
+    
+    public static bool ArticleFileExists(int id, string fileName)
+    {
+        string filePath = CreateArticleAttachmentPath(id, fileName);
+        return File.Exists(filePath);
+    }
 
     public static void DeleteArticleAttachment(int id, string fileName)
     {
@@ -180,4 +186,5 @@ public static class FileSystemHelper
         await File.WriteAllBytesAsync(path, content);
         return path;
     }
+
 }

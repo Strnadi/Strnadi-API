@@ -68,9 +68,19 @@ public class ArticlesController : ControllerBase
         [FromRoute] int id,
         [FromRoute] string fileName)
     {
-        var article = await articlesRepo.GetAsync(id, fileName);
+        try
+        {
+            var article = await articlesRepo.GetAsync(id, fileName);
+            if (article is null)
+                return NotFound();
 
-        return File(article, MimeHelper.GetMimeType(FileSystemHelper.CreateArticleAttachmentPath(id, fileName)));
+            return File(article, MimeHelper.GetMimeType(FileSystemHelper.CreateArticleAttachmentPath(id, fileName)));
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(ex.Message, LogLevel.Error);
+            return NotFound();
+        }
     }
 
     [HttpPost]

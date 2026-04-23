@@ -8,10 +8,10 @@ public class PredicationResult
         
         public string? Label { get; set; }
         
+        public bool IsRepresentant { get; set; }
+        
         public Dictionary<string, double> FullPrediction { get; set; }
     }
-    
-    public int RepresentantId { get; set; }
     
     public Segment[] Segments { get; set; }
 }
