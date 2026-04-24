@@ -15,6 +15,7 @@
  */
 
 using Auth.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -22,11 +23,15 @@ using System.Text.Json;
 using Repository;
 using Shared.BackgroundServices.AudioProcessing;
 using Shared.Extensions;
+using Shared.Models.Database.Recordings;
 using Shared.Models.Requests.Notifications;
 using Shared.Tools;
 
 namespace Utils;
 
+/// <summary>
+/// Provides maintenance and diagnostic utility endpoints for administrators.
+/// </summary>
 [ApiController]
 [Route("utils")]
 public class UtilsController : ControllerBase
@@ -37,11 +42,26 @@ public class UtilsController : ControllerBase
     {
         _logger = logger;
     }
-    
+
+    /// <summary>
+    /// Checks whether the API process can respond to requests.
+    /// </summary>
+    /// <returns>An empty successful HTTP response.</returns>
     [HttpHead("health")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Health() => Ok();
 
+    /// <summary>
+    /// Recalculates recording part end dates when the stored start and end dates are equal.
+    /// </summary>
+    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
+    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
+    /// <param name="recordingsRepo">Repository used to repair recording part dates.</param>
+    /// <returns>An HTTP response indicating whether the repair operation was started and completed.</returns>
     [HttpGet("fix-same-dates")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> FixSameDates([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
@@ -61,7 +81,17 @@ public class UtilsController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Normalizes stored audio files for existing recording parts.
+    /// </summary>
+    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
+    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
+    /// <param name="recordingsRepo">Repository used to normalize recording part audio files.</param>
+    /// <returns>An HTTP response indicating whether the normalization operation was started and completed.</returns>
     [HttpGet("normalize-existing-audios")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> NormalizeExistingAudios([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
@@ -80,8 +110,18 @@ public class UtilsController : ControllerBase
         await recordingsRepo.NormalizeAudiosAsync();
         return Ok();
     }
-    
+
+    /// <summary>
+    /// Logs detected format and duration information for stored recording part audio files.
+    /// </summary>
+    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
+    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
+    /// <param name="recordingsRepo">Repository used to inspect recording part audio files.</param>
+    /// <returns>An HTTP response indicating whether the analysis operation was started and completed.</returns>
     [HttpGet("analyze-parts")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AnalyzeParts([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
@@ -101,7 +141,20 @@ public class UtilsController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Sends a custom invisible Firebase notification to every device registered for a user.
+    /// </summary>
+    /// <param name="req">Notification payload and target user identifier.</param>
+    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
+    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
+    /// <param name="devicesRepo">Repository used to load the target user's devices.</param>
+    /// <param name="notificationService">Service used to send Firebase notifications.</param>
+    /// <returns>An HTTP response indicating whether the notification dispatch loop completed.</returns>
     [HttpPost("send-notification")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SendNotification([FromBody] SendNotificationRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
@@ -148,7 +201,20 @@ public class UtilsController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Queues audio classification work for recordings that have not yet produced classified filtered parts.
+    /// </summary>
+    /// <param name="queue">Background queue used to run audio processing work.</param>
+    /// <param name="recordingsRepo">Repository used to load recordings and store prediction results.</param>
+    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
+    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
+    /// <returns>An HTTP response containing the recordings queued for classification, or an error status.</returns>
     [HttpGet("classify")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(Recording[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ClassifyRecordings([FromServices] AudioProcessingQueue queue, 
         [FromServices] RecordingsRepository recordingsRepo, 
         [FromServices] JwtService jwtService,

@@ -21,12 +21,24 @@ using Shared.Tools;
 
 namespace Repository;
 
+/// <summary>
+/// Provides database and file operations for stored photos.
+/// </summary>
 public class PhotosRepository : RepositoryBase
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PhotosRepository"/> class.
+    /// </summary>
+    /// <param name="configuration">Application configuration used by the repository base.</param>
     public PhotosRepository(IConfiguration configuration) : base(configuration)
     {
     }
 
+    /// <summary>
+    /// Stores a recording photo and updates its file path in the database.
+    /// </summary>
+    /// <param name="request">Recording photo upload data.</param>
+    /// <returns><c>true</c> when the photo record and file path are saved; otherwise, <c>false</c>.</returns>
     public async Task<bool> UploadRecPhotoAsync(UploadRecordingPhotoRequest request) => await ExecuteSafelyAsync(
         async () =>
         {
@@ -37,6 +49,12 @@ public class PhotosRepository : RepositoryBase
             return await UpdateRecPhotoFilePathAsync(id, path);
         });
 
+    /// <summary>
+    /// Stores a user's profile photo and updates its file path in the database.
+    /// </summary>
+    /// <param name="userId">User identifier associated with the photo.</param>
+    /// <param name="req">Profile photo data to store.</param>
+    /// <returns><c>true</c> when the photo record and file path are saved; otherwise, <c>false</c>.</returns>
     public async Task<bool> UploadUserPhotoAsync(int userId, UserProfilePhotoModel req)
         => await ExecuteSafelyAsync(async () =>
         {
@@ -87,6 +105,11 @@ public class PhotosRepository : RepositoryBase
         return await FileSystemHelper.SaveUserPhotoFileAsync(userId, base64, format);
     }
 
+    /// <summary>
+    /// Gets a user's profile photo as a base64 payload.
+    /// </summary>
+    /// <param name="userId">User identifier associated with the photo.</param>
+    /// <returns>The user's profile photo model, or <c>null</c> when no photo or file is found.</returns>
     public async Task<UserProfilePhotoModel?> GetUserPhotoAsync(int userId) =>
         await ExecuteSafelyAsync(async () =>
         {   

@@ -17,6 +17,7 @@
 using Auth.Services;
 using Email;
 using Repository;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Extensions;
 using Shared.Logging;
@@ -27,11 +28,24 @@ using Shared.Tools;
 
 namespace Users;
 
+/// <summary>
+/// Provides user profile, account, verification, and profile photo endpoints.
+/// </summary>
 [ApiController]
 [Route("users")]
 public class UsersController : ControllerBase
 {
+    /// <summary>
+    /// Gets all users for an administrator.
+    /// </summary>
+    /// <param name="jwtService">Service used to validate the current JWT.</param>
+    /// <param name="usersRepo">Repository used to check administrator access and load users.</param>
+    /// <returns>An HTTP result containing all users when the caller is an administrator.</returns>
     [HttpGet]
+    [ProducesResponseType(typeof(User[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Get([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
@@ -51,7 +65,16 @@ public class UsersController : ControllerBase
         return users is not null ? Ok(users) : StatusCode(500);
     }
 
+    /// <summary>
+    /// Gets the user identifier for the current JWT.
+    /// </summary>
+    /// <param name="jwtService">Service used to validate the current JWT.</param>
+    /// <param name="usersRepo">Repository used to load the current user.</param>
+    /// <returns>An HTTP result containing the current user's identifier.</returns>
     [HttpGet("get-id")]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetId([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
@@ -70,7 +93,17 @@ public class UsersController : ControllerBase
         return Ok(user.Id);
     }
     
+    /// <summary>
+    /// Gets a user by identifier, hiding the email address when the caller is not authorized to view it.
+    /// </summary>
+    /// <param name="userId">Identifier of the user to load.</param>
+    /// <param name="jwtService">Service used to validate an optional JWT.</param>
+    /// <param name="usersRepo">Repository used to load the user and check administrator access.</param>
+    /// <returns>An HTTP result containing the requested user.</returns>
     [HttpGet("{userId:int}")]
+    [ProducesResponseType(typeof(User), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> GetById([FromRoute] int userId,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
@@ -103,7 +136,19 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
+    /// <summary>
+    /// Updates the specified user when the current JWT belongs to that user or an administrator.
+    /// </summary>
+    /// <param name="userId">Identifier of the user to update.</param>
+    /// <param name="model">User fields to update.</param>
+    /// <param name="jwtService">Service used to validate the current JWT.</param>
+    /// <param name="usersRepo">Repository used to load and update the user.</param>
+    /// <returns>An HTTP result indicating whether the user was updated.</returns>
     [HttpPatch("{userId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update([FromRoute] int userId,
         [FromBody] UpdateUserModel model,
         [FromServices] JwtService jwtService,
@@ -131,7 +176,18 @@ public class UsersController : ControllerBase
         return updated ? Ok() : StatusCode(409, "Failed to update user");
     }
 
+    /// <summary>
+    /// Deletes the specified user when the current JWT belongs to that user or an administrator.
+    /// </summary>
+    /// <param name="userId">Identifier of the user to delete.</param>
+    /// <param name="jwtService">Service used to validate the current JWT.</param>
+    /// <param name="usersRepo">Repository used to load and delete the user.</param>
+    /// <returns>An HTTP result indicating whether the user was deleted.</returns>
     [HttpDelete("{userId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteUser([FromRoute] int userId,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
@@ -158,7 +214,18 @@ public class UsersController : ControllerBase
         return deleted ? Ok() : StatusCode(404, "Failed to delete user");
     }
 
+    /// <summary>
+    /// Verifies a user's email address using a verification JWT and redirects to the verification result page.
+    /// </summary>
+    /// <param name="userId">Identifier of the user whose email should be verified.</param>
+    /// <param name="jwt">Verification JWT from the email link.</param>
+    /// <param name="jwtService">Service used to validate the verification JWT.</param>
+    /// <param name="linkGenerator">Service used to build the verification result redirect URL.</param>
+    /// <param name="usersRepo">Repository used to load and verify the user.</param>
+    /// <returns>A permanent redirect to the email verification result page, or an unauthorized response.</returns>
     [HttpGet("{userId:int}/verify-email")]
+    [ProducesResponseType(StatusCodes.Status301MovedPermanently)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> VerifyEmailAsync([FromRoute] int userId,
         [FromQuery] string jwt,
         [FromServices] JwtService jwtService,
@@ -182,7 +249,20 @@ public class UsersController : ControllerBase
         return RedirectPermanent(linkGenerator.GenerateEmailVerificationRedirectionLink(verified));
     }
 
+    /// <summary>
+    /// Changes the password for the specified user.
+    /// </summary>
+    /// <param name="userId">Identifier of the user whose password should be changed.</param>
+    /// <param name="request">Password change request containing the new password.</param>
+    /// <param name="jwtService">Service used to validate the current JWT.</param>
+    /// <param name="usersRepo">Repository used to load the user and change the password.</param>
+    /// <returns>An HTTP result indicating whether the password was changed.</returns>
     [HttpPatch("{userId:int}/change-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ChangePasswordAsync(int userId,
         [FromBody] ChangePasswordRequest request,
         [FromServices] JwtService jwtService,
@@ -218,7 +298,17 @@ public class UsersController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Checks whether a user exists by email address or user identifier.
+    /// </summary>
+    /// <param name="userId">Optional user identifier to check.</param>
+    /// <param name="email">Optional email address to check.</param>
+    /// <param name="usersRepo">Repository used to check for a matching user.</param>
+    /// <returns>A conflict result when the user exists, otherwise an OK result.</returns>
     [HttpGet("exists")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Exists([FromQuery] int? userId,
         [FromQuery] string? email,
         [FromServices] UsersRepository usersRepo)
@@ -235,8 +325,20 @@ public class UsersController : ControllerBase
         return exists ? Conflict("Exists") : Ok();
     }
 
+    /// <summary>
+    /// Uploads or replaces a user's profile photo.
+    /// </summary>
+    /// <param name="userId">Identifier of the user whose photo should be saved.</param>
+    /// <param name="req">Profile photo payload to save.</param>
+    /// <param name="repo">Repository used to save the profile photo.</param>
+    /// <param name="jwtService">Service used to validate the current JWT.</param>
+    /// <returns>An HTTP result indicating whether the profile photo was saved.</returns>
     [HttpPost("{userId:int}/upload-profile-photo")]
     [RequestSizeLimit(130023424)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UploadUserProfilePhoto([FromRoute] int userId,
         [FromBody] UserProfilePhotoModel req,
         [FromServices] PhotosRepository repo,
@@ -257,7 +359,16 @@ public class UsersController : ControllerBase
         return success ? Ok() : Conflict("Failed to save user photo");
     }
 
+    /// <summary>
+    /// Gets a user's profile photo.
+    /// </summary>
+    /// <param name="userId">Identifier of the user whose photo should be loaded.</param>
+    /// <param name="photosRepo">Repository used to load the profile photo.</param>
+    /// <param name="jwtService">Service provided by dependency injection for this endpoint.</param>
+    /// <returns>An HTTP result containing the user's profile photo when one exists.</returns>
     [HttpGet("{userId:int}/get-profile-photo")]
+    [ProducesResponseType(typeof(UserProfilePhotoModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUserProfilePhoto([FromRoute] int userId,
         [FromServices] PhotosRepository photosRepo,
         [FromServices] JwtService jwtService)

@@ -8,12 +8,23 @@ using Shared.Tools;
 
 namespace Repository;
 
+/// <summary>
+/// Provides data and file persistence operations for articles, article attachments, and article categories.
+/// </summary>
 public class ArticlesRepository : RepositoryBase
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ArticlesRepository"/> class.
+    /// </summary>
+    /// <param name="configuration">Application configuration used to initialize the repository connection.</param>
     public ArticlesRepository(IConfiguration configuration) : base(configuration)
     {
     }
 
+    /// <summary>
+    /// Gets all articles with their attachments and categories.
+    /// </summary>
+    /// <returns>An array of articles, or null when the query fails.</returns>
     public async Task<Article[]?> GetAsync()
     {
         var articles = await GetArticlesAsync();
@@ -64,6 +75,11 @@ public class ArticlesRepository : RepositoryBase
                     ArticleId = articleId
                 })).ToArray());
 
+    /// <summary>
+    /// Gets articles assigned to a category by category name.
+    /// </summary>
+    /// <param name="categoryName">The category name to query.</param>
+    /// <returns>An array of articles assigned to the category, or null when the query fails.</returns>
     public async Task<Article[]?> GetAsync(string categoryName)
     {
         var assignments = await GetCategoryAssignmentsByCategoryAsync(categoryName);
@@ -93,6 +109,11 @@ public class ArticlesRepository : RepositoryBase
                 )
                 """, new { CategoryName = categoryName })).ToArray());
 
+    /// <summary>
+    /// Gets an article by id with its attachments and categories.
+    /// </summary>
+    /// <param name="id">The article id.</param>
+    /// <returns>The article, or null when it does not exist or the query fails.</returns>
     public async Task<Article?> GetAsync(int id)
     {
         var article = await GetArticleAsync(id);
@@ -153,6 +174,12 @@ public class ArticlesRepository : RepositoryBase
                 "SELECT * FROM article_categories WHERE id = @CategoryId", 
                 new { CategoryId = categoryId }));
 
+    /// <summary>
+    /// Gets an article attachment file by article id and file name.
+    /// </summary>
+    /// <param name="id">The article id.</param>
+    /// <param name="fileName">The attachment file name.</param>
+    /// <returns>The attachment bytes, or null when the file does not exist.</returns>
     public async Task<byte[]?> GetAsync(int id, string fileName)
     {
         if (!FileSystemHelper.ArticleFileExists(id, fileName))
@@ -162,6 +189,11 @@ public class ArticlesRepository : RepositoryBase
         return content;
     }
 
+    /// <summary>
+    /// Saves a new article.
+    /// </summary>
+    /// <param name="req">The article data to save.</param>
+    /// <returns>The created article id, or null when the insert fails.</returns>
     public async Task<int?> SaveArticleAsync(ArticleUploadRequest req) =>
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteScalarAsync<int?>(
@@ -171,6 +203,13 @@ public class ArticlesRepository : RepositoryBase
                 RETURNING id
                 """, new { req.Name, req.Description }));
 
+    /// <summary>
+    /// Saves an article attachment file and records it in the database.
+    /// </summary>
+    /// <param name="articleId">The article id.</param>
+    /// <param name="fileName">The attachment file name.</param>
+    /// <param name="base64">The attachment content encoded as Base64.</param>
+    /// <returns>True when the database record is inserted; otherwise, false.</returns>
     public async Task<bool> SaveArticleAttachmentAsync(int articleId, string fileName, string base64)
     {
         await FileSystemHelper.SaveArticleFileAsync(articleId, fileName, base64);
@@ -189,6 +228,12 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM articles WHERE id = @Id", new { Id = id }) != 0);
 
+    /// <summary>
+    /// Updates an existing article.
+    /// </summary>
+    /// <param name="id">The article id.</param>
+    /// <param name="req">The article fields to update.</param>
+    /// <returns>True when the article exists and is updated; otherwise, false.</returns>
     public async Task<bool> UpdateArticleAsync(int id, ArticleUpdateRequest req)
     {
         if (!await ExistsAsync(id))
@@ -217,6 +262,13 @@ public class ArticlesRepository : RepositoryBase
         });
     }
 
+    /// <summary>
+    /// Replaces an article attachment file.
+    /// </summary>
+    /// <param name="id">The article id.</param>
+    /// <param name="fileName">The attachment file name.</param>
+    /// <param name="base64">The replacement attachment content encoded as Base64.</param>
+    /// <returns>True when the article exists and the file is saved; otherwise, false.</returns>
     public async Task<bool> UpdateArticleAttachmentAsync(int id, string fileName, string base64)
     {
         if (!await ExistsAsync(id))
@@ -226,6 +278,11 @@ public class ArticlesRepository : RepositoryBase
         return true;
     }
 
+    /// <summary>
+    /// Deletes an article by id.
+    /// </summary>
+    /// <param name="id">The article id.</param>
+    /// <returns>True when the article exists and is deleted; otherwise, false.</returns>
     public async Task<bool> DeleteArticleAsync(int id)
     {
         if (!await ExistsAsync(id))
@@ -235,6 +292,12 @@ public class ArticlesRepository : RepositoryBase
             await Connection.ExecuteAsync("DELETE FROM articles WHERE id = @Id", new { Id = id }) != 0);
     }
 
+    /// <summary>
+    /// Deletes an article attachment file and its database record.
+    /// </summary>
+    /// <param name="id">The article id.</param>
+    /// <param name="fileName">The attachment file name.</param>
+    /// <returns>True when the article exists and the database record is deleted; otherwise, false.</returns>
     public async Task<bool> DeleteArticleAttachmentAsync(int id, string fileName)
     {
         if (!await ExistsAsync(id))
@@ -253,11 +316,19 @@ public class ArticlesRepository : RepositoryBase
             0); 
     }
 
+    /// <summary>
+    /// Gets all article categories.
+    /// </summary>
+    /// <returns>An array of article categories, or null when the query fails.</returns>
     public async Task<ArticleCategory[]?> GetCategoriesAsync() =>
         await ExecuteSafelyAsync(async () => 
             (await Connection.QueryAsync<ArticleCategory>(
                 "SELECT * FROM article_categories")).ToArray());
     
+    /// <summary>
+    /// Gets all article categories with articles assigned to each category.
+    /// </summary>
+    /// <returns>An array of article categories with articles, or null when a query fails.</returns>
     public async Task<ArticleCategory[]?> GetCategoriesWithArticlesAsync()
     {
         var categories = await GetCategoriesAsync();
@@ -275,6 +346,11 @@ public class ArticlesRepository : RepositoryBase
         return categories;
     }
 
+    /// <summary>
+    /// Saves a new article category.
+    /// </summary>
+    /// <param name="req">The category data to save.</param>
+    /// <returns>True when the category is inserted; otherwise, false.</returns>
     public async Task<bool> SaveArticleCategoryAsync(ArticleCategoryUploadRequest req) =>
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteAsync(
@@ -288,6 +364,12 @@ public class ArticlesRepository : RepositoryBase
             await Connection.QueryFirstOrDefaultAsync<ArticleCategory>(
                 "SELECT * FROM article_categories WHERE name = @Name", new { Name = categoryName }));
     
+    /// <summary>
+    /// Assigns an article to an article category.
+    /// </summary>
+    /// <param name="categoryName">The category name.</param>
+    /// <param name="request">The article assignment data.</param>
+    /// <returns>True when the category exists and the assignment is inserted; otherwise, false.</returns>
     public async Task<bool> AssignArticleToCategoryAsync(string categoryName, AssignArticleToCategoryRequest request)
     {
         var category = await GetCategoryModelAsync(categoryName);
@@ -311,10 +393,21 @@ public class ArticlesRepository : RepositoryBase
                     Order = order
                 })) != 0;
 
+    /// <summary>
+    /// Deletes an article category by category name.
+    /// </summary>
+    /// <param name="categoryName">The category name.</param>
+    /// <returns>True when the category is deleted; otherwise, false.</returns>
     public async Task<bool> DeleteCategoryAsync(string categoryName) =>
         await Connection.ExecuteAsync(
             "DELETE FROM article_categories WHERE name = @CategoryName", new { CategoryName = categoryName }) != 0;
 
+    /// <summary>
+    /// Removes an article from an article category.
+    /// </summary>
+    /// <param name="categoryName">The category name.</param>
+    /// <param name="articleId">The article id.</param>
+    /// <returns>True when the category exists and the assignment is deleted; otherwise, false.</returns>
     public async Task<bool> DeleteArticleCategoryAssignmentAsync(string categoryName, int articleId)
     {
         var category = await GetCategoryModelAsync(categoryName);
