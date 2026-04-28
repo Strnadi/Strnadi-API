@@ -174,7 +174,7 @@ public class ArticlesRepository : RepositoryBase
 
     public async Task<byte[]?> GetAsync(int id, string fileName)
     {
-        if (FileSystemHelper.ArticleFileExists(id, fileName))
+        if (!FileSystemHelper.ArticleFileExists(id, fileName))
             return null;
         
         byte[] content = await FileSystemHelper.ReadArticleFileAsync(id, fileName);
