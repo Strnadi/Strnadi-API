@@ -8,5 +8,7 @@ public class ArticleTranslation
     
     public string LanguageCode { get; set; }
     
-    public string Value { get; set; }
+    public string NameValue { get; set; }
+    
+    public string DescriptionValue { get; set; }
 }
