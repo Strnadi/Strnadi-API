@@ -7,10 +7,17 @@ using Shared.Tools;
 
 namespace Repository;
 
+/// <summary>
+/// Provides database and file operations for achievements.
+/// </summary>
 public class AchievementsRepository : RepositoryBase
 {
     private LinkGenerator _linkGenerator;
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AchievementsRepository"/> class.
+    /// </summary>
+    /// <param name="configuration">Application configuration used by the repository base.</param>
     public AchievementsRepository(IConfiguration configuration) : base(configuration)
     {
         _linkGenerator = new LinkGenerator(configuration);
@@ -21,6 +28,10 @@ public class AchievementsRepository : RepositoryBase
             "SELECT * FROM achievement_content WHERE achievement_id = @Id",
             new { Id = achievementId })))?.ToArray();
     
+    /// <summary>
+    /// Gets all achievements with generated image URLs and localized contents.
+    /// </summary>
+    /// <returns>All achievements, or <c>null</c> when the query fails.</returns>
     public async Task<Achievement[]?> GetAllAsync()
     {
         var achievements = await ExecuteSafelyAsync(Connection.QueryAsync<Achievement>(
@@ -39,6 +50,11 @@ public class AchievementsRepository : RepositoryBase
         return arr;
     }
 
+    /// <summary>
+    /// Gets achievements awarded to a specific user.
+    /// </summary>
+    /// <param name="userId">User identifier to query.</param>
+    /// <returns>The user's awarded achievements, or <c>null</c> when the query fails.</returns>
     public async Task<Achievement[]?> GetByUserIdAsync(int userId)
     {
         var achievements = await ExecuteSafelyAsync(Connection.QueryAsync<Achievement>(
@@ -65,10 +81,20 @@ public class AchievementsRepository : RepositoryBase
         return arr;
     }
 
+    /// <summary>
+    /// Gets an achievement by identifier.
+    /// </summary>
+    /// <param name="achievementId">Achievement identifier to query.</param>
+    /// <returns>The matching achievement, or <c>null</c> when no achievement is found.</returns>
     public async Task<Achievement?> GetByIdAsync(int achievementId) =>
         await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync<Achievement>(
             "SELECT * FROM achievements WHERE id = @Id", new { Id = achievementId }));
 
+    /// <summary>
+    /// Reads the stored image bytes for an achievement.
+    /// </summary>
+    /// <param name="achievementId">Achievement identifier associated with the image.</param>
+    /// <returns>The image bytes, or <c>null</c> when the achievement is not found.</returns>
     public async Task<byte[]?> GetPhotoAsync(int achievementId)
     {
         var achievement = await GetByIdAsync(achievementId);
@@ -110,6 +136,12 @@ public class AchievementsRepository : RepositoryBase
             await transaction.CommitAsync();
         });
 
+    /// <summary>
+    /// Creates an achievement, saves its image, and inserts localized content.
+    /// </summary>
+    /// <param name="req">Achievement data to insert.</param>
+    /// <param name="file">Image file to store for the achievement.</param>
+    /// <returns><c>true</c> when the achievement is created; otherwise, <c>false</c>.</returns>
     public async Task<bool> CreateAchievementAsync(PostAchievementRequest req, IFormFile file)
     {
         var insertedId = await InsertAchievementAsync(req.Sql);
@@ -125,6 +157,10 @@ public class AchievementsRepository : RepositoryBase
         return true;
     }
 
+    /// <summary>
+    /// Evaluates achievement SQL queries and awards matching achievements to users.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous award operation.</returns>
     public async Task CheckAndAwardAchievements()
     {
         var achievements = await GetAllAsync();

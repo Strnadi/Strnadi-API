@@ -26,6 +26,7 @@ using Shared.Models.Database;
 using Shared.Models.Requests.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -33,6 +34,9 @@ using LogLevel = Shared.Logging.LogLevel;
 
 namespace Auth;
 
+/// <summary>
+/// Provides authentication endpoints for JWT, password, Google, and Apple sign-in flows.
+/// </summary>
 [ApiController]
 [Route("/auth")]
 public class AuthController : ControllerBase
@@ -46,12 +50,25 @@ public class AuthController : ControllerBase
     private string _appleClientId => _configuration["Auth:Apple:ClientId"] ?? throw new NullReferenceException();
     private string _appleClientIdWeb => _configuration["Auth:Apple:ClientIdWeb"] ?? throw new NullReferenceException();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuthController"/> class.
+    /// </summary>
+    /// <param name="configuration">Application configuration containing authentication settings.</param>
     public AuthController(IConfiguration configuration)
     {
         _configuration = configuration;
     }
 
+    /// <summary>
+    /// Verifies that the current JWT contains an email address for a verified user.
+    /// </summary>
+    /// <param name="jwtService">Service used to read the JWT email claim.</param>
+    /// <param name="usersRepo">Repository used to check email verification state.</param>
+    /// <returns>An HTTP result indicating whether the JWT belongs to a verified user.</returns>
     [HttpGet("verify-jwt")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> VerifyJwt([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
@@ -68,7 +85,16 @@ public class AuthController : ControllerBase
         return await usersRepo.IsEmailVerifiedAsync(email) ? Ok() : StatusCode(403);
     }
 
+    /// <summary>
+    /// Renews a valid JWT for an existing user.
+    /// </summary>
+    /// <param name="jwtService">Service used to validate and generate JWT values.</param>
+    /// <param name="usersRepo">Repository used to check that the JWT user exists.</param>
+    /// <returns>An HTTP result containing a renewed JWT when the current token is valid.</returns>
     [HttpGet("renew-jwt")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RenewJwt([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
@@ -88,7 +114,17 @@ public class AuthController : ControllerBase
         return Ok(newJwt);
     }
     
+    /// <summary>
+    /// Starts a new account sign-up using a Google ID token.
+    /// </summary>
+    /// <param name="req">Google authentication request containing the ID token.</param>
+    /// <param name="jwtService">Service used to generate an application JWT.</param>
+    /// <param name="repo">Repository used to check existing users.</param>
+    /// <returns>An HTTP result containing a JWT and Google profile names for a new user.</returns>
     [HttpPost("sign-up-google")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
@@ -108,7 +144,17 @@ public class AuthController : ControllerBase
         return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName });
     }
 
+    /// <summary>
+    /// Logs an existing user in using a Google ID token.
+    /// </summary>
+    /// <param name="req">Google authentication request containing the ID token.</param>
+    /// <param name="jwtService">Service used to generate an application JWT.</param>
+    /// <param name="repo">Repository used to load the matching user.</param>
+    /// <returns>An HTTP result containing a JWT for an existing user.</returns>
     [HttpPost("login-google")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
@@ -134,7 +180,16 @@ public class AuthController : ControllerBase
         return Ok(jwt);
     }
 
+    /// <summary>
+    /// Handles Google authentication for linking, login, or sign-up discovery.
+    /// </summary>
+    /// <param name="req">Google authentication request containing the ID token.</param>
+    /// <param name="jwtService">Service used to validate existing auth JWTs and generate new JWTs.</param>
+    /// <param name="repo">Repository used to load and update Google user mappings.</param>
+    /// <returns>An HTTP result describing whether the Google user exists or was linked.</returns>
     [HttpPost("google")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
@@ -197,7 +252,17 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Handles Apple authentication for linking, login, or sign-up discovery.
+    /// </summary>
+    /// <param name="req">Apple authentication request containing the ID token and optional user details.</param>
+    /// <param name="jwtService">Service used to validate existing auth JWTs and generate new JWTs.</param>
+    /// <param name="repo">Repository used to load and update Apple user mappings.</param>
+    /// <returns>An HTTP result containing login or first-time Apple sign-in details.</returns>
     [HttpPost("apple")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> LoginViaApple([FromBody] AppleAuthRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
@@ -302,7 +367,16 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Receives the web Apple callback and redirects the browser back to the provided state return URL.
+    /// </summary>
+    /// <param name="user">Apple user payload posted by Apple, when provided.</param>
+    /// <param name="state">State value containing the return URL.</param>
+    /// <param name="idToken">Apple ID token posted by Apple.</param>
+    /// <returns>A redirect to the return URL when state is provided, otherwise a bad request response.</returns>
     [HttpPost("apple-callback")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult AppleCallback(
         [FromForm] string? user,
         [FromForm] string? state,
@@ -321,7 +395,16 @@ public class AuthController : ControllerBase
         }
     }
     
+    /// <summary>
+    /// Receives the app Apple callback and redirects into the Android application intent URL.
+    /// </summary>
+    /// <param name="user">Apple user payload posted by Apple, when provided.</param>
+    /// <param name="state">State value posted by Apple, when provided.</param>
+    /// <param name="idToken">Apple ID token posted by Apple, when provided.</param>
+    /// <param name="code">Apple authorization code posted by Apple, when provided.</param>
+    /// <returns>A redirect to the Android intent callback URL.</returns>
     [HttpPost("apple/callback")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     public IActionResult AppleAppCallback(
         [FromForm] string? user,
         [FromForm] string? state,
@@ -346,21 +429,47 @@ public class AuthController : ControllerBase
         return Redirect(intentUrl);
     }
 
+    /// <summary>
+    /// Checks whether a user has an Apple identifier linked.
+    /// </summary>
+    /// <param name="userId">Identifier of the user to inspect.</param>
+    /// <param name="users">Repository used to load the user.</param>
+    /// <returns>An HTTP result indicating whether the user has an Apple identifier.</returns>
     [HttpGet("has-apple-id")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> HasAppleId([FromQuery] int userId, [FromServices] UsersRepository users)
     {
         var has = (await users.GetUserByIdAsync(userId))?.AppleId is not null;
         return has ? Ok() : Conflict();
     }
 
+    /// <summary>
+    /// Checks whether a user has a Google identifier linked.
+    /// </summary>
+    /// <param name="userId">Identifier of the user to inspect.</param>
+    /// <param name="users">Repository used to load the user.</param>
+    /// <returns>An HTTP result indicating whether the user has a Google identifier.</returns>
     [HttpGet("has-google-id")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> HasGoogleId([FromQuery] int userId, [FromServices] UsersRepository users)
     {
         var has = (await users.GetUserByIdAsync(userId))?.GoogleId is not null;
         return has ? Ok() : Conflict();
     }
 
+    /// <summary>
+    /// Logs an existing user in with email and password credentials.
+    /// </summary>
+    /// <param name="request">Login request containing email and password.</param>
+    /// <param name="jwtService">Service used to generate an application JWT.</param>
+    /// <param name="repo">Repository used to check and authorize the user.</param>
+    /// <returns>An HTTP result containing a JWT when credentials are valid.</returns>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
@@ -379,7 +488,17 @@ public class AuthController : ControllerBase
         return Ok(jwtService.GenerateToken(email));
     }
 
+    /// <summary>
+    /// Creates a user account and sends or applies email verification based on the sign-up flow.
+    /// </summary>
+    /// <param name="request">Sign-up request containing user profile and credential details.</param>
+    /// <param name="emailService">Service used to send verification email messages.</param>
+    /// <param name="jwtService">Service used to generate an application JWT.</param>
+    /// <param name="repo">Repository used to create and verify the user.</param>
+    /// <returns>An HTTP result containing a JWT when the account is created.</returns>
     [HttpPost("sign-up")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request,
         [FromServices] EmailService emailService,
         [FromServices] JwtService jwtService,
@@ -412,7 +531,19 @@ public class AuthController : ControllerBase
         return Ok(newJwt);
     }
 
+    /// <summary>
+    /// Sends a new email verification message for the specified user.
+    /// </summary>
+    /// <param name="userId">Identifier of the user requesting another verification email.</param>
+    /// <param name="jwtService">Service used to validate the current JWT and generate a verification JWT.</param>
+    /// <param name="emailService">Service used to send the verification email message.</param>
+    /// <param name="usersRepo">Repository used to load and inspect the user.</param>
+    /// <returns>An HTTP result indicating whether the verification email was sent.</returns>
     [HttpGet("{userId:int}/resend-verify-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status208AlreadyReported)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] int userId,
         [FromServices] JwtService jwtService,
         [FromServices] EmailService emailService,
@@ -441,7 +572,17 @@ public class AuthController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Sends a password reset message to the user with the specified email address.
+    /// </summary>
+    /// <param name="email">Email address of the user requesting a password reset.</param>
+    /// <param name="usersRepo">Repository used to load the user.</param>
+    /// <param name="jwtService">Service used to generate a password reset JWT.</param>
+    /// <param name="emailService">Service used to send the password reset message.</param>
+    /// <returns>An HTTP result indicating whether a password reset message was sent.</returns>
     [HttpGet("{email}/reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResetPasswordAsync([FromRoute] string email,
         [FromServices] UsersRepository usersRepo,
         [FromServices] JwtService jwtService,

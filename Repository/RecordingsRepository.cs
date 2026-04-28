@@ -30,16 +30,31 @@ using LogLevel = Shared.Logging.LogLevel;
 
 namespace Repository;
 
+/// <summary>
+/// Provides database and file-system operations for recordings, recording parts, filtered parts, and detected dialects.
+/// </summary>
 public class RecordingsRepository : RepositoryBase
 {
     private readonly TimeSpan _timeMatchTolerance = TimeSpan.FromSeconds(1);
     private readonly ILogger<RecordingsRepository> _logger;
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RecordingsRepository"/> class.
+    /// </summary>
+    /// <param name="logger">Logger used for repository diagnostics.</param>
+    /// <param name="configuration">Configuration used by the repository base to create database connections.</param>
     public RecordingsRepository(ILogger<RecordingsRepository> logger, IConfiguration configuration) : base(configuration)
     {
         _logger = logger;
     }
 
+    /// <summary>
+    /// Gets completed recordings, optionally filtered by owner and expanded with parts or sound data.
+    /// </summary>
+    /// <param name="userId">Optional owner user identifier.</param>
+    /// <param name="parts">Whether to include recording parts.</param>
+    /// <param name="sound">Whether to include Base64 audio data for included parts.</param>
+    /// <returns>An array of recordings, or <c>null</c> when retrieval fails.</returns>
     public async Task<Recording[]?> GetAsync(int? userId, bool parts, bool sound)
     {
         Recording[]? recordings = (userId is not null
@@ -86,6 +101,10 @@ public class RecordingsRepository : RepositoryBase
                 HAVING r.expected_parts_count = COUNT(rp.id);
                 """));
 
+    /// <summary>
+    /// Gets completed recordings that are marked as deleted.
+    /// </summary>
+    /// <returns>Deleted recordings, or <c>null</c> when retrieval fails.</returns>
     public async Task<IEnumerable<Recording>?> GetDeletedAsync() =>
         await ExecuteSafelyAsync(
             Connection.QueryAsync<Recording>(
@@ -100,6 +119,10 @@ public class RecordingsRepository : RepositoryBase
                 HAVING r.expected_parts_count = COUNT(rp.id);
                 """));
 
+    /// <summary>
+    /// Gets recordings that have not yet produced filtered parts in classification states.
+    /// </summary>
+    /// <returns>An array of recordings with parts attached, or <c>null</c> when retrieval fails.</returns>
     public async Task<Recording[]?> GetPreparedForClassificationAsync()
     {
         var recordings = await ExecuteSafelyAsync(
@@ -130,6 +153,13 @@ public class RecordingsRepository : RepositoryBase
         return recordings.ToArray();
     }
 
+    /// <summary>
+    /// Gets a recording by identifier, optionally expanded with parts or sound data.
+    /// </summary>
+    /// <param name="id">Recording identifier.</param>
+    /// <param name="parts">Whether to include recording parts.</param>
+    /// <param name="sound">Whether to include Base64 audio data for included parts.</param>
+    /// <returns>The recording when found, otherwise <c>null</c>.</returns>
     public async Task<Recording?> GetByIdAsync(int id, bool parts, bool sound)
     {
         var recording = await GetAsync(id);
@@ -162,6 +192,12 @@ public class RecordingsRepository : RepositoryBase
             return r;
         });
 
+    /// <summary>
+    /// Gets parts for a recording, optionally including Base64 audio data.
+    /// </summary>
+    /// <param name="recordingId">Recording identifier.</param>
+    /// <param name="sound">Whether to include Base64 audio data from each part file.</param>
+    /// <returns>Recording parts, or <c>null</c> when retrieval fails.</returns>
     public async Task<IEnumerable<RecordingPart>?> GetPartsAsync(int recordingId, bool sound) =>
         await ExecuteSafelyAsync<IEnumerable<RecordingPart>?>(async () =>
         {
@@ -200,6 +236,12 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.QueryAsync<RecordingPart>(sql, new { RecordingId = recordingId });
         });
 
+    /// <summary>
+    /// Creates a recording metadata row for a user.
+    /// </summary>
+    /// <param name="userId">Owner user identifier.</param>
+    /// <param name="request">Recording metadata to insert.</param>
+    /// <returns>The new recording identifier, or <c>null</c> when insertion fails.</returns>
     public async Task<int?> UploadAsync(int userId, RecordingUploadRequest request) =>
         await ExecuteSafelyAsync(async () =>
         {
@@ -221,6 +263,11 @@ public class RecordingsRepository : RepositoryBase
             });
         });
     
+    /// <summary>
+    /// Creates a recording part and stores Base64-encoded audio on disk.
+    /// </summary>
+    /// <param name="request">Recording part metadata and Base64 audio data.</param>
+    /// <returns>The new recording part identifier, or <c>null</c> when creation fails.</returns>
     public async Task<int?> UploadPartAsync(RecordingPartUploadRequest request)
     {
         int? partId = await UploadPartModelToDbAsync(request);
@@ -234,6 +281,12 @@ public class RecordingsRepository : RepositoryBase
         return partId;
     }
 
+    /// <summary>
+    /// Creates a recording part and stores uploaded audio on disk.
+    /// </summary>
+    /// <param name="request">Recording part metadata.</param>
+    /// <param name="file">Uploaded audio file to store for the part.</param>
+    /// <returns>The new recording part identifier, or <c>null</c> when creation fails.</returns>
     public async Task<int?> UploadPartAsync(RecordingPartUploadRequest request, IFormFile file)
     {
         int? partId = await UploadPartModelToDbAsync(request);
@@ -293,6 +346,12 @@ public class RecordingsRepository : RepositoryBase
             )
         );
 
+    /// <summary>
+    /// Gets filtered recording parts, optionally limited by recording and verified states, with detected dialect codes populated.
+    /// </summary>
+    /// <param name="recordingId">Optional recording identifier to filter by.</param>
+    /// <param name="verified">Whether to include only filtered parts in verified states.</param>
+    /// <returns>An array of filtered recording parts, or <c>null</c> when retrieval fails.</returns>
     public async Task<FilteredRecordingPartModel[]?> GetFilteredPartsAsync(int? recordingId, bool verified)
     {
         var filteredParts = (await GetFilteredPartsRawAsync(recordingId, verified))?.ToArray();
@@ -333,11 +392,20 @@ public class RecordingsRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             (await Connection.QueryAsync<Dialect>("SELECT * FROM dialects")).ToArray());
     
+    /// <summary>
+    /// Gets all detected dialect records.
+    /// </summary>
+    /// <returns>An array of detected dialects, or <c>null</c> when retrieval fails.</returns>
     public async Task<DetectedDialect[]?> GetDetectedDialectsAsync() =>
         await ExecuteSafelyAsync(async () => (
                 await Connection.QueryAsync<DetectedDialect>("SELECT * FROM detected_dialects")).ToArray()
         );
     
+    /// <summary>
+    /// Gets detected dialect records by detected dialect identifier.
+    /// </summary>
+    /// <param name="ddId">Detected dialect identifier.</param>
+    /// <returns>An array of matching detected dialects, or <c>null</c> when retrieval fails.</returns>
     public async Task<DetectedDialect[]?> GetDetectedDialectsAsync(int ddId) =>
         await ExecuteSafelyAsync(async () => (
                 await Connection.QueryAsync<DetectedDialect>("SELECT * FROM detected_dialects WHERE id = @Id",
@@ -353,6 +421,11 @@ public class RecordingsRepository : RepositoryBase
                     FPartId = filteredPartId
                 })).ToArray());
 
+    /// <summary>
+    /// Creates a filtered recording part and records the user-guessed dialect.
+    /// </summary>
+    /// <param name="model">Filtered recording part upload data.</param>
+    /// <returns><c>true</c> when the filtered part and dialect record are inserted; otherwise <c>false</c>.</returns>
     public async Task<bool> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model)
     {
         int? dialectId = await GetDialectCodeIdAsync(model.DialectCode);
@@ -379,6 +452,11 @@ public class RecordingsRepository : RepositoryBase
                 State = (int)FilteredRecordingPartState.AwaitingProcession
             }));
 
+    /// <summary>
+    /// Gets the database identifier for a dialect code.
+    /// </summary>
+    /// <param name="dialectCode">Dialect code to look up.</param>
+    /// <returns>The dialect identifier, or <c>null</c> when no dialect matches or lookup fails.</returns>
     public async Task<int?> GetDialectCodeIdAsync(string dialectCode) =>
         await ExecuteSafelyAsync(Connection.ExecuteScalarAsync<int?>(sql:
                 "SELECT id FROM dialects WHERE dialect_code = @DialectCode", new
@@ -397,6 +475,14 @@ public class RecordingsRepository : RepositoryBase
                 UserGuessDialectId = userGuessDialectId
             })) != 0;
 
+    /// <summary>
+    /// Inserts a detected dialect record for a filtered recording part.
+    /// </summary>
+    /// <param name="filteredPartId">Filtered recording part identifier.</param>
+    /// <param name="userGuessDialectId">Optional user-guessed dialect identifier.</param>
+    /// <param name="confirmedDialectId">Optional confirmed dialect identifier.</param>
+    /// <param name="predictedDialectId">Optional predicted dialect identifier.</param>
+    /// <returns><c>true</c> when the record is inserted; otherwise <c>false</c>.</returns>
     public async Task<bool> InsertDetectedDialectAsync(int filteredPartId, int? userGuessDialectId,
         int? confirmedDialectId,
         int? predictedDialectId)
@@ -420,9 +506,20 @@ public class RecordingsRepository : RepositoryBase
             })) != 0;
     }
 
+    /// <summary>
+    /// Determines whether a recording exists.
+    /// </summary>
+    /// <param name="id">Recording identifier.</param>
+    /// <returns><c>true</c> when the recording exists; otherwise <c>false</c>.</returns>
     public async Task<bool> ExistsAsync(int id) =>
         await GetByIdAsync(id, false, false) is not null;
     
+    /// <summary>
+    /// Determines whether a user owns a recording.
+    /// </summary>
+    /// <param name="id">Recording identifier.</param>
+    /// <param name="userId">User identifier to compare with the recording owner.</param>
+    /// <returns><c>true</c> when the user owns the recording; otherwise <c>false</c>.</returns>
     public async Task<bool> IsOwnerAsync(int id, int userId)
     {
         if (!await ExistsAsync(id))
@@ -431,6 +528,12 @@ public class RecordingsRepository : RepositoryBase
         return (await GetByIdAsync(id, false, false))!.UserId == userId;
     }
 
+    /// <summary>
+    /// Deletes a recording permanently or marks it as deleted.
+    /// </summary>
+    /// <param name="id">Recording identifier.</param>
+    /// <param name="final">Whether to permanently delete the recording.</param>
+    /// <returns><c>true</c> when a row is affected; otherwise <c>false</c>.</returns>
     public async Task<bool> DeleteAsync(int id, bool final) =>
         await ExecuteSafelyAsync(Connection.ExecuteAsync(
             sql: final
@@ -438,6 +541,12 @@ public class RecordingsRepository : RepositoryBase
                 : "UPDATE recordings SET deleted = true WHERE id = @Id", 
             new { Id = id } ))!= 0;
 
+    /// <summary>
+    /// Updates recording metadata fields supplied by the request.
+    /// </summary>
+    /// <param name="recordingId">Recording identifier.</param>
+    /// <param name="request">Recording update request containing mapped database columns.</param>
+    /// <returns><c>true</c> when a row is updated; otherwise <c>false</c>.</returns>
     public async Task<bool> UpdateAsync(int recordingId, UpdateRecordingRequest request) =>
         await ExecuteSafelyAsync(async () =>
         {
@@ -457,11 +566,21 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
+    /// <summary>
+    /// Gets a recording part by identifier.
+    /// </summary>
+    /// <param name="partId">Recording part identifier.</param>
+    /// <returns>The recording part when found, otherwise <c>null</c>.</returns>
     public async Task<RecordingPart?> GetPartAsync(int partId) =>
         await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync<RecordingPart>(
             "SELECT * FROM recording_parts WHERE id = @Id",
             new { Id = partId }));
     
+    /// <summary>
+    /// Reads the audio bytes for a recording part.
+    /// </summary>
+    /// <param name="partId">Recording part identifier.</param>
+    /// <returns>The audio bytes, or <c>null</c> when the part or file path is unavailable.</returns>
     public async Task<byte[]?> GetPartSoundAsync(int partId)
     {
         var part = await GetPartAsync(partId);
@@ -471,6 +590,13 @@ public class RecordingsRepository : RepositoryBase
         return await FileSystemHelper.ReadRecordingFileAsync(part.FilePath);
     }
 
+    /// <summary>
+    /// Finds a filtered part for a recording whose start and end times match within the repository tolerance.
+    /// </summary>
+    /// <param name="recordingId">Recording identifier.</param>
+    /// <param name="start">Start time to match.</param>
+    /// <param name="end">End time to match.</param>
+    /// <returns>The matching filtered part, or <c>null</c> when none is found or retrieval fails.</returns>
     public async Task<FilteredRecordingPartModel?> FindFilteredPartByTimeAsync(
         int recordingId, DateTime start, DateTime end) =>
         await ExecuteSafelyAsync(
@@ -491,6 +617,15 @@ public class RecordingsRepository : RepositoryBase
                     ToleranceSeconds = _timeMatchTolerance.Seconds
                 }));
 
+    /// <summary>
+    /// Creates a filtered recording part.
+    /// </summary>
+    /// <param name="recordingId">Recording identifier.</param>
+    /// <param name="startDate">Filtered part start time.</param>
+    /// <param name="endDate">Filtered part end time.</param>
+    /// <param name="state">Filtered part state.</param>
+    /// <param name="representant">Whether the filtered part is marked as representative.</param>
+    /// <returns>The created filtered part, or <c>null</c> when creation fails.</returns>
     public async Task<FilteredRecordingPartModel?> CreateFilteredPartAsync(
         int recordingId, DateTime startDate, DateTime endDate, FilteredRecordingPartState state, bool representant) =>
         await ExecuteSafelyAsync(
@@ -510,6 +645,17 @@ public class RecordingsRepository : RepositoryBase
                 }
             ));
 
+    /// <summary>
+    /// Updates selected fields of a filtered recording part.
+    /// </summary>
+    /// <param name="filteredPartId">Filtered recording part identifier.</param>
+    /// <param name="start">Optional start time to set.</param>
+    /// <param name="end">Optional end time to set.</param>
+    /// <param name="representant">Optional representative flag to set.</param>
+    /// <param name="state">Optional state to set.</param>
+    /// <param name="recordingId">Optional recording identifier to set.</param>
+    /// <param name="parentId">Optional parent filtered part identifier to set.</param>
+    /// <returns><c>true</c> when a row is updated; otherwise <c>false</c>.</returns>
     public async Task<bool> UpdateFilteredPartAsync(int filteredPartId, DateTime? start, DateTime? end,
         bool? representant, FilteredRecordingPartState? state, int? recordingId, int? parentId) =>
         await ExecuteSafelyAsync(async () =>
@@ -559,6 +705,14 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
+    /// <summary>
+    /// Inserts or updates detected dialect codes for a filtered recording part.
+    /// </summary>
+    /// <param name="filteredPartId">Filtered recording part identifier.</param>
+    /// <param name="userGuessDialectCode">Optional user-guessed dialect code to set.</param>
+    /// <param name="confirmedDialectCode">Optional confirmed dialect code to set.</param>
+    /// <param name="predictedDialectCode">Optional predicted dialect code to set.</param>
+    /// <returns><c>true</c> when a detected dialect row is inserted or updated; otherwise <c>false</c>.</returns>
     public async Task<bool> UpsertDetectedDialectAsync(
         int filteredPartId,
         string? userGuessDialectCode = null,
@@ -616,6 +770,11 @@ public class RecordingsRepository : RepositoryBase
         return await ExecuteSafelyAsync(Connection.ExecuteAsync(sql, parameters)) != 0;    
     }
 
+    /// <summary>
+    /// Deletes a filtered recording part.
+    /// </summary>
+    /// <param name="filteredPartId">Filtered recording part identifier.</param>
+    /// <returns><c>true</c> when a row is deleted; otherwise <c>false</c>.</returns>
     public async Task<bool> DeleteFilteredPartAsync(int filteredPartId) =>
         await ExecuteSafelyAsync(
             Connection.ExecuteAsync(
@@ -625,6 +784,11 @@ public class RecordingsRepository : RepositoryBase
                     FilteredPartId = filteredPartId
                 })) != 0;
 
+    /// <summary>
+    /// Determines whether a filtered recording part exists.
+    /// </summary>
+    /// <param name="filteredPartId">Filtered recording part identifier.</param>
+    /// <returns><c>true</c> when the filtered part exists; otherwise <c>false</c>.</returns>
     public async Task<bool> ExistsFilteredPartAsync(int filteredPartId) =>
         await ExecuteSafelyAsync(
             Connection.ExecuteScalarAsync<int>(
@@ -635,6 +799,10 @@ public class RecordingsRepository : RepositoryBase
                 })
         ) != 0;
 
+    /// <summary>
+    /// Recalculates end times for recording parts whose start and end times are equal by inspecting audio duration.
+    /// </summary>
+    /// <returns>A task representing the asynchronous repair operation.</returns>
     public async Task FixSameDatesInPartsAsync()
     {
         var parts = await ExecuteSafelyAsync(
@@ -668,11 +836,19 @@ public class RecordingsRepository : RepositoryBase
         }
     }
 
+    /// <summary>
+    /// Gets all dialect records.
+    /// </summary>
+    /// <returns>An array of dialect records.</returns>
     public async Task<Dialect[]> GetDialectsAsync()
     {
         return (await Connection.QueryAsync<Dialect>("SELECT * FROM dialects")).ToArray();
     }
 
+    /// <summary>
+    /// Normalizes all stored recording part audio files that have a file path.
+    /// </summary>
+    /// <returns>A task representing the asynchronous normalization operation.</returns>
     public async Task NormalizeAudiosAsync()
     {
         var parts = await ExecuteSafelyAsync(
@@ -698,6 +874,10 @@ public class RecordingsRepository : RepositoryBase
         }
     }
 
+    /// <summary>
+    /// Logs detected file format and duration for stored recording part audio files that have a file path.
+    /// </summary>
+    /// <returns>A task representing the asynchronous analysis operation.</returns>
     public async Task AnalyzePartsAsync()
     {
         var parts = await ExecuteSafelyAsync(
@@ -719,6 +899,11 @@ public class RecordingsRepository : RepositoryBase
         }
     }
 
+    /// <summary>
+    /// Gets identifiers of recordings whose part count does not match the expected part count.
+    /// </summary>
+    /// <param name="userId">Owner user identifier.</param>
+    /// <returns>An array of incomplete recording identifiers, or <c>null</c> when retrieval fails.</returns>
     public async Task<int[]?> GetIncompleteRecordingsAsync(int userId)
     {
         var incomplete = await ExecuteSafelyAsync(Connection.QueryAsync<Recording>(
@@ -736,6 +921,12 @@ public class RecordingsRepository : RepositoryBase
         return incomplete?.Select(r => r.Id).ToArray();
     }
 
+    /// <summary>
+    /// Creates filtered parts and predicted dialect records from an AI prediction result for a recording part.
+    /// </summary>
+    /// <param name="recordingPartId">Recording part identifier.</param>
+    /// <param name="result">Prediction result containing segments and labels.</param>
+    /// <returns>A task representing the asynchronous prediction processing operation.</returns>
     public async Task ProcessPredictionAsync(int recordingPartId, PredicationResult result)
     {
         if (result is { Segments.Length: 0 })
@@ -780,10 +971,20 @@ public class RecordingsRepository : RepositoryBase
         }
     }
 
+    /// <summary>
+    /// Gets a filtered recording part by identifier.
+    /// </summary>
+    /// <param name="fpId">Filtered recording part identifier.</param>
+    /// <returns>The filtered recording part when found, otherwise <c>null</c>.</returns>
     public async Task<FilteredRecordingPartModel?> GetFilteredPartAsync(int fpId) =>
         await ExecuteSafelyAsync(Connection.QueryFirstOrDefaultAsync<FilteredRecordingPartModel>(
             "SELECT * FROM filtered_recording_parts WHERE id = @Id", new { Id = fpId }));
 
+    /// <summary>
+    /// Updates selected fields of a detected dialect record.
+    /// </summary>
+    /// <param name="req">Detected dialect update request.</param>
+    /// <returns><c>true</c> when a row is updated; otherwise <c>false</c>.</returns>
     public async Task<bool> UpdateDetectedDialectAsync(UpdateDetectedDialectRequest req) =>
         await ExecuteSafelyAsync(async () =>
         {
@@ -817,6 +1018,11 @@ public class RecordingsRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, parameters) != 0;
         });
 
+    /// <summary>
+    /// Deletes a detected dialect record.
+    /// </summary>
+    /// <param name="ddId">Detected dialect identifier.</param>
+    /// <returns><c>true</c> when the delete operation reports success; otherwise <c>false</c>.</returns>
     public async Task<bool> DeleteDetectedDialectAsync(int ddId) =>
         await ExecuteSafelyAsync(async () => await Connection.ExecuteScalarAsync<int>(
             "DELETE FROM detected_dialects WHERE id = @Id", new { Id = ddId }) == 0);
