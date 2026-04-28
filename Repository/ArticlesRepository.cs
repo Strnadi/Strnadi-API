@@ -24,11 +24,8 @@ public class ArticlesRepository : RepositoryBase
         foreach (var article in articles)
         {
             article.Files = (await GetArticleFilesAsync(article.Id))!;
-            if (article.Files == null!)
-                return null;
             article.Categories = (await GetCategoriesByArticleAsync(article.Id))!;
-            if (article.Categories == null!)
-                return null;
+            article.Translations = (await GetArticleTranslationsAsync(article.Id))!;
         }
         
         return articles;
@@ -47,10 +44,7 @@ public class ArticlesRepository : RepositoryBase
         var articles = new Article[assignments.Length];
         for (int i = 0; i < articles.Length; i++)
         {
-            var article = await GetArticleAsync(assignments[i].ArticleId);
-            if (article is null)
-                return null;
-            articles[i] = article;
+            articles[i] = (await GetArticleAsync(assignments[i].ArticleId))!;
         }
 
         return articles;
@@ -110,10 +104,18 @@ public class ArticlesRepository : RepositoryBase
         return article;
     }
 
-    private async Task<Article?> GetArticleAsync(int id) =>
-        await ExecuteSafelyAsync(async () =>
-            await Connection.QueryFirstOrDefaultAsync<Article>(
-                "SELECT * FROM articles WHERE id = @Id", new { Id = id }));
+    private async Task<Article?> GetArticleAsync(int id)
+    {
+        var article = await Connection.QueryFirstOrDefaultAsync<Article>(
+            "SELECT * FROM articles WHERE id = @Id", new { Id = id });
+
+        if (article is null)
+            return null;
+
+        article.Translations = (await GetArticleTranslationsAsync(article.Id))!;
+
+        return article;
+    }
 
     private async Task<ArticleCategory[]?> GetCategoriesByArticleAsync(int articleId)
     {
@@ -152,6 +154,23 @@ public class ArticlesRepository : RepositoryBase
             await Connection.QueryFirstOrDefaultAsync<ArticleCategory>(
                 "SELECT * FROM article_categories WHERE id = @CategoryId", 
                 new { CategoryId = categoryId }));
+
+    private async Task<ArticleTranslation[]?> GetArticleTranslationsAsync(int articleId) =>
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<ArticleTranslation>(
+                "SELECT * FROM article_translations WHERE article_id = @ArticleId", new
+                {
+                    ArticleId = articleId
+                })).ToArray());
+
+    private async Task<ArticleCategoryTranslation[]?> GetArticleCategoryTranslationsAsync(int articleCategoryId) =>
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<ArticleCategoryTranslation>(
+                "SELECT * FROM article_category_translations WHERE article_category_id = @ArticleCategoryId",
+                new
+                {
+                    ArticleCategoryId = articleCategoryId
+                })).ToArray());
 
     public async Task<byte[]?> GetAsync(int id, string fileName)
     {
@@ -266,10 +285,7 @@ public class ArticlesRepository : RepositoryBase
 
         foreach (var category in categories)
         {
-            var articles = await GetArticlesByCategoryAsync(category.Id);
-            if (articles is null)
-                return null;
-            category.Articles = articles;
+            category.Articles = (await GetArticlesByCategoryAsync(category.Id))!;
         }
         
         return categories;
