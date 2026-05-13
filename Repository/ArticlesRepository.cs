@@ -272,10 +272,20 @@ public class ArticlesRepository : RepositoryBase
             0); 
     }
 
-    public async Task<ArticleCategory[]?> GetCategoriesAsync() =>
-        await ExecuteSafelyAsync(async () => 
-            (await Connection.QueryAsync<ArticleCategory>(
-                "SELECT * FROM article_categories")).ToArray());
+    public async Task<ArticleCategory[]?> GetCategoriesAsync()
+    {
+        var categories = (await Connection.QueryAsync<ArticleCategory>(
+            "SELECT * FROM article_categories")).ToArray();
+
+        foreach (var category in categories)
+        {
+            category.Translation = (await Connection.QueryAsync<ArticleCategoryTranslation>(
+                "SELECT * FROM article_category_translations WHERE category_id = @CategoryId",
+                new { CategoryId = category.Id })).ToArray();
+        }
+
+        return categories;
+    }
     
     public async Task<ArticleCategory[]?> GetCategoriesWithArticlesAsync()
     {
@@ -350,4 +360,6 @@ public class ArticlesRepository : RepositoryBase
                     CategoryId = categoryId
                 }) !=
             0);
+    
+    
 }
