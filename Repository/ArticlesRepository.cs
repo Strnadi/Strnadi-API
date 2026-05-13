@@ -272,6 +272,85 @@ public class ArticlesRepository : RepositoryBase
             0); 
     }
 
+    public async Task<ArticleTranslation?> GetArticleTranslationAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.QueryFirstOrDefaultAsync<ArticleTranslation>(
+                "SELECT * FROM article_translations WHERE id = @Id", new { Id = id }));
+
+    public async Task<bool> UpdateArticleTranslationAsync(int id, Shared.Models.Requests.Articles.ArticleTranslationUpdateRequest req)
+    {
+        // ensure exists
+        var exists = await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM article_translations WHERE id = @Id", new { Id = id }) != 0);
+
+        if (!exists)
+            return false;
+
+        return await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", id);
+
+            foreach (var prop in req.GetType().GetProperties()
+                         .Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
+            {
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(req));
+            }
+
+            if (updateFields.Count == 0)
+                return true;
+
+            var sql = $"UPDATE article_translations SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+    }
+
+    public async Task<bool> DeleteArticleTranslationAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync("DELETE FROM article_translations WHERE id = @Id", new { Id = id }) != 0);
+
+    public async Task<ArticleCategoryTranslation?> GetArticleCategoryTranslationAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.QueryFirstOrDefaultAsync<ArticleCategoryTranslation>(
+                "SELECT * FROM article_category_translations WHERE id = @Id", new { Id = id }));
+
+    public async Task<bool> UpdateArticleCategoryTranslationAsync(int id, Shared.Models.Requests.Articles.ArticleCategoryTranslationUpdateRequest req)
+    {
+        var exists = await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM article_category_translations WHERE id = @Id", new { Id = id }) != 0);
+
+        if (!exists)
+            return false;
+
+        return await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", id);
+
+            foreach (var prop in req.GetType().GetProperties()
+                         .Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
+            {
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(req));
+            }
+
+            if (updateFields.Count == 0)
+                return true;
+
+            var sql = $"UPDATE article_category_translations SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+    }
+
+    public async Task<bool> DeleteArticleCategoryTranslationAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync("DELETE FROM article_category_translations WHERE id = @Id", new { Id = id }) != 0);
+
     public async Task<ArticleCategory[]?> GetCategoriesAsync()
     {
         var categories = (await Connection.QueryAsync<ArticleCategory>(

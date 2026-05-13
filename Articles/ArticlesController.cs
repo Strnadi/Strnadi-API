@@ -162,6 +162,98 @@ public class ArticlesController : ControllerBase
         return success ? Ok() : StatusCode(500, "Failed to save article");
     }
 
+    [HttpGet("translations/{id:int}")]
+    public async Task<IActionResult> GetTranslation([FromRoute] int id,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        var translation = await articlesRepo.GetArticleTranslationAsync(id);
+        if (translation is null)
+            return NotFound();
+
+        return Ok(translation);
+    }
+
+    [HttpPatch("translations/{id:int}")]
+    public async Task<IActionResult> PatchTranslation([FromRoute] int id,
+        [FromBody] ArticleTranslationUpdateRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+
+        bool success = await articlesRepo.UpdateArticleTranslationAsync(id, req);
+
+        return success ? Ok() : StatusCode(500, "Failed to update article translation");
+    }
+
+    [HttpDelete("translations/{id:int}")]
+    public async Task<IActionResult> DeleteTranslation([FromRoute] int id,
+        [FromServices] JwtService jwtService,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+
+        bool success = await articlesRepo.DeleteArticleTranslationAsync(id);
+
+        return success ? Ok() : StatusCode(500, "Failed to delete article translation");
+    }
+
+    [HttpGet("categories/translations/{id:int}")]
+    public async Task<IActionResult> GetCategoryTranslation([FromRoute] int id,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        var translation = await articlesRepo.GetArticleCategoryTranslationAsync(id);
+        if (translation is null)
+            return NotFound();
+
+        return Ok(translation);
+    }
+
+    [HttpPatch("categories/translations/{id:int}")]
+    public async Task<IActionResult> PatchCategoryTranslation([FromRoute] int id,
+        [FromBody] ArticleCategoryTranslationUpdateRequest req,
+        [FromServices] JwtService jwtService,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+
+        bool success = await articlesRepo.UpdateArticleCategoryTranslationAsync(id, req);
+
+        return success ? Ok() : StatusCode(500, "Failed to update article category translation");
+    }
+
+    [HttpDelete("categories/translations/{id:int}")]
+    public async Task<IActionResult> DeleteCategoryTranslation([FromRoute] int id,
+        [FromServices] JwtService jwtService,
+        [FromServices] ArticlesRepository articlesRepo)
+    {
+        string? jwt = this.GetJwt();
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out _))
+            return Unauthorized();
+
+        bool success = await articlesRepo.DeleteArticleCategoryTranslationAsync(id);
+
+        return success ? Ok() : StatusCode(500, "Failed to delete article category translation");
+    }
+
     [HttpPatch("{id:int}/{fileName}")]
     public async Task<IActionResult> Patch([FromRoute] int id,
         [FromRoute] string fileName,
