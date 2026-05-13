@@ -365,7 +365,7 @@ public class AuthController : ControllerBase
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository repo)
     {
-        string email = request.Email;
+        string email = request.Email.ToLower();
 
         if (!await repo.ExistsAsync(email))
             return Conflict("User doesn't exist");

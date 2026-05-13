@@ -279,9 +279,7 @@ public class ArticlesRepository : RepositoryBase
 
         foreach (var category in categories)
         {
-            category.Translation = (await Connection.QueryAsync<ArticleCategoryTranslation>(
-                "SELECT * FROM article_category_translations WHERE category_id = @CategoryId",
-                new { CategoryId = category.Id })).ToArray();
+            category.Translation = await GetArticleCategoryTranslationsAsync(category.Id);
         }
 
         return categories;
