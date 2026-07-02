@@ -98,7 +98,11 @@ public class AchievementsRepository : RepositoryBase
     public async Task<byte[]?> GetPhotoAsync(int achievementId)
     {
         var achievement = await GetByIdAsync(achievementId);
-        if (achievement is null) return null;
+        if (achievement is null || string.IsNullOrWhiteSpace(achievement.ImagePath))
+            return null;
+        if (!File.Exists(achievement.ImagePath))
+            return null;
+
         return await File.ReadAllBytesAsync(achievement.ImagePath);
     }
     
