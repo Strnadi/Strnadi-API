@@ -1,54 +1,43 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Auth.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
-using Shared.Models.Database.Achievements;
 using Shared.Models.Requests.Achievements;
 
 namespace Achievements;
 
-/// <summary>
-/// Handles achievement listing, image retrieval, and administrative creation.
-/// </summary>
 [ApiController]
 [Route("achievements")]
 public class AchievementsController : ControllerBase
 {
     /// <summary>
-    /// Gets all achievements or the achievements awarded to a specific user.
+    /// Lists achievements. When <paramref name="userId"/> is provided, evaluates and returns that
+    /// user's achievement progress; otherwise returns all achievement definitions.
     /// </summary>
-    /// <param name="userId">Optional user identifier used to filter awarded achievements.</param>
-    /// <param name="repo">Repository used to query and award achievements.</param>
-    /// <returns>The matching achievements.</returns>
+    /// <param name="userId">Identifier of the user to get achievement progress for. Omit to list all achievement definitions.</param>
+    /// <returns>The achievements, or 404 if none could be loaded.</returns>
     [HttpGet]
-    [Produces("application/json")]
-    [ProducesResponseType(typeof(Achievement[]), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Get([FromQuery] int? userId, [FromServices] AchievementsRepository repo)
     {
         if (userId is not null)
             await repo.CheckAndAwardAchievements();
-        
-        var achievements = userId is null 
-            ? await repo.GetAllAsync() 
+
+        var achievements = userId is null
+            ? await repo.GetAllAsync()
             : await repo.GetByUserIdAsync(userId.Value);
-        
+
         if (achievements is null) return NotFound();
         return Ok(achievements);
     }
 
     /// <summary>
-    /// Gets the PNG image for an achievement.
+    /// Downloads the icon image for an achievement.
     /// </summary>
-    /// <param name="achievementId">Achievement identifier.</param>
-    /// <param name="repo">Repository used to read the achievement image.</param>
-    /// <returns>The achievement image file.</returns>
+    /// <param name="achievementId">Identifier of the achievement to get the icon for.</param>
+    /// <returns>The icon as a PNG image, or 404 if it does not exist.</returns>
     [HttpGet("{achievementId:int}/photo")]
-    [Produces("image/png")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPhotoAsync([FromRoute] int achievementId, [FromServices] AchievementsRepository repo)
     {
         byte[]? content = await repo.GetPhotoAsync(achievementId);
@@ -57,33 +46,26 @@ public class AchievementsController : ControllerBase
     }
 
     /// <summary>
-    /// Creates an achievement with localized content and an image.
+    /// Creates a new achievement definition with its icon. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="sql">SQL query used to determine which users receive the achievement.</param>
-    /// <param name="contents">JSON array of localized achievement content entries.</param>
-    /// <param name="file">Achievement image file.</param>
-    /// <param name="jwtService">JWT validation service.</param>
-    /// <param name="usersRepo">Repository used to verify administrator access.</param>
-    /// <param name="achievementsRepo">Repository used to create the achievement.</param>
-    /// <returns>An HTTP result indicating whether the achievement was created.</returns>
+    /// <param name="sql">SQL expression used to evaluate whether a user has earned the achievement.</param>
+    /// <param name="contents">JSON-encoded array of localized achievement content (title/description per language).</param>
+    /// <param name="file">The achievement icon image file.</param>
+    /// <returns>200 on success, 400 if the JWT is missing or <paramref name="contents"/> is invalid, 401 if the caller is not an administrator, or 409 on failure.</returns>
     [HttpPost]
     [RequestSizeLimit(int.MaxValue)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Post(
         [FromForm] string sql,
         [FromForm] string contents,
         IFormFile file,
-        [FromServices] JwtService jwtService, 
-        [FromServices] UsersRepository usersRepo, 
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo,
         [FromServices] AchievementsRepository achievementsRepo)
     {
         string? jwt = this.GetJwt();
-        if (jwt is null) 
+        if (jwt is null)
             return BadRequest();
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
@@ -91,7 +73,7 @@ public class AchievementsController : ControllerBase
             return Unauthorized();
 
         PostAchievementContentRequest[]? contentsArray;
-        try 
+        try
         {
             contentsArray = JsonSerializer.Deserialize<PostAchievementContentRequest[]>(contents);
             if (contentsArray is null || contentsArray.Length == 0)
@@ -101,17 +83,17 @@ public class AchievementsController : ControllerBase
         {
             return BadRequest($"Invalid Contents format: {ex.Message}");
         }
-        
-        var req = new PostAchievementRequest 
-        { 
-            Sql = sql, 
-            Contents = contentsArray 
+
+        var req = new PostAchievementRequest
+        {
+            Sql = sql,
+            Contents = contentsArray
         };
-        
+
         Console.WriteLine(JsonSerializer.Serialize(req));
 
         bool created = await achievementsRepo.CreateAchievementAsync(req, file);
-        
+
         if (!created) return Conflict();
         return Ok();
     }

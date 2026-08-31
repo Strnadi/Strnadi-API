@@ -15,7 +15,6 @@
  */
 
 using Auth.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
@@ -26,32 +25,24 @@ using LogLevel = Shared.Logging.LogLevel;
 
 namespace Recordings;
 
-/// <summary>
-/// Provides endpoints for filtered recording parts and detected dialect records.
-/// </summary>
 [ApiController]
 [Route("/recordings/filtered")]
 public class FilteredRecordingsController : ControllerBase
 {
     /// <summary>
-    /// Gets filtered recording parts, optionally limited by recording and verified states.
+    /// Lists filtered recording parts, optionally scoped to a recording and/or verification state.
     /// </summary>
-    /// <param name="recordingsRepo">Repository used to read filtered recording parts.</param>
-    /// <param name="recordingId">Optional recording identifier to filter by.</param>
-    /// <param name="verified">Whether to include only filtered parts in verified states.</param>
-    /// <returns>An HTTP response containing filtered parts, no content, or a conflict status.</returns>
+    /// <param name="recordingId">Identifier of the recording to filter parts by. Omit to list parts for all recordings.</param>
+    /// <param name="verified">Whether to only return parts that have been verified.</param>
+    /// <returns>The array of filtered parts, 204 if none exist, or 409 on failure.</returns>
     [HttpGet]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> GetFilteredPartsAsync([FromServices] RecordingsRepository recordingsRepo,
         [FromQuery] int? recordingId = null,
         [FromQuery] bool verified = false)
     {
         var filtered = await recordingsRepo.GetFilteredPartsAsync(recordingId, verified);
-        
-        if (filtered is null) 
+
+        if (filtered is null)
             return StatusCode(409, "Failed to get filtered parts");
 
         if (filtered.Length is 0)
@@ -61,15 +52,11 @@ public class FilteredRecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets one filtered recording part by identifier.
+    /// Gets a single filtered recording part by its identifier.
     /// </summary>
-    /// <param name="fpId">Filtered recording part identifier.</param>
-    /// <param name="recordingsRepo">Repository used to read the filtered recording part.</param>
-    /// <returns>An HTTP response containing the filtered part, or conflict when it is unavailable.</returns>
+    /// <param name="fpId">Identifier of the filtered part to retrieve.</param>
+    /// <returns>The filtered part, or 409 if it does not exist.</returns>
     [HttpGet("{fpId:int}")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> GetFilteredPartAsync([FromRoute] int fpId, [FromServices] RecordingsRepository recordingsRepo)
     {
         var fp = await recordingsRepo.GetFilteredPartAsync(fpId);
@@ -77,26 +64,20 @@ public class FilteredRecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Uploads a filtered recording part for an authenticated request.
+    /// Uploads a filtered recording part. Requires a valid JWT.
     /// </summary>
-    /// <param name="model">Filtered recording part data to upload.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="recordingsRepo">Repository used to create the filtered part.</param>
-    /// <returns>An HTTP response indicating upload success, authentication failure, or conflict.</returns>
+    /// <param name="model">The filtered part to create.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if it is invalid, or 409 on failure.</returns>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UploadFilteredPartAsync(FilteredRecordingPartUploadRequest model,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
@@ -106,25 +87,18 @@ public class FilteredRecordingsController : ControllerBase
             ? $"Filtered part for recording {model.RecordingId} has been uploaded"
             : $"Failed to upload filtered part for recording {model.RecordingId}");
 
-        return added ? 
+        return added ?
             Ok() :
             Conflict();
     }
-    
+
     /// <summary>
-    /// Creates a manually confirmed filtered part and detected dialect for an administrator.
+    /// Creates a manually confirmed dialect detection for a newly created filtered part. Requires a
+    /// valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="req">Confirmed dialect and filtered part data.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to authorize the current user as an administrator.</param>
-    /// <param name="recordingsRepo">Repository used to create filtered part and detected dialect records.</param>
-    /// <returns>An HTTP response indicating creation success or validation, authorization, conflict, or server error.</returns>
+    /// <param name="req">The recording, time range, representative sample, and confirmed dialect code.</param>
+    /// <returns>200 on success, 400 if the JWT/dialect code is invalid, 401 if the caller is not an admin, 409 if the recording does not exist, or 500 on failure.</returns>
     [HttpPost("post-confirmed-dialect")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PostConfirmedDialectAsync([FromBody] PostConfirmedDialectRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
@@ -162,31 +136,24 @@ public class FilteredRecordingsController : ControllerBase
             Logger.Log("FilteredRecordingsController::InsertDetectedDialectAsync returned false", LogLevel.Error);
             return StatusCode(500);
         }
-        
+
         return Ok();
     }
 
     /// <summary>
-    /// Updates confirmed dialect data and selected filtered part fields for an administrator.
+    /// Updates the confirmed dialect and/or time range of a filtered part identified by its confirmed
+    /// dialect entry. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="req">Confirmed dialect update request.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to authorize the current user as an administrator.</param>
-    /// <param name="recordingsRepo">Repository used to update filtered part and detected dialect records.</param>
-    /// <returns>An HTTP response indicating update success or validation, authorization, conflict, or server error.</returns>
+    /// <param name="req">Identifies the filtered part and the fields to update.</param>
+    /// <returns>200 on success, 400 if the JWT/dialect code is invalid, 401 if the caller is not an admin, 409 if the filtered part does not exist, or 500 on failure.</returns>
     [HttpPatch("update-confirmed-dialect")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateConfirmedDialectAsync([FromBody] UpdateConfirmedDialectRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
 
@@ -195,10 +162,10 @@ public class FilteredRecordingsController : ControllerBase
 
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
-        
-        if (!await recordingsRepo.ExistsFilteredPartAsync(req.FilteredPartId)) 
+
+        if (!await recordingsRepo.ExistsFilteredPartAsync(req.FilteredPartId))
             return Conflict("Filtered part does not exist");
-        
+
         if (req.StartDate == null && req.EndDate == null && req.Representant == null && req.ConfirmedDialectCode == null)
             return Ok();
 
@@ -212,12 +179,12 @@ public class FilteredRecordingsController : ControllerBase
         if (req.Representant != null || req.StartDate != null || req.EndDate != null)
         {
             bool updated = await recordingsRepo.UpdateFilteredPartAsync(
-                req.FilteredPartId, 
-                req.StartDate, 
-                req.EndDate, 
-                req.Representant, 
-                state: null, 
-                recordingId: null, 
+                req.FilteredPartId,
+                req.StartDate,
+                req.EndDate,
+                req.Representant,
+                state: null,
+                recordingId: null,
                 parentId: null
             );
             Logger.Log("Updated Filtered part with id " + req.FilteredPartId);
@@ -227,13 +194,13 @@ public class FilteredRecordingsController : ControllerBase
                 return StatusCode(500);
             }
         }
-        
+
         if (req.ConfirmedDialectCode != null)
         {
             bool updated = await recordingsRepo.UpsertDetectedDialectAsync(
-                req.FilteredPartId, 
+                req.FilteredPartId,
                 confirmedDialectCode: req.ConfirmedDialectCode);
-            
+
             if (!updated)
             {
                 Logger.Log("FilteredRecordingsController::UpdateConfirmedDialectAsync: SetConfirmedDialect returned false", LogLevel.Warning);
@@ -243,22 +210,14 @@ public class FilteredRecordingsController : ControllerBase
 
         return Ok();
     }
-    
+
     /// <summary>
-    /// Updates selected fields of a filtered recording part for an administrator.
+    /// Updates a filtered recording part. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="fpId">Filtered recording part identifier.</param>
-    /// <param name="req">Filtered part fields to update.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to authorize the current user as an administrator.</param>
-    /// <param name="recordingsRepo">Repository used to update the filtered part.</param>
-    /// <returns>An HTTP response indicating update success or authentication, authorization, conflict, or server error.</returns>
+    /// <param name="fpId">Identifier of the filtered part to update.</param>
+    /// <param name="req">The fields to update.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if the caller is not an admin, 409 if the filtered part does not exist, or 500 on failure.</returns>
     [HttpPatch("{fpId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PatchFilteredPartAsync([FromRoute] int fpId,
         [FromBody] FilteredRecordingPartUpdateRequest req,
         [FromServices] JwtService jwtService,
@@ -266,7 +225,7 @@ public class FilteredRecordingsController : ControllerBase
         [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
 
@@ -275,42 +234,35 @@ public class FilteredRecordingsController : ControllerBase
 
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
-        
-        if (!await recordingsRepo.ExistsFilteredPartAsync(fpId)) 
+
+        if (!await recordingsRepo.ExistsFilteredPartAsync(fpId))
             return Conflict("Filtered part does not exist");
-        
-        if (req.StartDate == null && req.EndDate == null && 
+
+        if (req.StartDate == null && req.EndDate == null &&
             req.Representant == null && req.RecordingId == null &&
             req.ParentId == null && req.State == null)
             return Ok();
 
         bool updated = await recordingsRepo.UpdateFilteredPartAsync(
-            fpId, 
-            req.StartDate, 
-            req.EndDate, 
-            req.Representant, 
-            req.State, 
-            req.RecordingId, 
+            fpId,
+            req.StartDate,
+            req.EndDate,
+            req.Representant,
+            req.State,
+            req.RecordingId,
             req.ParentId
         );
-        
+
         return updated ? Ok() : StatusCode(500);
     }
 
     /// <summary>
-    /// Deletes a filtered recording part using the legacy confirmed dialect route.
+    /// Deletes a filtered part's confirmed dialect entry. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="filteredPartId">Filtered recording part identifier.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to authorize the current user as an administrator.</param>
-    /// <param name="recordingsRepo">Repository used to delete the filtered part.</param>
-    /// <returns>An HTTP response indicating deletion success or authentication, authorization, or conflict status.</returns>
+    /// <param name="filteredPartId">Identifier of the filtered part to delete.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if the caller is not an admin, or 409 if it does not exist.</returns>
     [Obsolete("Use /recordings/filtered/{fpId} DELETE instead")]
     [HttpDelete("delete-confirmed-dialect/{filteredPartId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteConfirmedDialectAsync([FromRoute] int filteredPartId,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
@@ -320,21 +272,14 @@ public class FilteredRecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a filtered recording part for an administrator.
+    /// Deletes a filtered recording part. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="fpId">Filtered recording part identifier.</param>
-    /// <param name="recordingsRepo">Repository used to delete the filtered part.</param>
-    /// <param name="usersRepo">Repository used to authorize the current user as an administrator.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <returns>An HTTP response indicating deletion success or authentication, authorization, or conflict status.</returns>
+    /// <param name="fpId">Identifier of the filtered part to delete.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if the caller is not an admin, or 409 if it does not exist.</returns>
     [HttpDelete("{fpId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> DeleteFilteredPartAsync([FromRoute] int fpId, 
-        [FromServices] RecordingsRepository recordingsRepo, 
-        [FromServices] UsersRepository usersRepo, 
+    public async Task<IActionResult> DeleteFilteredPartAsync([FromRoute] int fpId,
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromServices] UsersRepository usersRepo,
         [FromServices] JwtService jwtService)
     {
         string? jwt = this.GetJwt();
@@ -343,27 +288,23 @@ public class FilteredRecordingsController : ControllerBase
 
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
-        
+
         if (!await recordingsRepo.ExistsFilteredPartAsync(fpId))
             return Conflict("Filtered part does not exist");
-        
+
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
-        
+
         bool deleted =  await recordingsRepo.DeleteFilteredPartAsync(fpId);
 
         return deleted ? Ok() : Conflict();
     }
 
     /// <summary>
-    /// Gets all detected dialect records.
+    /// Lists all detected dialect entries.
     /// </summary>
-    /// <param name="repo">Repository used to read detected dialects.</param>
-    /// <returns>An HTTP response containing detected dialect records, or conflict when unavailable.</returns>
+    /// <returns>The array of detected dialects, or 409 on failure.</returns>
     [HttpGet("detected/")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> GetDetectedDialectsAsync([FromServices] RecordingsRepository repo)
     {
         var detected = await repo.GetDetectedDialectsAsync();
@@ -371,15 +312,11 @@ public class FilteredRecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets detected dialect records by detected dialect identifier.
+    /// Gets a single detected dialect entry by its identifier.
     /// </summary>
-    /// <param name="ddId">Detected dialect identifier.</param>
-    /// <param name="repo">Repository used to read detected dialects.</param>
-    /// <returns>An HTTP response containing matching detected dialect records, or conflict when unavailable.</returns>
+    /// <param name="ddId">Identifier of the detected dialect entry to retrieve.</param>
+    /// <returns>The detected dialect entry, or 409 if it does not exist.</returns>
     [HttpGet("detected/{ddId:int}")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> GetDetectedDialectAsync([FromRoute] int ddId, [FromServices] RecordingsRepository repo)
     {
         var detected = await repo.GetDetectedDialectsAsync(ddId);
@@ -387,18 +324,11 @@ public class FilteredRecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a detected dialect record for an administrator.
+    /// Creates a detected dialect entry for a filtered part. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="req">Detected dialect data to create.</param>
-    /// <param name="usersRepo">Repository used to authorize the current user as an administrator.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="repo">Repository used to create the detected dialect.</param>
-    /// <returns>An HTTP response indicating creation success or authentication, authorization, or conflict status.</returns>
+    /// <param name="req">The filtered part and the user-guessed, confirmed, and/or predicted dialects.</param>
+    /// <returns>201 on success, 400 if the JWT is missing, 401 if the caller is not an admin, or 409 on failure.</returns>
     [HttpPost("detected/")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> PostDetectedDialectAsync([FromBody] DetectedDialectUploadRequest req,
         [FromServices] UsersRepository usersRepo,
         [FromServices] JwtService jwtService,
@@ -407,31 +337,24 @@ public class FilteredRecordingsController : ControllerBase
         string? jwt = this.GetJwt();
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
-        
+
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
-        
+
         bool created = await repo.InsertDetectedDialectAsync(req.FilteredPartId, req.UserGuessDialectId, req.ConfirmedDialectId, req.PredictedDialectId);
 
         return created ? Created() : Conflict();
     }
 
     /// <summary>
-    /// Updates selected fields of a detected dialect record for an administrator.
+    /// Updates a detected dialect entry. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="req">Detected dialect fields to update.</param>
-    /// <param name="usersRepo">Repository used to authorize the current user as an administrator.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="repo">Repository used to update the detected dialect.</param>
-    /// <returns>An HTTP response indicating update success or authentication, authorization, or conflict status.</returns>
+    /// <param name="req">Identifies the detected dialect entry and the fields to update.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if the caller is not an admin, or 409 on failure.</returns>
     [HttpPatch("detected/")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> PatchDetectedDialectsAsync([FromBody] UpdateDetectedDialectRequest req,
         [FromServices] UsersRepository usersRepo,
         [FromServices] JwtService jwtService,
@@ -440,48 +363,41 @@ public class FilteredRecordingsController : ControllerBase
         string? jwt = this.GetJwt();
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
-        
+
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
 
         bool updated = await repo.UpdateDetectedDialectAsync(req);
-        
+
         return updated ? Ok() : Conflict();
     }
 
     /// <summary>
-    /// Deletes a detected dialect record for an administrator.
+    /// Deletes a detected dialect entry. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="ddId">Detected dialect identifier.</param>
-    /// <param name="usersRepo">Repository used to authorize the current user as an administrator.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="repo">Repository used to delete the detected dialect.</param>
-    /// <returns>An HTTP response indicating deletion success or authentication, authorization, or conflict status.</returns>
+    /// <param name="ddId">Identifier of the detected dialect entry to delete.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if the caller is not an admin, or 409 on failure.</returns>
     [HttpDelete("detected/{ddId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteDetectedDialectsAsync([FromRoute] int ddId,
         [FromServices] UsersRepository usersRepo,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository repo)
-    {   
+    {
         string? jwt = this.GetJwt();
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
-        
+
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
 
         bool deleted = await repo.DeleteDetectedDialectAsync(ddId);
-        
+
         return deleted ? Ok() : Conflict();
     }
 }

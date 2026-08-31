@@ -151,7 +151,7 @@ public class UsersRepository : RepositoryBase
             return await Connection.ExecuteAsync(sql, new
             {
                 request.Nickname,
-                request.Email,
+                Email = request.Email.ToLower(),
                 Password = hashedPassword,
                 request.FirstName,
                 request.LastName,

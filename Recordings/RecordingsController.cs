@@ -32,9 +32,6 @@ using LogLevel = Shared.Logging.LogLevel;
 
 namespace Recordings;
 
-/// <summary>
-/// Provides endpoints for recording metadata, recording parts, audio files, and dialect lookup data.
-/// </summary>
 [ApiController]
 [Route("recordings")]
 public class RecordingsController : ControllerBase
@@ -49,48 +46,34 @@ public class RecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets completed, non-deleted recordings, optionally filtered by user and expanded with parts or sound data.
+    /// Lists non-deleted recordings, optionally filtered by owner.
     /// </summary>
-    /// <param name="repo">Repository used to read recordings.</param>
-    /// <param name="userId">Optional user identifier to filter recordings by owner.</param>
-    /// <param name="parts">Whether to include recording parts.</param>
-    /// <param name="sound">Whether to include part audio data when parts are requested.</param>
-    /// <returns>An HTTP response containing recordings, no content when none exist, or an error status.</returns>
+    /// <param name="userId">Identifier of the user to filter recordings by. Omit to list all recordings.</param>
+    /// <param name="parts">Whether to include each recording's parts.</param>
+    /// <param name="sound">Whether to include the parts' audio data. Ignored unless <paramref name="parts"/> is <c>true</c>.</param>
+    /// <returns>The array of recordings, 204 if none exist, or 500 on failure.</returns>
     [HttpGet]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetRecordingsAsync([FromServices] RecordingsRepository repo,
         [FromQuery] int? userId = null,
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
     {
         var recordings = (await repo.GetAsync(userId, parts, sound))?.Where(r => !r.Deleted).ToArray();
-        
+
         if (recordings is null)
             return StatusCode(500, "Failed to get recordings");
 
         if (recordings.Length is 0)
             return NoContent();
-        
+
         return Ok(recordings);
     }
 
     /// <summary>
-    /// Gets recordings marked as deleted for an authenticated administrator.
+    /// Lists soft-deleted recordings. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to resolve and authorize the current user.</param>
-    /// <param name="recordingsRepo">Repository used to read deleted recordings.</param>
-    /// <returns>An HTTP response containing deleted recordings, no content, or an authentication or error status.</returns>
+    /// <returns>The array of deleted recordings, 204 if none exist, 400 if the JWT is missing, 401 if it is invalid or the caller is not an admin, or 500 on failure.</returns>
     [HttpGet("deleted")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetDeletedAsync([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
@@ -99,65 +82,57 @@ public class RecordingsController : ControllerBase
 
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
         var user = await usersRepo.GetUserByEmailAsync(email!);
         if (user is null)
             return BadRequest("Invalid email");
-        
+
         if (!user.IsAdmin)
             return Unauthorized("User is not an admin");
 
         var recordings = await recordingsRepo.GetDeletedAsync();
-        
+
         if (recordings is null)
             return StatusCode(500, "Failed to get recordings");
 
         if (recordings.Count() is 0)
             return NoContent();
-        
+
         return Ok(recordings);
     }
 
     /// <summary>
-    /// Gets one non-deleted recording by identifier, optionally expanded with parts or sound data.
+    /// Gets a single recording by its identifier.
     /// </summary>
-    /// <param name="id">Recording identifier.</param>
-    /// <param name="repo">Repository used to read the recording.</param>
-    /// <param name="parts">Whether to include recording parts.</param>
-    /// <param name="sound">Whether to include part audio data when parts are requested.</param>
-    /// <returns>An HTTP response containing the recording, or no content when it does not exist or is deleted.</returns>
+    /// <param name="id">Identifier of the recording to retrieve.</param>
+    /// <param name="parts">Whether to include the recording's parts.</param>
+    /// <param name="sound">Whether to include the parts' audio data. Ignored unless <paramref name="parts"/> is <c>true</c>.</param>
+    /// <returns>The recording, or 204 if it does not exist or has been deleted.</returns>
     [HttpGet("{id:int}")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> GetRecordingAsync(int id,
         [FromServices] RecordingsRepository repo,
         [FromQuery] bool parts = false,
         [FromQuery] bool sound = false)
     {
         var recording = await repo.GetByIdAsync(id, parts, sound);
-        
+
         if (recording is null || recording.Deleted)
             return NoContent();
-        
+
         return Ok(recording);
     }
 
     /// <summary>
-    /// Gets the WAV audio file for a recording part using the legacy route.
+    /// Downloads the audio for a recording part, addressed by both recording and part identifier.
     /// </summary>
-    /// <param name="recId">Recording identifier from the legacy route.</param>
-    /// <param name="partId">Recording part identifier.</param>
-    /// <param name="repo">Repository used to locate the recording part file.</param>
-    /// <returns>An HTTP response streaming the WAV file, or not found when the file is unavailable.</returns>
+    /// <param name="recId">Identifier of the recording the part belongs to.</param>
+    /// <param name="partId">Identifier of the part to download audio for.</param>
+    /// <returns>The audio as a WAV file, or 404 if it does not exist.</returns>
     [Obsolete("use part/{partId:int} GET instead")]
     [HttpGet("part/{recId:int}/{partId:int}/sound")]
-    [Produces("audio/wav")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSound([FromRoute] int recId,
         [FromRoute] int partId,
         [FromServices] RecordingsRepository repo)
@@ -167,17 +142,13 @@ public class RecordingsController : ControllerBase
             return NotFound();
         return PhysicalFile(part.FilePath, "audio/wav", enableRangeProcessing: true);
     }
-    
+
     /// <summary>
-    /// Gets the WAV audio file for a recording part.
+    /// Downloads the audio for a recording part.
     /// </summary>
-    /// <param name="partId">Recording part identifier.</param>
-    /// <param name="repo">Repository used to locate the recording part file.</param>
-    /// <returns>An HTTP response streaming the WAV file, or not found when the file is unavailable.</returns>
+    /// <param name="partId">Identifier of the part to download audio for.</param>
+    /// <returns>The audio as a WAV file, or 404 if it does not exist.</returns>
     [HttpGet("part/{partId:int}/sound")]
-    [Produces("audio/wav")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSound([FromRoute] int partId, [FromServices] RecordingsRepository repo)
     {
         var part = await repo.GetPartAsync(partId);
@@ -188,20 +159,12 @@ public class RecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes or permanently deletes a recording when the authenticated user is the owner or an administrator.
+    /// Deletes a recording. Requires a valid JWT belonging to the recording's owner or an administrator.
     /// </summary>
-    /// <param name="id">Recording identifier.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to resolve and authorize the current user.</param>
-    /// <param name="recordingsRepo">Repository used to check ownership and delete the recording.</param>
-    /// <param name="final">Whether to permanently delete instead of marking the recording as deleted.</param>
-    /// <returns>An HTTP response indicating deletion success, authorization failure, missing recording, or conflict.</returns>
+    /// <param name="id">Identifier of the recording to delete.</param>
+    /// <param name="final">Whether to permanently delete the recording instead of soft-deleting it. Only administrators may pass <c>true</c>.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if it is invalid or the caller lacks permission, 404 if the recording does not exist, or 409 on failure.</returns>
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteRecordingAsync([FromRoute] int id,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
@@ -215,41 +178,33 @@ public class RecordingsController : ControllerBase
 
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
-        
+
         if (!await recordingsRepo.ExistsAsync(id))
             return NotFound("Recording not found");
-        
+
         var user = await usersRepo.GetUserByEmailAsync(email!);
         if (user is null)
             return Unauthorized("User does not exist");
-        
+
         if (!await recordingsRepo.IsOwnerAsync(id, user.Id) && !user.IsAdmin)
             return Unauthorized("You are not owner or admin to delete this recording");
-        
+
         if (final && !user.IsAdmin)
             return Unauthorized("You cannot finally delete this recording if you are not admin");
 
         bool deleted = await recordingsRepo.DeleteAsync(id, final);
-        
+
         Logger.Log(deleted ? $"Deleted recording {id}" : $"Failed to delete recording {id}");
-        
+
         return deleted ? Ok() : Conflict();
     }
 
     /// <summary>
-    /// Creates a recording for the authenticated user and schedules a later completeness check when possible.
+    /// Uploads a new recording and schedules a follow-up check job. Requires a valid JWT.
     /// </summary>
-    /// <param name="request">Recording metadata to upload.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="recordingsRepo">Repository used to create the recording.</param>
-    /// <param name="usersRepo">Repository used to resolve the current user.</param>
-    /// <returns>An HTTP response containing the new recording identifier, or an authentication or conflict status.</returns>
+    /// <param name="request">The recording metadata to store.</param>
+    /// <returns>The identifier of the created recording, 400 if the JWT is missing, 401 if it is invalid or the user does not exist, or 409 on failure.</returns>
     [HttpPost]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UploadAsync([FromBody] RecordingUploadRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo,
@@ -259,20 +214,20 @@ public class RecordingsController : ControllerBase
 
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
         var user = await usersRepo.GetUserByEmailAsync(email!);
         if (user is null)
             return Unauthorized("User does not exist");
-        
+
         int? recordingId = await recordingsRepo.UploadAsync(user.Id, request);
-        
+
         Logger.Log(recordingId is not null
             ? $"Recording {recordingId} has been uploaded"
             : $"Failed to upload recording {recordingId}");
-        
+
         if (recordingId is null)
             return StatusCode(409, "Failed to upload recording");
 
@@ -287,7 +242,7 @@ public class RecordingsController : ControllerBase
             return;
 
         var scheduler = await _schedulerFactory.GetScheduler();
-        
+
         var job = JobBuilder.Create<CheckRecordingJob>()
             .WithIdentity($"check_recording_{recordingId}", "group1")
             .UsingJobData("recordingId", recordingId.ToString())
@@ -305,59 +260,44 @@ public class RecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Uploads a recording part with Base64-encoded audio for an authenticated request.
+    /// Uploads a recording part as a JSON body. Requires a valid JWT.
     /// </summary>
-    /// <param name="request">Recording part metadata and Base64 audio data.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="recordingsRepo">Repository used to create the part and store its audio.</param>
-    /// <returns>An HTTP response containing the new part identifier, or an authentication or error status.</returns>
+    /// <param name="request">The recording part's metadata and audio data.</param>
+    /// <returns>The identifier of the created part, 400 if the JWT is missing, 401 if it is invalid, or 500 on failure.</returns>
     [HttpPost("part")]
     [RequestSizeLimit(int.MaxValue)]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request,
         [FromServices] JwtService jwtService,
         [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
-        
-        if (jwt is null) 
+
+        if (jwt is null)
             return BadRequest("No JWT provided");
 
         if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
-        
+
         int? recordingPartId = await recordingsRepo.UploadPartAsync(request);
 
         Logger.Log(recordingPartId is not null
             ? $"Recording part {recordingPartId} has been uploaded"
             : $"Failed to upload recording part {recordingPartId}");
-        
-        return recordingPartId is not null 
-            ? Ok(recordingPartId) 
+
+        return recordingPartId is not null
+            ? Ok(recordingPartId)
             : StatusCode(500, "Failed to upload recording");
     }
 
     /// <summary>
-    /// Uploads a recording part with multipart audio data and queues automatic audio classification.
+    /// Uploads a recording part along with its audio file as multipart form data, and enqueues it for
+    /// automatic dialect classification. Requires a valid JWT.
     /// </summary>
-    /// <param name="request">Recording part metadata from the submitted form.</param>
-    /// <param name="file">Uploaded audio file for the recording part.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="recordingsRepo">Repository used to create the part and store its audio.</param>
-    /// <param name="modelConnector">AI model connector used by the queued classification task.</param>
-    /// <param name="audioProcessingQueue">Queue used to run audio classification in the background.</param>
-    /// <returns>An HTTP response containing the new part identifier, or an authentication or error status.</returns>
+    /// <param name="request">The recording part's metadata.</param>
+    /// <param name="file">The part's audio file.</param>
+    /// <returns>The identifier of the created part, 400 if the JWT is missing, 401 if it is invalid, or 500 on failure.</returns>
     [HttpPost("part-new")]
     [RequestSizeLimit(int.MaxValue)]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UploadPartAsync([FromForm] RecordingPartUploadRequest request,
         IFormFile file,
         [FromServices] JwtService jwtService,
@@ -366,25 +306,25 @@ public class RecordingsController : ControllerBase
         [FromServices] AudioProcessingQueue audioProcessingQueue)
     {
         string? jwt = this.GetJwt();
-        
-        if (jwt is null) 
+
+        if (jwt is null)
             return BadRequest("No JWT provided");
 
         if (!jwtService.TryValidateToken(jwt, out _))
             return Unauthorized();
-        
+
         int? recordingPartId = await recordingsRepo.UploadPartAsync(request, file);
 
         Logger.Log(recordingPartId is not null
             ? $"Recording part {recordingPartId} has been uploaded"
             : $"Failed to upload recording part {recordingPartId}");
-        
+
         if (recordingPartId is null)
             return StatusCode(500, "Failed to upload recording");
-        
-        await audioProcessingQueue.EnqueueAsync(async sp => 
-            await ClassifyAudioAsync(recordingPartId.Value, 
-                sp.GetRequiredService<RecordingsRepository>(), 
+
+        await audioProcessingQueue.EnqueueAsync(async sp =>
+            await ClassifyAudioAsync(recordingPartId.Value,
+                sp.GetRequiredService<RecordingsRepository>(),
                 sp.GetRequiredService<AiModelConnector>()
             ));
 
@@ -398,16 +338,16 @@ public class RecordingsController : ControllerBase
             var part = await repo.GetPartAsync(recordingPartId);
             if (part is null)
                 return;
-            
-            
+
+
             var audio = await repo.GetPartSoundAsync(recordingPartId);
             if (audio is null)
                 return;
-            
+
             var result = await modelConnector.Classify(audio, part.FilePath);
             if (result is null)
                 return;
-            
+
             Logger.Log("Classification result: " + JsonSerializer.Serialize(result));
             await repo.ProcessPredictionAsync(recordingPartId, result);
         }
@@ -419,61 +359,44 @@ public class RecordingsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets identifiers of recordings owned by the authenticated user that have fewer parts than expected.
+    /// Lists recordings that the caller has started but not yet completed uploading. Requires a valid JWT.
     /// </summary>
-    /// <param name="recordingsRepo">Repository used to read incomplete recordings.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to resolve the current user.</param>
-    /// <returns>An HTTP response containing incomplete recording identifiers, no content, or an authentication or error status.</returns>
+    /// <returns>The array of incomplete recordings, 204 if none exist, 400 if the JWT is missing, 401 if it is invalid or the user does not exist, or 500 on failure.</returns>
     [HttpGet("incomplete")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetIncompleteRecordingsAsync([FromServices] RecordingsRepository recordingsRepo, 
+    public async Task<IActionResult> GetIncompleteRecordingsAsync([FromServices] RecordingsRepository recordingsRepo,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
         var user = await usersRepo.GetUserByEmailAsync(email);
         if (user is null)
             return Unauthorized("User does not exist");
-        
+
         var recordings = await recordingsRepo.GetIncompleteRecordingsAsync(user.Id);
-        
+
         if (recordings is null)
             return StatusCode(500, "Failed to get incomplete recordings");
 
         if (recordings.Length is 0)
             return NoContent();
-        
+
         return Ok(recordings);
     }
 
     /// <summary>
-    /// Updates recording metadata when the authenticated user is authorized for the recording.
+    /// Updates a recording. Requires a valid JWT belonging to the recording's owner or an administrator.
     /// </summary>
-    /// <param name="id">Recording identifier.</param>
-    /// <param name="request">Recording fields to update.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to resolve the current user and recording owner.</param>
-    /// <param name="recordingsRepo">Repository used to read and update the recording.</param>
-    /// <returns>An HTTP response indicating update success, authorization failure, missing recording, or conflict.</returns>
+    /// <param name="id">Identifier of the recording to update.</param>
+    /// <param name="request">The fields to update.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if it is invalid or the caller lacks permission, 404 if the recording does not exist, or 409 on failure.</returns>
     [HttpPatch("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> EditAsync([FromRoute] int id,
         [FromBody] UpdateRecordingRequest request,
         [FromServices] JwtService jwtService,
@@ -485,9 +408,9 @@ public class RecordingsController : ControllerBase
         if (jwt is null)
             return BadRequest("No JWT provided");
 
-        if (!jwtService.TryValidateToken(jwt, out string? email)) 
+        if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
-        
+
         var jwtUser = await usersRepo.GetUserByEmailAsync(email!);
         if (jwtUser is null)
             return Unauthorized("User does not exist");
@@ -501,20 +424,17 @@ public class RecordingsController : ControllerBase
             return Unauthorized("User does not belong to this email or is not an admin");
 
         bool updated = await recordingsRepo.UpdateAsync(id, request);
-        
+
         Logger.Log(updated ? $"Recording {id} updated successfully" : $"Failed to update recording {id}");
-        
+
         return updated ? Ok() : Conflict();
     }
 
     /// <summary>
-    /// Gets all configured dialects.
+    /// Lists the known bird dialects.
     /// </summary>
-    /// <param name="recordingsRepo">Repository used to read dialect records.</param>
-    /// <returns>An HTTP response containing dialect records.</returns>
+    /// <returns>The array of dialects.</returns>
     [HttpGet("dialects")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDialects([FromServices] RecordingsRepository recordingsRepo)
     {
         return Ok(await recordingsRepo.GetDialectsAsync());

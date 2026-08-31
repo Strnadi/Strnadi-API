@@ -15,7 +15,6 @@
  */
 
 using Auth.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -23,15 +22,12 @@ using System.Text.Json;
 using Repository;
 using Shared.BackgroundServices.AudioProcessing;
 using Shared.Extensions;
-using Shared.Models.Database.Recordings;
 using Shared.Models.Requests.Notifications;
+using Shared.Models.Requests.Recordings;
 using Shared.Tools;
 
 namespace Utils;
 
-/// <summary>
-/// Provides maintenance and diagnostic utility endpoints for administrators.
-/// </summary>
 [ApiController]
 [Route("utils")]
 public class UtilsController : ControllerBase
@@ -44,33 +40,27 @@ public class UtilsController : ControllerBase
     }
 
     /// <summary>
-    /// Checks whether the API process can respond to requests.
+    /// Health check endpoint.
     /// </summary>
-    /// <returns>An empty successful HTTP response.</returns>
+    /// <returns>200 if the service is up.</returns>
     [HttpHead("health")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Health() => Ok();
 
     /// <summary>
-    /// Recalculates recording part end dates when the stored start and end dates are equal.
+    /// Maintenance task that fixes recording parts sharing identical dates. Requires a valid JWT
+    /// belonging to an administrator.
     /// </summary>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
-    /// <param name="recordingsRepo">Repository used to repair recording part dates.</param>
-    /// <returns>An HTTP response indicating whether the repair operation was started and completed.</returns>
+    /// <returns>200 on success, 400 if the JWT is missing, or 401 if it is invalid or the caller is not an admin.</returns>
     [HttpGet("fix-same-dates")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> FixSameDates([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
@@ -82,25 +72,20 @@ public class UtilsController : ControllerBase
     }
 
     /// <summary>
-    /// Normalizes stored audio files for existing recording parts.
+    /// Maintenance task that normalizes the volume of existing recording audio files. Requires a valid
+    /// JWT belonging to an administrator.
     /// </summary>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
-    /// <param name="recordingsRepo">Repository used to normalize recording part audio files.</param>
-    /// <returns>An HTTP response indicating whether the normalization operation was started and completed.</returns>
+    /// <returns>200 on success, 400 if the JWT is missing, or 401 if it is invalid or the caller is not an admin.</returns>
     [HttpGet("normalize-existing-audios")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> NormalizeExistingAudios([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
@@ -112,25 +97,20 @@ public class UtilsController : ControllerBase
     }
 
     /// <summary>
-    /// Logs detected format and duration information for stored recording part audio files.
+    /// Maintenance task that re-analyzes existing recording parts. Requires a valid JWT belonging to
+    /// an administrator.
     /// </summary>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
-    /// <param name="recordingsRepo">Repository used to inspect recording part audio files.</param>
-    /// <returns>An HTTP response indicating whether the analysis operation was started and completed.</returns>
+    /// <returns>200 on success, 400 if the JWT is missing, or 401 if it is invalid or the caller is not an admin.</returns>
     [HttpGet("analyze-parts")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AnalyzeParts([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
         [FromServices] RecordingsRepository recordingsRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
 
@@ -142,19 +122,12 @@ public class UtilsController : ControllerBase
     }
 
     /// <summary>
-    /// Sends a custom invisible Firebase notification to every device registered for a user.
+    /// Sends a custom push notification to all of a user's registered devices. Requires a valid JWT
+    /// belonging to an administrator.
     /// </summary>
-    /// <param name="req">Notification payload and target user identifier.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
-    /// <param name="devicesRepo">Repository used to load the target user's devices.</param>
-    /// <param name="notificationService">Service used to send Firebase notifications.</param>
-    /// <returns>An HTTP response indicating whether the notification dispatch loop completed.</returns>
+    /// <param name="req">Identifies the target user and carries the localized notification title/body per language.</param>
+    /// <returns>200 on success (even if individual device sends fail), 400 if the JWT is missing, 401 if it is invalid or the caller is not an admin, or 409 if the user's devices could not be loaded.</returns>
     [HttpPost("send-notification")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SendNotification([FromBody] SendNotificationRequest req,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo,
@@ -162,13 +135,13 @@ public class UtilsController : ControllerBase
         [FromServices] FirebaseNotificationService notificationService)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
-        
+
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
 
@@ -202,48 +175,40 @@ public class UtilsController : ControllerBase
     }
 
     /// <summary>
-    /// Queues audio classification work for recordings that have not yet produced classified filtered parts.
+    /// Enqueues all recordings prepared for classification to run through the dialect classification
+    /// model. Requires a valid JWT belonging to an administrator.
     /// </summary>
-    /// <param name="queue">Background queue used to run audio processing work.</param>
-    /// <param name="recordingsRepo">Repository used to load recordings and store prediction results.</param>
-    /// <param name="jwtService">Service used to validate the bearer JWT.</param>
-    /// <param name="usersRepo">Repository used to verify that the authenticated user is an administrator.</param>
-    /// <returns>An HTTP response containing the recordings queued for classification, or an error status.</returns>
+    /// <returns>The recordings that were enqueued, 400 if the JWT is missing, 401 if it is invalid or the caller is not an admin, or 409 if the recordings could not be loaded.</returns>
     [HttpGet("classify")]
-    [Produces("application/json")]
-    [ProducesResponseType(typeof(Recording[]), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> ClassifyRecordings([FromServices] AudioProcessingQueue queue, 
-        [FromServices] RecordingsRepository recordingsRepo, 
+    public async Task<IActionResult> ClassifyRecordings([FromServices] AudioProcessingQueue queue,
+        [FromServices] RecordingsRepository recordingsRepo,
         [FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
     {
         string? jwt = this.GetJwt();
-        
+
         if (jwt is null)
             return BadRequest("No JWT provided");
-        
+
         if (!jwtService.TryValidateToken(jwt, out string? email))
             return Unauthorized();
-        
+
         if (!await usersRepo.IsAdminAsync(email))
             return Unauthorized("User is not admin");
 
         var recordings = await recordingsRepo.GetPreparedForClassificationAsync();
         if (recordings is null)
             return Conflict();
-        
+
         foreach (var recording in recordings)
         {
             if (recording.Parts is null)
                 continue;
-            
+
             foreach (var part in recording.Parts)
             {
                 if (part.FilePath is null) continue;
-                
+
                 byte[] content = await System.IO.File.ReadAllBytesAsync(part.FilePath);
                 await queue.EnqueueAsync(async sp =>
                 {
@@ -253,7 +218,7 @@ public class UtilsController : ControllerBase
                     var result = await connector.Classify(content, part.FilePath);
                     if (result is null)
                         return;
-                    
+
                     var repo = sp.GetRequiredService<RecordingsRepository>();
                     await repo.ProcessPredictionAsync(part.Id, result);
                     logger.LogInformation($"Finished audio processing for recording part {part.Id}\nPrediction result: " + JsonSerializer.Serialize(result));
@@ -262,5 +227,109 @@ public class UtilsController : ControllerBase
         }
 
         return Ok(recordings);
+    }
+
+    /// <summary>
+    /// Maintenance task that re-runs the AI dialect classifier for detected dialects whose predicted
+    /// dialect currently matches <paramref name="predictedDialectId"/>, replacing it with a freshly
+    /// predicted value. Intended to repair bulk data mistakes made against predicted_dialect_id.
+    /// If <paramref name="predictedDialectId"/> is omitted, every detected dialect is reclassified.
+    /// Requires a valid JWT belonging to an administrator.
+    /// </summary>
+    /// <returns>The detected dialects that were enqueued for reclassification, 400 if the JWT is missing, 401 if it is invalid or the caller is not an admin, or 409 if the detected dialects could not be loaded.</returns>
+    [HttpGet("reclassify-detected-dialects")]
+    public async Task<IActionResult> ReclassifyDetectedDialects(
+        [FromQuery] int? predictedDialectId,
+        [FromServices] AudioProcessingQueue queue,
+        [FromServices] RecordingsRepository recordingsRepo,
+        [FromServices] JwtService jwtService,
+        [FromServices] UsersRepository usersRepo)
+    {
+        string? jwt = this.GetJwt();
+
+        if (jwt is null)
+            return BadRequest("No JWT provided");
+
+        if (!jwtService.TryValidateToken(jwt, out string? email))
+            return Unauthorized();
+
+        if (!await usersRepo.IsAdminAsync(email))
+            return Unauthorized("User is not admin");
+
+        var detectedDialects = await recordingsRepo.GetDetectedDialectsByPredictedIdAsync(predictedDialectId);
+        if (detectedDialects is null)
+            return Conflict();
+
+        foreach (var detectedDialect in detectedDialects)
+        {
+            var filteredPart = await recordingsRepo.GetFilteredPartAsync(detectedDialect.FilteredRecordingPartId);
+            if (filteredPart is null)
+            {
+                _logger.LogWarning($"Skipping detected dialect {detectedDialect.Id}: filtered part {detectedDialect.FilteredRecordingPartId} not found");
+                continue;
+            }
+
+            var parentPart = await recordingsRepo.FindParentPartAsync(filteredPart.RecordingId, filteredPart.StartDate, filteredPart.EndDate);
+            if (parentPart?.FilePath is null)
+            {
+                _logger.LogWarning($"Skipping detected dialect {detectedDialect.Id}: no parent recording part found for filtered part {filteredPart.Id}");
+                continue;
+            }
+
+            await queue.EnqueueAsync(async sp =>
+            {
+                var connector = sp.GetRequiredService<AiModelConnector>();
+                var logger = sp.GetRequiredService<ILogger<AudioProcessingService>>();
+                var repo = sp.GetRequiredService<RecordingsRepository>();
+
+                string segmentPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"reclassify_{detectedDialect.Id}_{Guid.NewGuid():N}.wav");
+
+                try
+                {
+                    await FFmpegService.ExtractSegmentAsync(parentPart.FilePath!,
+                        filteredPart.StartDate - parentPart.StartDate,
+                        filteredPart.EndDate - parentPart.StartDate,
+                        segmentPath);
+
+                    byte[] content = await System.IO.File.ReadAllBytesAsync(segmentPath);
+
+                    logger.LogInformation($"Reclassifying detected dialect {detectedDialect.Id} (filtered part {filteredPart.Id})");
+                    var result = await connector.Classify(content, segmentPath);
+
+                    var segment = result?.Segments.FirstOrDefault(s => s.IsRepresentant) ?? result?.Segments.FirstOrDefault();
+                    if (segment?.Label is null)
+                    {
+                        logger.LogWarning($"Reclassification produced no result for detected dialect {detectedDialect.Id}");
+                        return;
+                    }
+
+                    int? newDialectId = await repo.GetDialectCodeIdAsync(segment.Label);
+                    if (newDialectId is null)
+                    {
+                        logger.LogWarning($"Unknown dialect code '{segment.Label}' returned for detected dialect {detectedDialect.Id}");
+                        return;
+                    }
+
+                    await repo.UpdateDetectedDialectAsync(new UpdateDetectedDialectRequest
+                    {
+                        Id = detectedDialect.Id,
+                        PredictedDialectId = newDialectId
+                    });
+
+                    logger.LogInformation($"Reclassified detected dialect {detectedDialect.Id}: predicted_dialect_id -> {newDialectId} ({segment.Label})");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, $"Failed to reclassify detected dialect {detectedDialect.Id}");
+                }
+                finally
+                {
+                    if (System.IO.File.Exists(segmentPath))
+                        System.IO.File.Delete(segmentPath);
+                }
+            });
+        }
+
+        return Ok(detectedDialects);
     }
 }

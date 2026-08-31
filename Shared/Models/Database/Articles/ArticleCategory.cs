@@ -13,4 +13,7 @@ public class ArticleCategory
     
     [NotMapped]
     public Article[] Articles { get; set; }
+    
+    [NotMapped]
+    public ArticleCategoryTranslation[] Translation { get; set; }
 }

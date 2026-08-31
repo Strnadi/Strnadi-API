@@ -14,7 +14,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using Auth.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Repository;
 using Shared.Extensions;
@@ -23,26 +22,17 @@ using Shared.Models.Requests.Photos;
 
 namespace Photos;
 
-/// <summary>
-/// Handles photo upload endpoints.
-/// </summary>
 [ApiController]
 [Route("photos")]
 public class PhotosController : ControllerBase
 {
     /// <summary>
-    /// Uploads and stores a photo for a recording.
+    /// Uploads a photo attached to a recording. Requires a valid JWT.
     /// </summary>
-    /// <param name="request">Recording photo data to upload.</param>
-    /// <param name="repo">Repository used to save the photo metadata and file.</param>
-    /// <param name="jwtService">JWT validation service.</param>
-    /// <returns>An HTTP result indicating whether the recording photo was saved.</returns>
+    /// <param name="request">Identifies the recording and carries the photo contents.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if it is invalid, or 409 on failure.</returns>
     [HttpPost("upload/recording-photo")]
     [RequestSizeLimit(130023424)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UploadRecPhoto([FromBody] UploadRecordingPhotoRequest request,
         [FromServices] PhotosRepository repo,
         [FromServices] JwtService jwtService)

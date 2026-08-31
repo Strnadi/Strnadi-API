@@ -13,15 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
 namespace Utils;
 
-/// <summary>
-/// Proxies Mapy.cz API GET requests and injects the configured API key.
-/// </summary>
 [ApiController]
 [Route("map")]
 public class MapController : ControllerBase
@@ -32,14 +28,13 @@ public class MapController : ControllerBase
     {
         _configuration = configuration;
     }
-
+    
     /// <summary>
-    /// Forwards a GET request path and query string to the Mapy.cz API.
+    /// Proxies a request to the Mapy.cz API, attaching the server's API key.
     /// </summary>
-    /// <param name="path">Catch-all Mapy.cz API path to request.</param>
-    /// <returns>The upstream response stream on success, or the upstream error body with its status code.</returns>
+    /// <param name="path">The Mapy.cz API path to forward the request to, along with any query string.</param>
+    /// <returns>The proxied response body and content type, or the upstream error status/body on failure.</returns>
     [HttpGet("{*path}")]
-    [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> ForwardToMapyCz([FromRoute] string path)
     {
         var query = Request.QueryString.Value;

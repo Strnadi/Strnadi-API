@@ -8,23 +8,12 @@ using Shared.Tools;
 
 namespace Repository;
 
-/// <summary>
-/// Provides data and file persistence operations for articles, article attachments, and article categories.
-/// </summary>
 public class ArticlesRepository : RepositoryBase
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ArticlesRepository"/> class.
-    /// </summary>
-    /// <param name="configuration">Application configuration used to initialize the repository connection.</param>
     public ArticlesRepository(IConfiguration configuration) : base(configuration)
     {
     }
 
-    /// <summary>
-    /// Gets all articles with their attachments and categories.
-    /// </summary>
-    /// <returns>An array of articles, or null when the query fails.</returns>
     public async Task<Article[]?> GetAsync()
     {
         var articles = await GetArticlesAsync();
@@ -35,11 +24,8 @@ public class ArticlesRepository : RepositoryBase
         foreach (var article in articles)
         {
             article.Files = (await GetArticleFilesAsync(article.Id))!;
-            if (article.Files == null!)
-                return null;
             article.Categories = (await GetCategoriesByArticleAsync(article.Id))!;
-            if (article.Categories == null!)
-                return null;
+            article.Translations = (await GetArticleTranslationsAsync(article.Id))!;
         }
         
         return articles;
@@ -58,10 +44,7 @@ public class ArticlesRepository : RepositoryBase
         var articles = new Article[assignments.Length];
         for (int i = 0; i < articles.Length; i++)
         {
-            var article = await GetArticleAsync(assignments[i].ArticleId);
-            if (article is null)
-                return null;
-            articles[i] = article;
+            articles[i] = (await GetArticleAsync(assignments[i].ArticleId))!;
         }
 
         return articles;
@@ -75,11 +58,6 @@ public class ArticlesRepository : RepositoryBase
                     ArticleId = articleId
                 })).ToArray());
 
-    /// <summary>
-    /// Gets articles assigned to a category by category name.
-    /// </summary>
-    /// <param name="categoryName">The category name to query.</param>
-    /// <returns>An array of articles assigned to the category, or null when the query fails.</returns>
     public async Task<Article[]?> GetAsync(string categoryName)
     {
         var assignments = await GetCategoryAssignmentsByCategoryAsync(categoryName);
@@ -109,11 +87,6 @@ public class ArticlesRepository : RepositoryBase
                 )
                 """, new { CategoryName = categoryName })).ToArray());
 
-    /// <summary>
-    /// Gets an article by id with its attachments and categories.
-    /// </summary>
-    /// <param name="id">The article id.</param>
-    /// <returns>The article, or null when it does not exist or the query fails.</returns>
     public async Task<Article?> GetAsync(int id)
     {
         var article = await GetArticleAsync(id);
@@ -131,10 +104,18 @@ public class ArticlesRepository : RepositoryBase
         return article;
     }
 
-    private async Task<Article?> GetArticleAsync(int id) =>
-        await ExecuteSafelyAsync(async () =>
-            await Connection.QueryFirstOrDefaultAsync<Article>(
-                "SELECT * FROM articles WHERE id = @Id", new { Id = id }));
+    private async Task<Article?> GetArticleAsync(int id)
+    {
+        var article = await Connection.QueryFirstOrDefaultAsync<Article>(
+            "SELECT * FROM articles WHERE id = @Id", new { Id = id });
+
+        if (article is null)
+            return null;
+
+        article.Translations = (await GetArticleTranslationsAsync(article.Id))!;
+
+        return article;
+    }
 
     private async Task<ArticleCategory[]?> GetCategoriesByArticleAsync(int articleId)
     {
@@ -174,12 +155,23 @@ public class ArticlesRepository : RepositoryBase
                 "SELECT * FROM article_categories WHERE id = @CategoryId", 
                 new { CategoryId = categoryId }));
 
-    /// <summary>
-    /// Gets an article attachment file by article id and file name.
-    /// </summary>
-    /// <param name="id">The article id.</param>
-    /// <param name="fileName">The attachment file name.</param>
-    /// <returns>The attachment bytes, or null when the file does not exist.</returns>
+    private async Task<ArticleTranslation[]?> GetArticleTranslationsAsync(int articleId) =>
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<ArticleTranslation>(
+                "SELECT * FROM article_translations WHERE article_id = @ArticleId", new
+                {
+                    ArticleId = articleId
+                })).ToArray());
+
+    private async Task<ArticleCategoryTranslation[]?> GetArticleCategoryTranslationsAsync(int articleCategoryId) =>
+        await ExecuteSafelyAsync(async () =>
+            (await Connection.QueryAsync<ArticleCategoryTranslation>(
+                "SELECT * FROM article_category_translations WHERE article_category_id = @ArticleCategoryId",
+                new
+                {
+                    ArticleCategoryId = articleCategoryId
+                })).ToArray());
+
     public async Task<byte[]?> GetAsync(int id, string fileName)
     {
         if (!FileSystemHelper.ArticleFileExists(id, fileName))
@@ -189,11 +181,6 @@ public class ArticlesRepository : RepositoryBase
         return content;
     }
 
-    /// <summary>
-    /// Saves a new article.
-    /// </summary>
-    /// <param name="req">The article data to save.</param>
-    /// <returns>The created article id, or null when the insert fails.</returns>
     public async Task<int?> SaveArticleAsync(ArticleUploadRequest req) =>
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteScalarAsync<int?>(
@@ -203,13 +190,6 @@ public class ArticlesRepository : RepositoryBase
                 RETURNING id
                 """, new { req.Name, req.Description }));
 
-    /// <summary>
-    /// Saves an article attachment file and records it in the database.
-    /// </summary>
-    /// <param name="articleId">The article id.</param>
-    /// <param name="fileName">The attachment file name.</param>
-    /// <param name="base64">The attachment content encoded as Base64.</param>
-    /// <returns>True when the database record is inserted; otherwise, false.</returns>
     public async Task<bool> SaveArticleAttachmentAsync(int articleId, string fileName, string base64)
     {
         await FileSystemHelper.SaveArticleFileAsync(articleId, fileName, base64);
@@ -228,12 +208,6 @@ public class ArticlesRepository : RepositoryBase
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM articles WHERE id = @Id", new { Id = id }) != 0);
 
-    /// <summary>
-    /// Updates an existing article.
-    /// </summary>
-    /// <param name="id">The article id.</param>
-    /// <param name="req">The article fields to update.</param>
-    /// <returns>True when the article exists and is updated; otherwise, false.</returns>
     public async Task<bool> UpdateArticleAsync(int id, ArticleUpdateRequest req)
     {
         if (!await ExistsAsync(id))
@@ -262,13 +236,6 @@ public class ArticlesRepository : RepositoryBase
         });
     }
 
-    /// <summary>
-    /// Replaces an article attachment file.
-    /// </summary>
-    /// <param name="id">The article id.</param>
-    /// <param name="fileName">The attachment file name.</param>
-    /// <param name="base64">The replacement attachment content encoded as Base64.</param>
-    /// <returns>True when the article exists and the file is saved; otherwise, false.</returns>
     public async Task<bool> UpdateArticleAttachmentAsync(int id, string fileName, string base64)
     {
         if (!await ExistsAsync(id))
@@ -278,11 +245,6 @@ public class ArticlesRepository : RepositoryBase
         return true;
     }
 
-    /// <summary>
-    /// Deletes an article by id.
-    /// </summary>
-    /// <param name="id">The article id.</param>
-    /// <returns>True when the article exists and is deleted; otherwise, false.</returns>
     public async Task<bool> DeleteArticleAsync(int id)
     {
         if (!await ExistsAsync(id))
@@ -292,12 +254,6 @@ public class ArticlesRepository : RepositoryBase
             await Connection.ExecuteAsync("DELETE FROM articles WHERE id = @Id", new { Id = id }) != 0);
     }
 
-    /// <summary>
-    /// Deletes an article attachment file and its database record.
-    /// </summary>
-    /// <param name="id">The article id.</param>
-    /// <param name="fileName">The attachment file name.</param>
-    /// <returns>True when the article exists and the database record is deleted; otherwise, false.</returns>
     public async Task<bool> DeleteArticleAttachmentAsync(int id, string fileName)
     {
         if (!await ExistsAsync(id))
@@ -316,19 +272,98 @@ public class ArticlesRepository : RepositoryBase
             0); 
     }
 
-    /// <summary>
-    /// Gets all article categories.
-    /// </summary>
-    /// <returns>An array of article categories, or null when the query fails.</returns>
-    public async Task<ArticleCategory[]?> GetCategoriesAsync() =>
-        await ExecuteSafelyAsync(async () => 
-            (await Connection.QueryAsync<ArticleCategory>(
-                "SELECT * FROM article_categories")).ToArray());
+    public async Task<ArticleTranslation?> GetArticleTranslationAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.QueryFirstOrDefaultAsync<ArticleTranslation>(
+                "SELECT * FROM article_translations WHERE id = @Id", new { Id = id }));
+
+    public async Task<bool> UpdateArticleTranslationAsync(int id, Shared.Models.Requests.Articles.ArticleTranslationUpdateRequest req)
+    {
+        // ensure exists
+        var exists = await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM article_translations WHERE id = @Id", new { Id = id }) != 0);
+
+        if (!exists)
+            return false;
+
+        return await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", id);
+
+            foreach (var prop in req.GetType().GetProperties()
+                         .Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
+            {
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(req));
+            }
+
+            if (updateFields.Count == 0)
+                return true;
+
+            var sql = $"UPDATE article_translations SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+    }
+
+    public async Task<bool> DeleteArticleTranslationAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync("DELETE FROM article_translations WHERE id = @Id", new { Id = id }) != 0);
+
+    public async Task<ArticleCategoryTranslation?> GetArticleCategoryTranslationAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.QueryFirstOrDefaultAsync<ArticleCategoryTranslation>(
+                "SELECT * FROM article_category_translations WHERE id = @Id", new { Id = id }));
+
+    public async Task<bool> UpdateArticleCategoryTranslationAsync(int id, Shared.Models.Requests.Articles.ArticleCategoryTranslationUpdateRequest req)
+    {
+        var exists = await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM article_category_translations WHERE id = @Id", new { Id = id }) != 0);
+
+        if (!exists)
+            return false;
+
+        return await ExecuteSafelyAsync(async () =>
+        {
+            var updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", id);
+
+            foreach (var prop in req.GetType().GetProperties()
+                         .Where(p => p.GetCustomAttribute<ColumnAttribute>() is not null))
+            {
+                string columnName = prop.GetCustomAttribute<ColumnAttribute>()!.Name!;
+                updateFields.Add($"{columnName} = @{prop.Name}");
+                parameters.Add(prop.Name, prop.GetValue(req));
+            }
+
+            if (updateFields.Count == 0)
+                return true;
+
+            var sql = $"UPDATE article_category_translations SET {string.Join(", ", updateFields)} WHERE id = @Id";
+            return await Connection.ExecuteAsync(sql, parameters) != 0;
+        });
+    }
+
+    public async Task<bool> DeleteArticleCategoryTranslationAsync(int id) =>
+        await ExecuteSafelyAsync(async () =>
+            await Connection.ExecuteAsync("DELETE FROM article_category_translations WHERE id = @Id", new { Id = id }) != 0);
+
+    public async Task<ArticleCategory[]?> GetCategoriesAsync()
+    {
+        var categories = (await Connection.QueryAsync<ArticleCategory>(
+            "SELECT * FROM article_categories")).ToArray();
+
+        foreach (var category in categories)
+        {
+            category.Translation = await GetArticleCategoryTranslationsAsync(category.Id);
+        }
+
+        return categories;
+    }
     
-    /// <summary>
-    /// Gets all article categories with articles assigned to each category.
-    /// </summary>
-    /// <returns>An array of article categories with articles, or null when a query fails.</returns>
     public async Task<ArticleCategory[]?> GetCategoriesWithArticlesAsync()
     {
         var categories = await GetCategoriesAsync();
@@ -337,20 +372,12 @@ public class ArticlesRepository : RepositoryBase
 
         foreach (var category in categories)
         {
-            var articles = await GetArticlesByCategoryAsync(category.Id);
-            if (articles is null)
-                return null;
-            category.Articles = articles;
+            category.Articles = (await GetArticlesByCategoryAsync(category.Id))!;
         }
         
         return categories;
     }
 
-    /// <summary>
-    /// Saves a new article category.
-    /// </summary>
-    /// <param name="req">The category data to save.</param>
-    /// <returns>True when the category is inserted; otherwise, false.</returns>
     public async Task<bool> SaveArticleCategoryAsync(ArticleCategoryUploadRequest req) =>
         await ExecuteSafelyAsync(async () =>
             await Connection.ExecuteAsync(
@@ -364,12 +391,6 @@ public class ArticlesRepository : RepositoryBase
             await Connection.QueryFirstOrDefaultAsync<ArticleCategory>(
                 "SELECT * FROM article_categories WHERE name = @Name", new { Name = categoryName }));
     
-    /// <summary>
-    /// Assigns an article to an article category.
-    /// </summary>
-    /// <param name="categoryName">The category name.</param>
-    /// <param name="request">The article assignment data.</param>
-    /// <returns>True when the category exists and the assignment is inserted; otherwise, false.</returns>
     public async Task<bool> AssignArticleToCategoryAsync(string categoryName, AssignArticleToCategoryRequest request)
     {
         var category = await GetCategoryModelAsync(categoryName);
@@ -393,21 +414,10 @@ public class ArticlesRepository : RepositoryBase
                     Order = order
                 })) != 0;
 
-    /// <summary>
-    /// Deletes an article category by category name.
-    /// </summary>
-    /// <param name="categoryName">The category name.</param>
-    /// <returns>True when the category is deleted; otherwise, false.</returns>
     public async Task<bool> DeleteCategoryAsync(string categoryName) =>
         await Connection.ExecuteAsync(
             "DELETE FROM article_categories WHERE name = @CategoryName", new { CategoryName = categoryName }) != 0;
 
-    /// <summary>
-    /// Removes an article from an article category.
-    /// </summary>
-    /// <param name="categoryName">The category name.</param>
-    /// <param name="articleId">The article id.</param>
-    /// <returns>True when the category exists and the assignment is deleted; otherwise, false.</returns>
     public async Task<bool> DeleteArticleCategoryAssignmentAsync(string categoryName, int articleId)
     {
         var category = await GetCategoryModelAsync(categoryName);
@@ -427,4 +437,6 @@ public class ArticlesRepository : RepositoryBase
                     CategoryId = categoryId
                 }) !=
             0);
+    
+    
 }
