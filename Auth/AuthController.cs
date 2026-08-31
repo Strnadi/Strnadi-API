@@ -51,6 +51,10 @@ public class AuthController : ControllerBase
         _configuration = configuration;
     }
 
+    /// <summary>
+    /// Checks whether the caller's email address has been verified. Requires a valid JWT.
+    /// </summary>
+    /// <returns>200 if the email is verified, 400 if the JWT/email is missing, or 403 if the email is not verified.</returns>
     [HttpGet("verify-jwt")]
     public async Task<IActionResult> VerifyJwt([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
@@ -68,6 +72,10 @@ public class AuthController : ControllerBase
         return await usersRepo.IsEmailVerifiedAsync(email) ? Ok() : StatusCode(403);
     }
 
+    /// <summary>
+    /// Issues a fresh JWT for the caller, based on the email encoded in their current JWT.
+    /// </summary>
+    /// <returns>The newly issued JWT, 400 if the JWT/email is invalid, or 409 if the user no longer exists.</returns>
     [HttpGet("renew-jwt")]
     public async Task<IActionResult> RenewJwt([FromServices] JwtService jwtService,
         [FromServices] UsersRepository usersRepo)
@@ -87,7 +95,12 @@ public class AuthController : ControllerBase
         string newJwt = jwtService.GenerateToken(email);
         return Ok(newJwt);
     }
-    
+
+    /// <summary>
+    /// Registers a new user using a Google ID token.
+    /// </summary>
+    /// <param name="req">Contains the Google ID token to validate.</param>
+    /// <returns>The new JWT and profile details, 401 if the ID token is invalid, or 409 if the user already exists.</returns>
     [HttpPost("sign-up-google")]
     public async Task<IActionResult> SignUpViaGoogle([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
@@ -108,6 +121,11 @@ public class AuthController : ControllerBase
         return Ok(new { jwt, firstName = payload.GivenName, lastName = payload.FamilyName });
     }
 
+    /// <summary>
+    /// Logs in an existing user using a Google ID token.
+    /// </summary>
+    /// <param name="req">Contains the Google ID token to validate.</param>
+    /// <returns>The issued JWT, 401 if the ID token is invalid, or 409 if the user does not exist.</returns>
     [HttpPost("login-google")]
     public async Task<IActionResult> LoginViaGoogle([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
@@ -134,6 +152,15 @@ public class AuthController : ControllerBase
         return Ok(jwt);
     }
 
+    /// <summary>
+    /// Signs in with Google, creating the account if it doesn't exist yet, or linking Google to the
+    /// currently authenticated account when a JWT is supplied.
+    /// </summary>
+    /// <param name="req">Contains the Google ID token to validate.</param>
+    /// <returns>
+    /// 200 with the linked account confirmation, the existing user's JWT, or a new user's JWT and profile
+    /// details; 401 if the ID token or supplied JWT is invalid.
+    /// </returns>
     [HttpPost("google")]
     public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest req,
         [FromServices] JwtService jwtService,
@@ -144,7 +171,7 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid ID token");
 
         string googleId = payload.Subject;
-        
+
         User? user = await repo.GetUserByGoogleId(googleId);
 
         string? authJwt = this.GetJwt();
@@ -157,7 +184,7 @@ public class AuthController : ControllerBase
 
             return Ok();
         }
-        
+
         if (user is not null)
         {
             // If email is not marked as verified yet
@@ -197,6 +224,12 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Signs in with Apple, creating the account if it doesn't exist yet, or linking Apple to the
+    /// currently authenticated account when a JWT is supplied.
+    /// </summary>
+    /// <param name="req">Contains the Apple ID token and, for first-time sign-ins, the user's identifier and name.</param>
+    /// <returns>200 with the linked/existing/new account's JWT and profile details, or 401 if the ID token or auth JWT is invalid.</returns>
     [HttpPost("apple")]
     public async Task<IActionResult> LoginViaApple([FromBody] AppleAuthRequest req,
         [FromServices] JwtService jwtService,
@@ -287,7 +320,7 @@ public class AuthController : ControllerBase
             else
             {
                 User user = (await repo.GetUserByEmailAsync(email))!;
-                
+
                 await repo.AddAppleIdAsync(email, appleId);
 
                 if (user.IsEmailVerified.HasValue && !user.IsEmailVerified.Value || !user.IsEmailVerified.HasValue)
@@ -302,6 +335,13 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Handles Apple's web sign-in form post callback and redirects back to the original return URL.
+    /// </summary>
+    /// <param name="user">JSON-encoded user info supplied by Apple on first sign-in, if any.</param>
+    /// <param name="state">Opaque state value, expected to contain the return URL before a '|' separator.</param>
+    /// <param name="idToken">The Apple-issued ID token.</param>
+    /// <returns>A redirect back to the return URL with the token appended, or 400 if <paramref name="state"/> is missing.</returns>
     [HttpPost("apple-callback")]
     public IActionResult AppleCallback(
         [FromForm] string? user,
@@ -320,7 +360,15 @@ public class AuthController : ControllerBase
             return BadRequest();
         }
     }
-    
+
+    /// <summary>
+    /// Handles Apple's sign-in form post callback for the Android app and redirects into it via an intent deep link.
+    /// </summary>
+    /// <param name="user">JSON-encoded user info supplied by Apple on first sign-in, if any.</param>
+    /// <param name="state">Opaque state value passed through from the original authorization request.</param>
+    /// <param name="idToken">The Apple-issued ID token.</param>
+    /// <param name="code">The Apple-issued authorization code.</param>
+    /// <returns>A redirect into the Android app via an <c>intent://</c> deep link.</returns>
     [HttpPost("apple/callback")]
     public IActionResult AppleAppCallback(
         [FromForm] string? user,
@@ -346,6 +394,11 @@ public class AuthController : ControllerBase
         return Redirect(intentUrl);
     }
 
+    /// <summary>
+    /// Checks whether a user has an Apple account linked.
+    /// </summary>
+    /// <param name="userId">Identifier of the user to check.</param>
+    /// <returns>200 if an Apple ID is linked, or 409 if not.</returns>
     [HttpGet("has-apple-id")]
     public async Task<IActionResult> HasAppleId([FromQuery] int userId, [FromServices] UsersRepository users)
     {
@@ -353,6 +406,11 @@ public class AuthController : ControllerBase
         return has ? Ok() : Conflict();
     }
 
+    /// <summary>
+    /// Checks whether a user has a Google account linked.
+    /// </summary>
+    /// <param name="userId">Identifier of the user to check.</param>
+    /// <returns>200 if a Google ID is linked, or 409 if not.</returns>
     [HttpGet("has-google-id")]
     public async Task<IActionResult> HasGoogleId([FromQuery] int userId, [FromServices] UsersRepository users)
     {
@@ -360,6 +418,11 @@ public class AuthController : ControllerBase
         return has ? Ok() : Conflict();
     }
 
+    /// <summary>
+    /// Logs in using an email/password pair.
+    /// </summary>
+    /// <param name="request">The credentials to authenticate with.</param>
+    /// <returns>The issued JWT, 409 if the user does not exist, or 401 if the password is incorrect.</returns>
     [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
         [FromServices] JwtService jwtService,
@@ -379,6 +442,12 @@ public class AuthController : ControllerBase
         return Ok(jwtService.GenerateToken(email));
     }
 
+    /// <summary>
+    /// Registers a new user with an email/password pair, or completes sign-up for a caller already
+    /// authenticated via a social provider. Sends a verification email for regular registrations.
+    /// </summary>
+    /// <param name="request">The new user's profile, credentials, and optional linked Apple ID.</param>
+    /// <returns>The issued JWT, or 409 if the user already exists or could not be created.</returns>
     [HttpPost("sign-up")]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request,
         [FromServices] EmailService emailService,
@@ -399,7 +468,7 @@ public class AuthController : ControllerBase
         string newJwt = jwtService.GenerateToken(request.Email);
 
         var user = await repo.GetUserByEmailAsync(request.Email);
-        
+
         if (request.AppleId is not null && request.AppleId != "")
             await repo.AddAppleIdAsync(request.Email, request.AppleId);
 
@@ -412,6 +481,11 @@ public class AuthController : ControllerBase
         return Ok(newJwt);
     }
 
+    /// <summary>
+    /// Resends the account verification email. Requires a valid JWT matching the target user.
+    /// </summary>
+    /// <param name="userId">Identifier of the user to resend the verification email to.</param>
+    /// <returns>200 on success, 401 if the JWT is invalid or does not match the user, or 208 if already verified.</returns>
     [HttpGet("{userId:int}/resend-verify-email")]
     public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] int userId,
         [FromServices] JwtService jwtService,
@@ -441,6 +515,11 @@ public class AuthController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Sends a password reset email for the given address.
+    /// </summary>
+    /// <param name="email">Email address of the account to send the reset link to.</param>
+    /// <returns>200 on success, or 404 if no user exists with that email.</returns>
     [HttpGet("{email}/reset-password")]
     public async Task<IActionResult> ResetPasswordAsync([FromRoute] string email,
         [FromServices] UsersRepository usersRepo,

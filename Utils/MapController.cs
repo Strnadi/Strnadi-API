@@ -29,6 +29,11 @@ public class MapController : ControllerBase
         _configuration = configuration;
     }
     
+    /// <summary>
+    /// Proxies a request to the Mapy.cz API, attaching the server's API key.
+    /// </summary>
+    /// <param name="path">The Mapy.cz API path to forward the request to, along with any query string.</param>
+    /// <returns>The proxied response body and content type, or the upstream error status/body on failure.</returns>
     [HttpGet("{*path}")]
     public async Task<IActionResult> ForwardToMapyCz([FromRoute] string path)
     {

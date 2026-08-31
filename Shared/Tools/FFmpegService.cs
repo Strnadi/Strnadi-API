@@ -138,4 +138,48 @@ public static class FFmpegService
             await ffmpeg.WaitForExitAsync();
         }
     }
+
+    public static async Task ExtractSegmentAsync(string sourceFilePath, TimeSpan start, TimeSpan end, string outputPath)
+    {
+        if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
+            throw new ArgumentException("Source file does not exist", nameof(sourceFilePath));
+
+        if (string.IsNullOrWhiteSpace(outputPath))
+            throw new ArgumentException("Output path cannot be null or empty", nameof(outputPath));
+
+        if (end <= start)
+            throw new ArgumentException("End must be greater than start", nameof(end));
+
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            Directory.CreateDirectory(directory);
+
+        string ss = start.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        string to = end.TotalSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "ffmpeg",
+            Arguments = $"-y -i \"{sourceFilePath}\" -ss {ss} -to {to} -acodec pcm_s16le -ar 48000 -ac 1 \"{outputPath}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi) ?? throw new Exception("FFmpeg process could not be started");
+
+        string errors = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        Logger.Log($"FFmpegService::ExtractSegmentAsync: FFmpeg process exited with code {process.ExitCode}");
+
+        if (process.ExitCode != 0)
+            throw new Exception($"FFmpeg exited with code {process.ExitCode}: {errors}");
+
+        if (!File.Exists(outputPath))
+            throw new Exception($"FFmpeg did not create output file: {outputPath}");
+
+        Logger.Log($"FFmpegService::ExtractSegmentAsync: Successfully extracted segment [{ss}s - {to}s] from {sourceFilePath} to {outputPath}");
+    }
 }

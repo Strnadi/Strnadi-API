@@ -344,6 +344,16 @@ public class RecordingsRepository : RepositoryBase
                     new { Id = ddId })).ToArray()
         );
 
+    public async Task<DetectedDialect[]?> GetDetectedDialectsByPredictedIdAsync(int? predictedDialectId) =>
+        await ExecuteSafelyAsync(async () => (
+            await Connection.QueryAsync<DetectedDialect>(
+                $"""
+                SELECT * FROM detected_dialects
+                {(predictedDialectId is not null ? "WHERE predicted_dialect_id = @PredictedDialectId" : "")}
+                """,
+                new { PredictedDialectId = predictedDialectId })).ToArray()
+        );
+
     private async Task<DetectedDialect[]?> GetDetectedDialectsByFpIdAsync(int filteredPartId) =>
         await ExecuteSafelyAsync(async () =>
             (await Connection.QueryAsync<DetectedDialect>(
@@ -489,6 +499,24 @@ public class RecordingsRepository : RepositoryBase
                     Start = start,
                     End = end,
                     ToleranceSeconds = _timeMatchTolerance.Seconds
+                }));
+
+    public async Task<RecordingPart?> FindParentPartAsync(int recordingId, DateTime start, DateTime end) =>
+        await ExecuteSafelyAsync(
+            Connection.QueryFirstOrDefaultAsync<RecordingPart>(
+                """
+                    SELECT *
+                    FROM recording_parts
+                    WHERE recording_id = @RecordingId
+                        AND start_date <= @Start
+                        AND end_date >= @End
+                    LIMIT 1
+                """,
+                new
+                {
+                    RecordingId = recordingId,
+                    Start = start,
+                    End = end
                 }));
 
     public async Task<FilteredRecordingPartModel?> CreateFilteredPartAsync(

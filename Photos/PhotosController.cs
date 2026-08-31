@@ -26,6 +26,11 @@ namespace Photos;
 [Route("photos")]
 public class PhotosController : ControllerBase
 {
+    /// <summary>
+    /// Uploads a photo attached to a recording. Requires a valid JWT.
+    /// </summary>
+    /// <param name="request">Identifies the recording and carries the photo contents.</param>
+    /// <returns>200 on success, 400 if the JWT is missing, 401 if it is invalid, or 409 on failure.</returns>
     [HttpPost("upload/recording-photo")]
     [RequestSizeLimit(130023424)]
     public async Task<IActionResult> UploadRecPhoto([FromBody] UploadRecordingPhotoRequest request,
