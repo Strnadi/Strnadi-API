@@ -115,9 +115,36 @@ app.MapHealthChecks("/utils/health");
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Strnadi API v1");
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Strnadi API v2");
     options.RoutePrefix = "swagger";
     options.DocumentTitle = "Strnadi API - Swagger";
 });
 
 app.Run();
+//
+// // Loads KEY=VALUE pairs from a .env file into the process environment so
+// // ASP.NET Core's built-in environment-variable configuration provider picks
+// // them up (Jwt__SecretKey -> config key "Jwt:SecretKey"). Variables already
+// // set in the environment take precedence over the file.
+// static void LoadEnvFile(string path)
+// {
+//     if (!File.Exists(path))
+//         return;
+//
+//     foreach (var line in File.ReadAllLines(path))
+//     {
+//         var trimmed = line.Trim();
+//         if (trimmed.Length == 0 || trimmed.StartsWith('#'))
+//             continue;
+//
+//         var separatorIndex = trimmed.IndexOf('=');
+//         if (separatorIndex < 0)
+//             continue;
+//
+//         var key = trimmed[..separatorIndex].Trim();
+//         var value = trimmed[(separatorIndex + 1)..].Trim().Trim('"');
+//
+//         if (Environment.GetEnvironmentVariable(key) is null)
+//             Environment.SetEnvironmentVariable(key, value);
+//     }
+// }

@@ -9,6 +9,7 @@ namespace Strnadi.Api.Controllers;
 [Route("devices")]
 public class DevicesController(DevicesService devicesService) : ControllerBase
 {
+    /// <summary>Registers a device for push notifications.</summary>
     [Authorize]
     [HttpPost("add")]
     public async Task<IActionResult> AddAsync([FromBody] AddDeviceRequest request, CancellationToken cancellationToken)
@@ -17,6 +18,7 @@ public class DevicesController(DevicesService devicesService) : ControllerBase
         return Ok();
     }
 
+    /// <summary>Updates a registered device.</summary>
     [Authorize]
     [HttpPatch("update")]
     public async Task<IActionResult> UpdateAsync([FromBody] UpdateDeviceRequest request, CancellationToken cancellationToken)
@@ -25,6 +27,7 @@ public class DevicesController(DevicesService devicesService) : ControllerBase
         return Ok();
     }
 
+    /// <summary>Unregisters a device.</summary>
     [Authorize]
     [HttpDelete("delete/{fcmToken}")]
     public async Task<IActionResult> DeleteAsync([FromRoute] string fcmToken, CancellationToken cancellationToken)

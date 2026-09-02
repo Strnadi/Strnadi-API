@@ -8,6 +8,7 @@ namespace Strnadi.Api.Controllers;
 [Route("users")]
 public class UserPhotosController(PhotosService photos) : ControllerBase
 {
+    /// <summary>Uploads or replaces a user's profile photo.</summary>
     [Authorize]
     [HttpPost("{userId:int}/upload-profile-photo")]
     [RequestSizeLimit(130023424)]
@@ -18,6 +19,7 @@ public class UserPhotosController(PhotosService photos) : ControllerBase
         return Ok();
     }
 
+    /// <summary>A user's profile photo.</summary>
     [HttpGet("{userId:int}/get-profile-photo")]
     public async Task<IActionResult> GetUserProfilePhoto([FromRoute] int userId, CancellationToken cancellationToken)
     {

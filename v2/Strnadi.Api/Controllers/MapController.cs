@@ -7,6 +7,7 @@ namespace Strnadi.Api.Controllers;
 [Route("map")]
 public class MapController(IMapyCzProxyService mapsProxy) : ControllerBase
 {
+    /// <summary>Proxies a request to Mapy.cz, attaching our API key.</summary>
     [HttpGet("{*path}")]
     public async Task<IActionResult> ForwardAsync([FromRoute] string path, CancellationToken cancellationToken)
     {

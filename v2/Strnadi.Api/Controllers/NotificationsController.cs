@@ -8,6 +8,7 @@ namespace Strnadi.Api.Controllers;
 [Route("utils")]
 public class NotificationsController(NotificationsService notificationsService) : ControllerBase
 {
+    /// <summary>Pushes a custom notification to all of a user's devices. Admin only.</summary>
     [Authorize(Policy = "AdminOnly")]
     [HttpPost("send-notification")]
     public async Task<IActionResult> SendAsync([FromBody] SendNotificationRequest request, CancellationToken cancellationToken)

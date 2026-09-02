@@ -11,6 +11,7 @@ namespace Strnadi.Api.Controllers;
 [Route("auth")]
 public class AuthController(AuthService authService) : ControllerBase
 {
+    /// <summary>Whether the caller's email is verified; getting past auth already means the JWT itself is valid.</summary>
     [Authorize]
     [HttpGet("verify-jwt")]
     public async Task<IActionResult> VerifyJwtAsync(CancellationToken cancellationToken)
@@ -19,6 +20,7 @@ public class AuthController(AuthService authService) : ControllerBase
         return verified ? Ok() : StatusCode(StatusCodes.Status403Forbidden);
     }
 
+    /// <summary>Issues a fresh JWT from an old one, even one that just expired.</summary>
     [HttpGet("renew-jwt")]
     public async Task<IActionResult> RenewJwtAsync(CancellationToken cancellationToken)
     {
@@ -30,18 +32,21 @@ public class AuthController(AuthService authService) : ControllerBase
         return Ok(await authService.RenewTokenAsync(token, cancellationToken));
     }
 
+    /// <summary>Validates a Google ID token for a brand-new account; the account itself is created by a later sign-up call.</summary>
     [HttpPost("sign-up-google")]
     public async Task<IActionResult> SignUpGoogleAsync([FromBody] GoogleAuthRequest request, CancellationToken cancellationToken)
     {
         return Ok(await authService.SignUpGoogleAsync(request, cancellationToken));
     }
 
+    /// <summary>Logs in with an already-linked Google account.</summary>
     [HttpPost("login-google")]
     public async Task<IActionResult> LoginGoogleAsync([FromBody] GoogleAuthRequest request, CancellationToken cancellationToken)
     {
         return Ok(await authService.LoginGoogleAsync(request, cancellationToken));
     }
 
+    /// <summary>Links, logs in, or starts sign-up with Google, depending on what's already on file.</summary>
     [HttpPost("google")]
     public async Task<IActionResult> GoogleAsync([FromBody] GoogleAuthRequest request, CancellationToken cancellationToken)
     {
@@ -49,6 +54,7 @@ public class AuthController(AuthService authService) : ControllerBase
         return result is null ? Ok() : Ok(result);
     }
 
+    /// <summary>Same as <see cref="GoogleAsync"/>, for Sign in with Apple.</summary>
     [HttpPost("apple")]
     public async Task<IActionResult> AppleAsync([FromBody] AppleAuthRequest request, CancellationToken cancellationToken)
     {
@@ -56,6 +62,7 @@ public class AuthController(AuthService authService) : ControllerBase
         return result is null ? Ok() : Ok(result);
     }
 
+    /// <summary>Apple's web redirect after sign-in; relays the result to the app's return URL.</summary>
     [HttpPost("apple-callback")]
     public IActionResult AppleCallback(
         [FromForm(Name = "user")] string? user,
@@ -69,6 +76,7 @@ public class AuthController(AuthService authService) : ControllerBase
         return Redirect($"{returnUrl}#user={user}&id_token={idToken}");
     }
 
+    /// <summary>Apple's redirect for the Android app; relays the result as a deep link instead of a URL fragment.</summary>
     [HttpPost("apple/callback")]
     public IActionResult AppleCallbackMobile(
         [FromServices] IConfiguration configuration,
@@ -88,30 +96,35 @@ public class AuthController(AuthService authService) : ControllerBase
         return Redirect($"intent://callback?{query}#Intent;scheme=signinwithapple;package={androidPackage};end");
     }
 
+    /// <summary>Whether this user has an Apple account linked.</summary>
     [HttpGet("has-apple-id")]
     public async Task<IActionResult> HasAppleIdAsync([FromQuery] int userId, CancellationToken cancellationToken)
     {
         return await authService.HasAppleIdAsync(userId, cancellationToken) ? Ok() : Conflict();
     }
 
+    /// <summary>Whether this user has a Google account linked.</summary>
     [HttpGet("has-google-id")]
     public async Task<IActionResult> HasGoogleIdAsync([FromQuery] int userId, CancellationToken cancellationToken)
     {
         return await authService.HasGoogleIdAsync(userId, cancellationToken) ? Ok() : Conflict();
     }
 
+    /// <summary>Logs in with email and password.</summary>
     [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         return Ok(await authService.LoginAsync(request, cancellationToken));
     }
 
+    /// <summary>Creates an account.</summary>
     [HttpPost("sign-up")]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request, CancellationToken cancellationToken)
     {
         return Ok(await authService.SignUpAsync(request, cancellationToken));
     }
 
+    /// <summary>Resends the verification email.</summary>
     [Authorize]
     [HttpGet("{userId:int}/resend-verify-email")]
     public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] int userId, CancellationToken cancellationToken)
@@ -120,6 +133,7 @@ public class AuthController(AuthService authService) : ControllerBase
         return Ok();
     }
 
+    /// <summary>Sends a password-reset email.</summary>
     [HttpGet("{email}/reset-password")]
     public async Task<IActionResult> ResetPasswordAsync([FromRoute] string email, CancellationToken cancellationToken)
     {

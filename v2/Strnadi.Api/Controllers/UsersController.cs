@@ -11,6 +11,7 @@ namespace Strnadi.Api.Controllers;
 [Route("users")]
 public class UsersController(UsersService usersService) : ControllerBase
 {
+    /// <summary>All users. Admin only.</summary>
     [Authorize(Policy = "AdminOnly")]
     [HttpGet]
     public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
@@ -18,6 +19,7 @@ public class UsersController(UsersService usersService) : ControllerBase
         return Ok(await usersService.GetAllUsersAsync(cancellationToken));
     }
 
+    /// <summary>The caller's own id, read straight off the JWT.</summary>
     [Authorize]
     [HttpGet("get-id")]
     public IActionResult GetId()
@@ -25,12 +27,14 @@ public class UsersController(UsersService usersService) : ControllerBase
         return Ok(this.GetCallerId());
     }
 
+    /// <summary>A user's profile; the email is only included for the user themselves or an admin.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetByIdAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
         return Ok(await usersService.GetUserByIdAsync(id, this.GetCallerIdOrDefault(), this.IsAdmin(), cancellationToken));
     }
 
+    /// <summary>Updates a user's profile fields.</summary>
     [Authorize]
     [HttpPatch("{id:int}")]
     public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] UpdateUserRequest request, CancellationToken cancellationToken)
@@ -38,6 +42,7 @@ public class UsersController(UsersService usersService) : ControllerBase
         return Ok(await usersService.UpdateAsync(id, request, this.GetCallerId(), this.IsAdmin(), cancellationToken));
     }
 
+    /// <summary>Deletes a user.</summary>
     [Authorize]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id, CancellationToken cancellationToken)
@@ -46,6 +51,7 @@ public class UsersController(UsersService usersService) : ControllerBase
         return Ok();
     }
 
+    /// <summary>Landing point for the link in the verification email; redirects to the web confirmation page.</summary>
     [HttpGet("{userId:int}/verify-email")]
     public async Task<IActionResult> VerifyEmailAsync([FromRoute] int userId,
         [FromQuery] string jwt,
@@ -56,6 +62,7 @@ public class UsersController(UsersService usersService) : ControllerBase
         return RedirectPermanent(linkBuilder.EmailVerificationRedirectLink(verified));
     }
 
+    /// <summary>Sets a new password.</summary>
     [Authorize]
     [HttpPatch("{userId:int}/change-password")]
     public async Task<IActionResult> ChangePasswordAsync([FromRoute] int userId,
@@ -66,6 +73,7 @@ public class UsersController(UsersService usersService) : ControllerBase
         return Ok();
     }
 
+    /// <summary>Whether a user with this id or email already exists.</summary>
     [HttpGet("exists")]
     public async Task<IActionResult> Exists([FromQuery] int? userId,
         [FromQuery] string? email,

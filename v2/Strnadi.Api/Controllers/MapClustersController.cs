@@ -8,6 +8,7 @@ namespace Strnadi.Api.Controllers;
 [Route("recordings/map-clusters")]
 public class MapClustersController(MapClustersService mapClusters) : ControllerBase
 {
+    /// <summary>Clusters recording points for the current map viewport, given either explicit bounds or a center/zoom.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAsync(
         [FromQuery] double? centerLat,
