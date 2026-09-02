@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="Strnadi.Api/Strnadi.Api.csproj" />
-  <Project Path="Strnadi.Application/Strnadi.Application.csproj" />
-  <Project Path="Strnadi.Domain/Strnadi.Domain.csproj" />
-  <Project Path="Strnadi.Infrastructure/Strnadi.Infrastructure.csproj" />
-</Solution>

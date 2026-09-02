@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Tenant/">
+    <Project Path="src/Tenant/Tenant.Api/Tenant.Api.csproj" />
+    <Project Path="src/Tenant/Tenant.Application/Tenant.Application.csproj" />
+    <Project Path="src/Tenant/Tenant.Domain/Tenant.Domain.csproj" />
+    <Project Path="src/Tenant/Tenant.Infrastructure/Tenant.Infrastructure.csproj" />
+  </Folder>
+</Solution>
