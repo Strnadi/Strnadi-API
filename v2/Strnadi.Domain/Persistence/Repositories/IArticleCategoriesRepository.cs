@@ -4,7 +4,7 @@ namespace Strnadi.Domain.Persistence.Repositories;
 
 public interface IArticleCategoriesRepository
 {
-    Task<ArticleCategory[]> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<ArticleCategory[]> GetAllAsync(bool includeArticles, CancellationToken cancellationToken = default);
 
     Task<ArticleCategory?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
 

@@ -1,9 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Strnadi.Application.Achievements;
+using Strnadi.Application.Articles;
 using Strnadi.Application.Devices;
 using Strnadi.Application.Maps;
 using Strnadi.Application.Notifications;
 using Strnadi.Application.Photos;
+using Strnadi.Application.Recordings;
 using Strnadi.Application.Users;
 
 namespace Strnadi.Application.Extensions;
@@ -20,6 +22,9 @@ public static class ApplicationExtensions
             serviceCollection.AddScoped<MapClustersService>();
             serviceCollection.AddScoped<DevicesService>();
             serviceCollection.AddScoped<AchievementsService>();
+            serviceCollection.AddScoped<DetectedDialectsService>();
+            serviceCollection.AddScoped<ArticlesService>();
+            serviceCollection.AddScoped<ArticleCategoriesService>();
 
             return serviceCollection;
         }

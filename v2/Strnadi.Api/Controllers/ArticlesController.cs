@@ -6,84 +6,107 @@ namespace Strnadi.Api.Controllers;
 
 [ApiController]
 [Route("articles")]
-public class ArticlesController : ControllerBase
+public class ArticlesController(ArticlesService articlesService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
     {
+        return Ok(await articlesService.GetAllAsync(cancellationToken));
     }
 
     [HttpGet("{categoryName}")]
     public async Task<IActionResult> GetByCategoryAsync([FromRoute] string categoryName, CancellationToken cancellationToken)
     {
+        return Ok(await articlesService.GetByCategoryAsync(categoryName, cancellationToken));
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetByIdAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
+        return Ok(await articlesService.GetByIdAsync(id, cancellationToken));
     }
 
     [HttpGet("{id:int}/{fileName}")]
     public async Task<IActionResult> GetAttachmentAsync([FromRoute] int id, [FromRoute] string fileName, CancellationToken cancellationToken)
     {
+        var content = await articlesService.GetAttachmentAsync(id, fileName, cancellationToken);
+        return File(content, "application/octet-stream", fileName);
     }
 
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateAsync([FromBody] ArticleUploadRequest request, CancellationToken cancellationToken)
     {
+        return Ok(await articlesService.CreateAsync(request, cancellationToken));
     }
 
     [Authorize]
     [HttpPost("{id:int}/{fileName}")]
     public async Task<IActionResult> UploadAttachmentAsync([FromRoute] int id, [FromRoute] string fileName, [FromBody] string base64, CancellationToken cancellationToken)
     {
+        await articlesService.UploadAttachmentAsync(id, fileName, base64, cancellationToken);
+        return Ok();
     }
 
     [Authorize]
     [HttpPatch("{id:int}")]
     public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] ArticleUpdateRequest request, CancellationToken cancellationToken)
     {
+        await articlesService.UpdateAsync(id, request, cancellationToken);
+        return Ok();
     }
 
     [HttpGet("translations/{id:int}")]
     public async Task<IActionResult> GetTranslationAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
+        return Ok(await articlesService.GetTranslationAsync(id, cancellationToken));
     }
 
     [Authorize]
     [HttpPatch("translations/{id:int}")]
     public async Task<IActionResult> UpdateTranslationAsync([FromRoute] int id, [FromBody] ArticleTranslationUpdateRequest request, CancellationToken cancellationToken)
     {
+        await articlesService.UpdateTranslationAsync(id, request, cancellationToken);
+        return Ok();
     }
 
     [Authorize]
     [HttpDelete("translations/{id:int}")]
     public async Task<IActionResult> DeleteTranslationAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
+        await articlesService.DeleteTranslationAsync(id, cancellationToken);
+        return Ok();
     }
 
     [Authorize(Policy = "AdminOnly")]
     [HttpPatch("{id:int}/{fileName}")]
     public async Task<IActionResult> UpdateAttachmentAsync([FromRoute] int id, [FromRoute] string fileName, [FromBody] string base64, CancellationToken cancellationToken)
     {
+        await articlesService.UpdateAttachmentAsync(id, fileName, base64, cancellationToken);
+        return Ok();
     }
 
     [Authorize(Policy = "AdminOnly")]
     [HttpPatch("{categoryName}")]
     public async Task<IActionResult> AssignToCategoryAsync([FromRoute] string categoryName, [FromBody] AssignArticleToCategoryRequest request, CancellationToken cancellationToken)
     {
+        await articlesService.AssignToCategoryAsync(categoryName, request, cancellationToken);
+        return Ok();
     }
 
     [Authorize]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
+        await articlesService.DeleteAsync(id, cancellationToken);
+        return Ok();
     }
 
     [Authorize]
     [HttpDelete("{id:int}/{fileName}")]
     public async Task<IActionResult> DeleteAttachmentAsync([FromRoute] int id, [FromRoute] string fileName, CancellationToken cancellationToken)
     {
+        await articlesService.DeleteAttachmentAsync(id, fileName, cancellationToken);
+        return Ok();
     }
 }
