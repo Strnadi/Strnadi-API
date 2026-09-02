@@ -7,17 +7,21 @@ namespace Strnadi.Api.Controllers;
 
 [ApiController]
 [Route("recordings")]
-public class RecordingPartsController : ControllerBase
+public class RecordingPartsController(RecordingPartsService recordingPartsService) : ControllerBase
 {
     [Obsolete("use part/{partId:int}/sound GET instead")]
     [HttpGet("part/{recId:int}/{partId:int}/sound")]
     public async Task<IActionResult> GetSoundLegacyAsync([FromRoute] int recId, [FromRoute] int partId, CancellationToken cancellationToken)
     {
+        var bytes = await recordingPartsService.GetSoundAsync(partId, cancellationToken);
+        return File(bytes, "audio/wav", enableRangeProcessing: true);
     }
 
     [HttpGet("part/{partId:int}/sound")]
     public async Task<IActionResult> GetSoundAsync([FromRoute] int partId, CancellationToken cancellationToken)
     {
+        var bytes = await recordingPartsService.GetSoundAsync(partId, cancellationToken);
+        return File(bytes, "audio/wav", enableRangeProcessing: true);
     }
 
     [Authorize]
@@ -25,6 +29,7 @@ public class RecordingPartsController : ControllerBase
     [RequestSizeLimit(int.MaxValue)]
     public async Task<IActionResult> UploadPartAsync([FromBody] RecordingPartUploadRequest request, CancellationToken cancellationToken)
     {
+        return Ok(await recordingPartsService.UploadPartAsync(request, cancellationToken));
     }
 
     [Authorize]
@@ -32,5 +37,9 @@ public class RecordingPartsController : ControllerBase
     [RequestSizeLimit(int.MaxValue)]
     public async Task<IActionResult> UploadPartWithFileAsync([FromForm] RecordingPartUploadRequest request, IFormFile file, CancellationToken cancellationToken)
     {
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream, cancellationToken);
+
+        return Ok(await recordingPartsService.UploadPartWithFileAsync(request, stream.ToArray(), cancellationToken));
     }
 }

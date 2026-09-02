@@ -25,6 +25,9 @@ public static class ApplicationExtensions
             serviceCollection.AddScoped<DetectedDialectsService>();
             serviceCollection.AddScoped<ArticlesService>();
             serviceCollection.AddScoped<ArticleCategoriesService>();
+            serviceCollection.AddScoped<RecordingsService>();
+            serviceCollection.AddScoped<RecordingPartsService>();
+            serviceCollection.AddScoped<FilteredRecordingPartsService>();
 
             return serviceCollection;
         }
