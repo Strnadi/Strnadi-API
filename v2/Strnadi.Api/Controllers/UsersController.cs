@@ -18,6 +18,13 @@ public class UsersController(UsersService usersService) : ControllerBase
         return Ok(await usersService.GetAllUsersAsync(cancellationToken));
     }
 
+    [Authorize]
+    [HttpGet("get-id")]
+    public IActionResult GetId()
+    {
+        return Ok(this.GetCallerId());
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetByIdAsync([FromRoute] int id, CancellationToken cancellationToken)
     {

@@ -31,6 +31,21 @@ public class UsersRepository(AppDbContext db) : IUsersRepository
         return await db.Users.AnyAsync(u => u.Email == email, cancellationToken);
     }
 
+    public async Task<User?> GetByGoogleIdAsync(string googleId, CancellationToken cancellationToken = default)
+    {
+        return await db.Users.FirstOrDefaultAsync(u => u.GoogleId == googleId, cancellationToken);
+    }
+
+    public async Task<User?> GetByAppleIdAsync(string appleId, CancellationToken cancellationToken = default)
+    {
+        return await db.Users.FirstOrDefaultAsync(u => u.Appleid == appleId, cancellationToken);
+    }
+
+    public void Add(User user)
+    {
+        db.Users.Add(user);
+    }
+
     public void Update(User user)
     {
         db.Users.Update(user);

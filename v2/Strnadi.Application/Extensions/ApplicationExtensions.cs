@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Strnadi.Application.Achievements;
 using Strnadi.Application.Articles;
+using Strnadi.Application.Auth;
+using Strnadi.Application.Common;
 using Strnadi.Application.Devices;
 using Strnadi.Application.Maps;
 using Strnadi.Application.Notifications;
@@ -28,6 +30,8 @@ public static class ApplicationExtensions
             serviceCollection.AddScoped<RecordingsService>();
             serviceCollection.AddScoped<RecordingPartsService>();
             serviceCollection.AddScoped<FilteredRecordingPartsService>();
+            serviceCollection.AddScoped<AuthService>();
+            serviceCollection.AddScoped<LinkBuilder>();
 
             return serviceCollection;
         }

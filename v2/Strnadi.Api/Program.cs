@@ -25,6 +25,9 @@ builder.Services.AddApplication();
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseNpgsql(sp.GetRequiredService<IDatabaseSettings>().ConnectionString));
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>();
+
 builder.Services.AddOpenApi();
 
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
@@ -59,8 +62,8 @@ builder.Services.AddOptions<CorsOptions>()
             policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
     });
 
-builder.Logging.AddConsole(options => options.FormatterName = "compact");
 builder.Services.AddSingleton<ConsoleFormatter, CompactConsoleFormatter>();
+builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
 
@@ -74,5 +77,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/utils/health");
 
 app.Run();

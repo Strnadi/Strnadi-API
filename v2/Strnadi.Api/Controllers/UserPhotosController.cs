@@ -15,6 +15,12 @@ public class UserPhotosController(PhotosService photos) : ControllerBase
         [FromBody] UserProfilePhotoModel req)
     {
         await photos.UploadUserProfilePhotoAsync(userId, req);
-        return Ok();   
+        return Ok();
+    }
+
+    [HttpGet("{userId:int}/get-profile-photo")]
+    public async Task<IActionResult> GetUserProfilePhoto([FromRoute] int userId, CancellationToken cancellationToken)
+    {
+        return Ok(await photos.GetUserProfilePhotoAsync(userId, cancellationToken));
     }
 }

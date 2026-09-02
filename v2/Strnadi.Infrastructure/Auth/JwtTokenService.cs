@@ -32,7 +32,7 @@ public class JwtTokenService(IJwtSettings jwtSettings) : ITokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public bool ValidateToken(string token, out int userId)
+    public bool ValidateToken(string token, out int userId, bool validateLifetime = true)
     {
         var handler = new JwtSecurityTokenHandler();
         var validationParameters = new TokenValidationParameters
@@ -43,7 +43,7 @@ public class JwtTokenService(IJwtSettings jwtSettings) : ITokenService
             ValidIssuer = jwtSettings.Issuer,
             ValidateAudience = true,
             ValidAudience = jwtSettings.Audience,
-            ValidateLifetime = true,
+            ValidateLifetime = validateLifetime,
             ClockSkew = TimeSpan.Zero
         };
 

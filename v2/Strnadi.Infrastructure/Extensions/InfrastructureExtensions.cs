@@ -4,6 +4,7 @@ using Strnadi.Domain.Persistence.Repositories;
 using Strnadi.Domain.Services;
 using Strnadi.Infrastructure.Auth;
 using Strnadi.Infrastructure.Configuration;
+using Strnadi.Infrastructure.Email;
 using Strnadi.Infrastructure.MapyCz;
 using Strnadi.Infrastructure.Notifications;
 using Strnadi.Infrastructure.Persistence.Repositories;
@@ -45,6 +46,9 @@ public static class InfrastructureExtensions
             serviceCollection.AddScoped<IMapPointsRepository, MapPointsRepository>();
 
             serviceCollection.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+            serviceCollection.AddScoped<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
+            serviceCollection.AddSingleton<IAppleIdTokenValidator, AppleIdTokenValidator>();
+            serviceCollection.AddScoped<IEmailSender, SmtpEmailSender>();
 
             serviceCollection.AddHttpClient<IMapyCzProxyService, MapyCzProxyService>();
             serviceCollection.AddHttpClient<IPushNotificationService, FirebaseNotificationService>();
