@@ -16,4 +16,10 @@ public class AchievementsRepository(AppDbContext db) : IAchievementsRepository
         db.UserAchievements.Where(ua => ua.UserId == userId).ToArrayAsync(cancellationToken);
 
     public void Add(Achievement achievement) => db.Achievements.Add(achievement);
+
+    public Task<int[]> GetEligibleUserIdsAsync(string sql, CancellationToken cancellationToken = default) =>
+        db.Database.SqlQueryRaw<int>(sql).ToArrayAsync(cancellationToken);
+
+    public void Award(int userId, int achievementId) =>
+        db.UserAchievements.Add(new UserAchievement { UserId = userId, AchievementId = achievementId });
 }

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Strnadi.Api.Extensions;
 using Strnadi.Application.Recordings;
 
 namespace Strnadi.Api.Controllers;

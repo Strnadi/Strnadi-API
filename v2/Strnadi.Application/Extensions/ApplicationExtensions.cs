@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Strnadi.Application.Achievements;
 using Strnadi.Application.Devices;
 using Strnadi.Application.Maps;
 using Strnadi.Application.Notifications;
@@ -18,6 +19,7 @@ public static class ApplicationExtensions
             serviceCollection.AddScoped<NotificationsService>();
             serviceCollection.AddScoped<MapClustersService>();
             serviceCollection.AddScoped<DevicesService>();
+            serviceCollection.AddScoped<AchievementsService>();
 
             return serviceCollection;
         }

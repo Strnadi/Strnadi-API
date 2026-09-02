@@ -11,4 +11,9 @@ public interface IAchievementsRepository
     Task<UserAchievement[]> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default);
 
     void Add(Achievement achievement);
+
+    // TODO(security): sql is admin-authored and executed as raw SQL - see backend-review.md, needs a safe criteria/rule system.
+    Task<int[]> GetEligibleUserIdsAsync(string sql, CancellationToken cancellationToken = default);
+
+    void Award(int userId, int achievementId);
 }
