@@ -1,3 +1,4 @@
+using Strnadi.Application.Common;
 using Strnadi.Domain.Entities;
 using Strnadi.Domain.Exceptions;
 using Strnadi.Domain.Persistence;
@@ -6,16 +7,27 @@ using Strnadi.Domain.Services;
 
 namespace Strnadi.Application.Achievements;
 
-public class AchievementsService(IAchievementsRepository achievements, IFileStorage fileStorage, IUnitOfWork unitOfWork)
+public class AchievementsService(IAchievementsRepository achievements, IFileStorage fileStorage, IUnitOfWork unitOfWork, LinkBuilder linkBuilder)
 {
-    public async Task<object> GetAllAsync(int? userId, CancellationToken cancellationToken = default)
+    public async Task<AchievementResponse[]> GetAllAsync(int? userId, CancellationToken cancellationToken = default)
     {
         if (userId is null)
-            return await achievements.GetAllAsync(cancellationToken);
+        {
+            var all = await achievements.GetAllAsync(cancellationToken);
+            return all.Select(ToResponse).ToArray();
+        }
 
         await CheckAndAwardAchievementsAsync(userId.Value, cancellationToken);
-        return await achievements.GetByUserIdAsync(userId.Value, cancellationToken);
+        var earned = await achievements.GetByUserIdAsync(userId.Value, cancellationToken);
+        return earned.Select(ToResponse).ToArray();
     }
+
+    private AchievementResponse ToResponse(Achievement achievement) => new(
+        achievement.Id,
+        linkBuilder.AchievementImageLink(achievement.Id),
+        achievement.AchievementContents
+            .Select(c => new AchievementContentResponse(c.Title, c.Description, c.LanguageCode))
+            .ToArray());
 
     public async Task<byte[]> GetPhotoAsync(int achievementId, CancellationToken cancellationToken = default)
     {
@@ -60,7 +72,7 @@ public class AchievementsService(IAchievementsRepository achievements, IFileStor
     {
         var allAchievements = await achievements.GetAllAsync(cancellationToken);
         var userAchievements = await achievements.GetByUserIdAsync(userId, cancellationToken);
-        var alreadyAwardedIds = userAchievements.Select(ua => ua.AchievementId).ToHashSet();
+        var alreadyAwardedIds = userAchievements.Select(a => a.Id).ToHashSet();
 
         foreach (var achievement in allAchievements.Where(a => !alreadyAwardedIds.Contains(a.Id)))
         {

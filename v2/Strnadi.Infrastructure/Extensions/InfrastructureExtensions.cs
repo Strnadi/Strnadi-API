@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Strnadi.Domain.Configuration;
+using Strnadi.Domain.Persistence;
 using Strnadi.Domain.Persistence.Repositories;
 using Strnadi.Domain.Services;
 using Strnadi.Infrastructure.Auth;
@@ -7,6 +8,7 @@ using Strnadi.Infrastructure.Configuration;
 using Strnadi.Infrastructure.Email;
 using Strnadi.Infrastructure.MapyCz;
 using Strnadi.Infrastructure.Notifications;
+using Strnadi.Infrastructure.Persistence;
 using Strnadi.Infrastructure.Persistence.Repositories;
 using Strnadi.Infrastructure.Storage;
 
@@ -31,6 +33,8 @@ public static class InfrastructureExtensions
             serviceCollection.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
             
             serviceCollection.AddSingleton<IFileStorage, LocalStorage>();
+
+            serviceCollection.AddScoped<IUnitOfWork, UnitOfWork>();
 
             serviceCollection.AddScoped<IUsersRepository, UsersRepository>();
             serviceCollection.AddScoped<IPhotosRepository, PhotosRepository>();

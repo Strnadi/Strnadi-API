@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 using Strnadi.Api.ExceptionHandling;
 using Strnadi.Api.Logging;
@@ -28,7 +29,39 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>();
 
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Strnadi API",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("bearerAuth", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "bearerAuth" }
+            },
+            []
+        }
+    });
+
+    foreach (var xmlFile in Directory.GetFiles(AppContext.BaseDirectory, "Strnadi.*.xml"))
+    {
+        options.IncludeXmlComments(xmlFile, includeControllerXmlComments: true);
+    }
+});
 
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -78,5 +111,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/utils/health");
+
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Strnadi API v1");
+    options.RoutePrefix = "swagger";
+    options.DocumentTitle = "Strnadi API - Swagger";
+});
 
 app.Run();

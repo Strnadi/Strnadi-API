@@ -11,9 +11,7 @@ public class CompactConsoleFormatter() : ConsoleFormatter("compact")
         if (string.IsNullOrEmpty(message) && logEntry.Exception != null)
             return;
 
-#pragma warning disable CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
-        var level = logEntry.State switch
-#pragma warning restore CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
+        var level = logEntry.LogLevel switch
         {
             LogLevel.Trace => "TRC",
             LogLevel.Debug => "DBG",
@@ -21,6 +19,7 @@ public class CompactConsoleFormatter() : ConsoleFormatter("compact")
             LogLevel.Warning => "WRN",
             LogLevel.Error => "ERR",
             LogLevel.Critical => "CRT",
+            _ => "???"
         };
         
         textWriter.Write($"[{level}] ");

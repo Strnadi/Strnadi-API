@@ -8,7 +8,7 @@ public interface IAchievementsRepository
 
     Task<Achievement?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
-    Task<UserAchievement[]> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default);
+    Task<Achievement[]> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default);
 
     void Add(Achievement achievement);
 
