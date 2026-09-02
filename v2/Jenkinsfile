@@ -1,0 +1,129 @@
+
+pipeline {
+    agent {
+        label 'container-build'
+    }
+
+    options {
+        skipDefaultCheckout()
+        timestamps()
+        timeout(time: 45, unit: 'MINUTES')
+    }
+
+    environment {
+        APPLICATION = 'strnadi-api'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+
+                script {
+                    env.RESOLVED_GIT_SHA = sh(
+                        script: 'git rev-parse HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    if (!(env.RESOLVED_GIT_SHA ==~ /[0-9a-f]{40}/)) {
+                        error('Unable to resolve the complete Git SHA.')
+                    }
+                }
+            }
+        }
+
+        stage('Validate build contract') {
+            steps {
+                sh '''
+                    set -eu
+
+                    test -f Dockerfile
+                    test -f deployment/compose.yaml
+                    test -f deployment/env.example
+
+                    test ! -f appsettings.json
+                    test ! -f Host/appsettings.json
+
+                    docker buildx version
+                    docker buildx inspect --bootstrap
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    set -eu
+
+                    docker buildx build \
+                      --pull \
+                      --progress=plain \
+                      --target test \
+                      --output=type=cacheonly \
+                      .
+                '''
+            }
+        }
+
+        stage('Validate production image') {
+            steps {
+                sh '''
+                    set -eu
+
+                    docker buildx build \
+                      --progress=plain \
+                      --target final \
+                      --output=type=cacheonly \
+                      .
+                '''
+            }
+        }
+
+        stage('Request trusted publication') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'master'
+                    buildingTag()
+                }
+            }
+
+            steps {
+                script {
+                    String targetEnvironment =
+                        env.BRANCH_NAME == 'master' ? 'production' : 'dev'
+
+                    build(
+                        job: '/Trusted/BuildApplication',
+                        wait: true,
+                        propagate: true,
+                        parameters: [
+                            string(
+                                name: 'APPLICATION',
+                                value: env.APPLICATION
+                            ),
+                            string(
+                                name: 'ENVIRONMENT',
+                                value: targetEnvironment
+                            ),
+                            string(
+                                name: 'GIT_SHA',
+                                value: env.RESOLVED_GIT_SHA
+                            ),
+                            string(
+                                name: 'SOURCE_BUILD_URL',
+                                value: env.BUILD_URL
+                            )
+                        ]
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            deleteDir()
+        }
+    }
+}

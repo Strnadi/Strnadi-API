@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
-using Strnadi.Infrastructure.Persistence.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using Strnadi.Domain.Entities;
 
 namespace Strnadi.Infrastructure.Persistence;
 
@@ -23,6 +21,10 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<ArticleCategory> ArticleCategories { get; set; }
 
     public virtual DbSet<ArticleCategoryAssignment> ArticleCategoryAssignments { get; set; }
+
+    public virtual DbSet<ArticleCategoryTranslation> ArticleCategoryTranslations { get; set; }
+
+    public virtual DbSet<ArticleTranslation> ArticleTranslations { get; set; }
 
     public virtual DbSet<DetectedDialect> DetectedDialects { get; set; }
 
@@ -150,6 +152,44 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.Category).WithMany(p => p.ArticleCategoryAssignments)
                 .HasForeignKey(d => d.CategoryId)
                 .HasConstraintName("article_category_assignment_category_id_fkey");
+        });
+
+        modelBuilder.Entity<ArticleCategoryTranslation>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("article_category_translations_pkey");
+
+            entity.ToTable("article_category_translations");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ArticleCategoryId).HasColumnName("article_category_id");
+            entity.Property(e => e.LanguageCode)
+                .HasMaxLength(5)
+                .HasColumnName("language_code");
+            entity.Property(e => e.NameValue).HasColumnName("name_value");
+            entity.Property(e => e.DescriptionValue).HasColumnName("description_value");
+
+            entity.HasOne(d => d.ArticleCategory).WithMany(p => p.ArticleCategoryTranslations)
+                .HasForeignKey(d => d.ArticleCategoryId)
+                .HasConstraintName("article_category_translations_article_category_id_fkey");
+        });
+
+        modelBuilder.Entity<ArticleTranslation>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("article_translations_pkey");
+
+            entity.ToTable("article_translations");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ArticleId).HasColumnName("article_id");
+            entity.Property(e => e.LanguageCode)
+                .HasMaxLength(5)
+                .HasColumnName("language_code");
+            entity.Property(e => e.NameValue).HasColumnName("name_value");
+            entity.Property(e => e.DescriptionValue).HasColumnName("description_value");
+
+            entity.HasOne(d => d.Article).WithMany(p => p.ArticleTranslations)
+                .HasForeignKey(d => d.ArticleId)
+                .HasConstraintName("article_translations_article_id_fkey");
         });
 
         modelBuilder.Entity<DetectedDialect>(entity =>
