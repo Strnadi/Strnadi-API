@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
+using ServiceDefaults;
 using Tenant.Api.ExceptionHandling;
 using Tenant.Api.Logging;
 using Tenant.Application.Extensions;
@@ -17,6 +17,8 @@ using Tenant.Infrastructure.Extensions;
 using Tenant.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 builder.Services.AddControllers();
 
@@ -99,6 +101,8 @@ builder.Services.AddSingleton<ConsoleFormatter, CompactConsoleFormatter>();
 builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 app.UseHttpsRedirection();
 

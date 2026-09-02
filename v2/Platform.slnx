@@ -5,4 +5,6 @@
     <Project Path="src/Tenant/Tenant.Domain/Tenant.Domain.csproj" />
     <Project Path="src/Tenant/Tenant.Infrastructure/Tenant.Infrastructure.csproj" />
   </Folder>
+  <Project Path="src/AppHost/AppHost.csproj" />
+  <Project Path="src/ServiceDefaults/ServiceDefaults.csproj" />
 </Solution>
