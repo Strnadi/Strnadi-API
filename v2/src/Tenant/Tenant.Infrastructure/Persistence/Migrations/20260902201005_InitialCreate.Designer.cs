@@ -11,7 +11,7 @@ using Tenant.Infrastructure.Persistence;
 
 namespace Tenant.Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(TenantDbContext))]
     [Migration("20260902201005_InitialCreate")]
     partial class InitialCreate
     {

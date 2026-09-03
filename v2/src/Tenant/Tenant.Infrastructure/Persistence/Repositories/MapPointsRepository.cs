@@ -4,7 +4,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class MapPointsRepository(AppDbContext db) : IMapPointsRepository
+public class MapPointsRepository(TenantDbContext db) : IMapPointsRepository
 {
     // Same set as FilteredRecordingPartsRepository.VerifiedStates - anything except
     // AwaitingProcession/UnableToConfirm.

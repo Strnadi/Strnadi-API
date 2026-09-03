@@ -5,7 +5,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class FilteredRecordingPartsRepository(AppDbContext db) : IFilteredRecordingPartsRepository
+public class FilteredRecordingPartsRepository(TenantDbContext db) : IFilteredRecordingPartsRepository
 {
     // verified = anything except AwaitingProcession/UnableToConfirm.
     private static readonly short[] VerifiedStates =

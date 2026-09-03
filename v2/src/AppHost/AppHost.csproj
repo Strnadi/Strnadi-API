@@ -11,6 +11,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Tenant\Tenant.Api\Tenant.Api.csproj" />
+      <ProjectReference Include="..\Administration\Administration.Api\Administration.Api.csproj" />
     </ItemGroup>
 
     <ItemGroup>

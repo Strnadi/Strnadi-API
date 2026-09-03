@@ -4,7 +4,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class RecordingPartsRepository(AppDbContext db) : IRecordingPartsRepository
+public class RecordingPartsRepository(TenantDbContext db) : IRecordingPartsRepository
 {
     public Task<RecordingPart?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         db.RecordingParts.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);

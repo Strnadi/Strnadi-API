@@ -5,11 +5,11 @@
     <Project Path="src/Tenant/Tenant.Domain/Tenant.Domain.csproj" />
     <Project Path="src/Tenant/Tenant.Infrastructure/Tenant.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/Admin/">
-    <Project Path="src/Admin/Admin.Api/Admin.Api.csproj"/>
-    <Project Path="src/Admin/Admin.Application/Admin.Application.csproj"/>
-    <Project Path="src/Admin/Admin.Domain/Admin.Domain.csproj"/>
-    <Project Path="src/Admin/Admin.Infrastructure/Admin.Infrastructure.csproj"/>
+  <Folder Name="/Administration/">
+    <Project Path="src/Administration/Administration.Api/Administration.Api.csproj"/>
+    <Project Path="src/Administration/Administration.Application/Administration.Application.csproj"/>
+    <Project Path="src/Administration/Administration.Domain/Administration.Domain.csproj"/>
+    <Project Path="src/Administration/Administration.Infrastructure/Administration.Infrastructure.csproj"/>
   </Folder>
   <Project Path="src/AppHost/AppHost.csproj" />
   <Project Path="src/ServiceDefaults/ServiceDefaults.csproj" />

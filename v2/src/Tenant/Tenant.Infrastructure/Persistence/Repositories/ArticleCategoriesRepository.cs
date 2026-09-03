@@ -4,7 +4,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class ArticleCategoriesRepository(AppDbContext db) : IArticleCategoriesRepository
+public class ArticleCategoriesRepository(TenantDbContext db) : IArticleCategoriesRepository
 {
     public Task<ArticleCategory[]> GetAllAsync(bool includeArticles, CancellationToken cancellationToken = default)
     {

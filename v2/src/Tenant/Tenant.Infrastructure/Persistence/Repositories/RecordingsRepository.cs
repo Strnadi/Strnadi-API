@@ -4,7 +4,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class RecordingsRepository(AppDbContext db) : IRecordingsRepository
+public class RecordingsRepository(TenantDbContext db) : IRecordingsRepository
 {
     public Task<Recording[]> GetAllAsync(int? userId, CancellationToken cancellationToken = default)
     {

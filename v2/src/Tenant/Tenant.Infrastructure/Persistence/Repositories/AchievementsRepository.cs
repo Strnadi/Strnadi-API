@@ -4,7 +4,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class AchievementsRepository(AppDbContext db) : IAchievementsRepository
+public class AchievementsRepository(TenantDbContext db) : IAchievementsRepository
 {
     public Task<Achievement[]> GetAllAsync(CancellationToken cancellationToken = default) =>
         db.Achievements.Include(a => a.AchievementContents).ToArrayAsync(cancellationToken);

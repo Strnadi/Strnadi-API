@@ -4,7 +4,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class DevicesRepository(AppDbContext db) : IDevicesRepository
+public class DevicesRepository(TenantDbContext db) : IDevicesRepository
 {
     public Task<Device?> GetByFcmTokenAsync(string fcmToken, CancellationToken cancellationToken = default) =>
         db.Devices.FirstOrDefaultAsync(d => d.FcmToken == fcmToken, cancellationToken);

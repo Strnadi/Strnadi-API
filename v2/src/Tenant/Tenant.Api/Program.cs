@@ -27,11 +27,11 @@ builder.Services.AddControllers();
 builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 
-builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
     options.UseNpgsql(sp.GetRequiredService<IDatabaseSettings>().ConnectionString));
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>();
+    .AddDbContextCheck<TenantDbContext>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -109,7 +109,7 @@ builder.Logging.AddConsole(options => options.FormatterName = "compact");
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
-    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<TenantDbContext>().Database.MigrateAsync();
 
 app.MapDefaultEndpoints();
 

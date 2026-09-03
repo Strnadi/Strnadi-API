@@ -4,7 +4,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class UsersRepository(AppDbContext db) : IUsersRepository
+public class UsersRepository(TenantDbContext db) : IUsersRepository
 {
     public async Task<User[]> GetAllAsync(CancellationToken cancellationToken = default)
     {

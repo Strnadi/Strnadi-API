@@ -4,7 +4,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
-public class DialectsRepository(AppDbContext db) : IDialectsRepository
+public class DialectsRepository(TenantDbContext db) : IDialectsRepository
 {
     public Task<Dialect[]> GetAllAsync(CancellationToken cancellationToken = default) =>
         db.Dialects.ToArrayAsync(cancellationToken);
