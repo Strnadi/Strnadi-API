@@ -7,21 +7,24 @@ FROM ${DOTNET_SDK_IMAGE} AS restore
 
 WORKDIR /source
 
-COPY v2/Directory.Build.props v2/StrnadiAPI.v2.slnx ./v2/
-COPY v2/Strnadi.Api/Strnadi.Api.csproj ./v2/Strnadi.Api/
-COPY v2/Strnadi.Application/Strnadi.Application.csproj ./v2/Strnadi.Application/
-COPY v2/Strnadi.Domain/Strnadi.Domain.csproj ./v2/Strnadi.Domain/
-COPY v2/Strnadi.Infrastructure/Strnadi.Infrastructure.csproj ./v2/Strnadi.Infrastructure/
+# Build the API and its dependencies, without the local Aspire AppHost.
+COPY v2/Directory.Build.props ./v2/
+COPY v2/src/Tenant/Tenant.Api/Tenant.Api.csproj ./v2/src/Tenant/Tenant.Api/
+COPY v2/src/Tenant/Tenant.Application/Tenant.Application.csproj ./v2/src/Tenant/Tenant.Application/
+COPY v2/src/Tenant/Tenant.Domain/Tenant.Domain.csproj ./v2/src/Tenant/Tenant.Domain/
+COPY v2/src/Tenant/Tenant.Infrastructure/Tenant.Infrastructure.csproj ./v2/src/Tenant/Tenant.Infrastructure/
+COPY v2/src/ServiceDefaults/ServiceDefaults.csproj ./v2/src/ServiceDefaults/
 
 RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore v2/StrnadiAPI.v2.slnx
+    dotnet restore v2/src/Tenant/Tenant.Api/Tenant.Api.csproj
 
 FROM restore AS build
 
-COPY v2/ ./v2/
+COPY v2/src/Tenant/ ./v2/src/Tenant/
+COPY v2/src/ServiceDefaults/ ./v2/src/ServiceDefaults/
 
 RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
-    dotnet build v2/StrnadiAPI.v2.slnx \
+    dotnet build v2/src/Tenant/Tenant.Api/Tenant.Api.csproj \
       --configuration Release \
       --no-restore
 
@@ -31,7 +34,7 @@ FROM build AS test
 FROM build AS publish
 
 RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
-    dotnet publish v2/Strnadi.Api/Strnadi.Api.csproj \
+    dotnet publish v2/src/Tenant/Tenant.Api/Tenant.Api.csproj \
       --configuration Release \
       --no-restore \
       --output /app/publish \
@@ -56,4 +59,4 @@ USER $APP_UID
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD bash -ec 'exec 3<>/dev/tcp/127.0.0.1/8080; printf "GET /utils/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3; head -n 1 <&3 | grep -q " 200 "'
 
-ENTRYPOINT ["dotnet", "Strnadi.Api.dll"]
+ENTRYPOINT ["dotnet", "Tenant.Api.dll"]
