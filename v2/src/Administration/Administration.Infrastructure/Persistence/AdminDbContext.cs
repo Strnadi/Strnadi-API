@@ -6,7 +6,11 @@ namespace Administration.Infrastructure.Persistence;
 
 public class AdminDbContext(DbContextOptions<AdminDbContext> options) : DbContext(options)
 {
-    public virtual DbSet<AdminUser> Users { get; set; }
+    public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<Role> Roles { get; set; }
+
+    public virtual DbSet<Permission> Permissions { get; set; }
 
     // Columns are "timestamp without time zone", but application code sets them with
     // DateTime.UtcNow (Kind=Utc); Npgsql rejects that mismatch, so strip/restore the Kind
@@ -31,16 +35,16 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options) : DbContex
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseOpenIddict();
-        
-        modelBuilder.Entity<AdminUser>(entity =>
+
+        modelBuilder.Entity<User>(entity =>
         {
-            entity.ToTable("admin_users");
+            entity.ToTable("users");
 
-            entity.HasKey(e => e.Id).HasName("admin_users_pkey");
+            entity.HasKey(e => e.Id).HasName("users_pkey");
 
-            entity.HasIndex(e => e.Email, "admin_users_email_key").IsUnique();
-            entity.HasIndex(e => e.GoogleId, "admin_users_google_id_key").IsUnique();
-            entity.HasIndex(e => e.AppleId, "admin_users_apple_id_key").IsUnique();
+            entity.HasIndex(e => e.Email, "users_email_key").IsUnique();
+            entity.HasIndex(e => e.GoogleId, "users_google_id_key").IsUnique();
+            entity.HasIndex(e => e.AppleId, "users_apple_id_key").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
 
@@ -64,11 +68,6 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options) : DbContex
                 .HasMaxLength(255)
                 .HasColumnName("apple_id");
 
-            entity.Property(e => e.Role)
-                .HasMaxLength(32)
-                .HasDefaultValue("user")
-                .HasColumnName("role");
-
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnType("timestamp without time zone")
@@ -77,6 +76,80 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options) : DbContex
             entity.Property(e => e.Deleted)
                 .HasDefaultValue(false)
                 .HasColumnName("deleted");
+
+            entity.HasMany(e => e.Roles)
+                .WithMany(r => r.Users)
+                .UsingEntity<Dictionary<string, object>>(
+                    "user_roles",
+                    j => j.HasOne<Role>().WithMany().HasForeignKey("role_id").HasConstraintName("user_roles_role_id_fkey"),
+                    j => j.HasOne<User>().WithMany().HasForeignKey("user_id").HasConstraintName("user_roles_user_id_fkey"),
+                    j =>
+                    {
+                        j.ToTable("user_roles");
+                        j.HasKey("user_id", "role_id").HasName("user_roles_pkey");
+                    });
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.ToTable("roles");
+
+            entity.HasKey(e => e.Id).HasName("roles_pkey");
+
+            entity.HasIndex(e => e.Name, "roles_name_key").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(64)
+                .HasColumnName("name");
+
+            entity.HasMany(e => e.Permissions)
+                .WithMany(p => p.Roles)
+                .UsingEntity<Dictionary<string, object>>(
+                    "role_permissions",
+                    j => j.HasOne<Permission>().WithMany().HasForeignKey("permission_id").HasConstraintName("role_permissions_permission_id_fkey"),
+                    j => j.HasOne<Role>().WithMany().HasForeignKey("role_id").HasConstraintName("role_permissions_role_id_fkey"),
+                    j =>
+                    {
+                        j.ToTable("role_permissions");
+                        j.HasKey("role_id", "permission_id").HasName("role_permissions_pkey");
+                    });
+        });
+
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.ToTable("permissions");
+
+            entity.HasKey(e => e.Id).HasName("permissions_pkey");
+
+            entity.HasIndex(e => e.Code, "permissions_code_key").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+
+            entity.Property(e => e.Code)
+                .HasMaxLength(128)
+                .HasColumnName("code");
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(255)
+                .HasColumnName("description");
+
+            // Fixed, code-defined catalog: each code corresponds to an actual authorization
+            // check somewhere in the code, so new permissions arrive via migration, not via UI.
+            entity.HasData(
+                new Permission
+                {
+                    Id = 1,
+                    Code = "administration.users.manage",
+                    Description = "Create, update, and delete Administration user accounts."
+                },
+                new Permission
+                {
+                    Id = 2,
+                    Code = "administration.roles.manage",
+                    Description = "Create roles and assign permissions to them."
+                });
         });
     }
 }

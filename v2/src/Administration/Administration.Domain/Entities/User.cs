@@ -1,6 +1,6 @@
 namespace Administration.Domain.Entities;
 
-public class AdminUser
+public class User
 {
     public int Id { get; set; }
 
@@ -15,9 +15,9 @@ public class AdminUser
 
     public string? AppleId { get; set; }
 
-    public string Role { get; set; } = "user";
-
     public DateTime CreatedAt { get; set; }
 
     public bool Deleted { get; set; }
+
+    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
 }
