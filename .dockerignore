@@ -1,11 +1,14 @@
-﻿**
+**
 
 !Dockerfile
 !.dockerignore
 !v2/
 !v2/**
 
-v2/**/.env
+# Never send local/runtime env files (including .env.development) to the builder.
+v2/**/.env*
+v2/**/*.env
+v2/**/*.env.*
 v2/**/bin/
 v2/**/obj/
 v2/artifacts/
