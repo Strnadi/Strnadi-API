@@ -108,9 +108,9 @@ builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-    await scope.ServiceProvider.GetRequiredService<TenantDbContext>().Database.MigrateAsync();
-
+// Migrations are applied manually (`dotnet ef database update`), not on startup — Aspire can
+// point this at a shared/copied database, and auto-migrating on every boot would race against
+// other instances or mutate a database other people are using.
 app.MapDefaultEndpoints();
 
 app.UseHttpsRedirection();
