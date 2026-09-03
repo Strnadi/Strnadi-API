@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tenant.Domain.Entities;
 
 namespace Tenant.Infrastructure.Persistence;
@@ -9,6 +10,26 @@ public partial class AppDbContext : DbContext
         : base(options)
     {
     }
+
+    // Columns are "timestamp without time zone" (Database-First from the existing schema), but
+    // application code sets them with DateTime.UtcNow (Kind=Utc); Npgsql rejects that mismatch,
+    // so strip/restore the Kind on the way in/out instead of touching every call site.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>()
+            .HaveConversion<UtcDateTimeConverter>();
+
+        configurationBuilder.Properties<DateTime?>()
+            .HaveConversion<NullableUtcDateTimeConverter>();
+    }
+
+    private sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
+        v => DateTime.SpecifyKind(v, DateTimeKind.Unspecified),
+        v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+    private sealed class NullableUtcDateTimeConverter() : ValueConverter<DateTime?, DateTime?>(
+        v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Unspecified) : v,
+        v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
 
     public virtual DbSet<Achievement> Achievements { get; set; }
 

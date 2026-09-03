@@ -11,9 +11,10 @@ public class UsersService(IUsersRepository users,
     ITokenService tokenService,
     IPasswordHasher passwordHasher)
 {
-    public async Task<User[]> GetAllUsersAsync(CancellationToken cancellationToken = default)
+    public async Task<UserResponse[]> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
-        return await users.GetAllAsync(cancellationToken);
+        var all = await users.GetAllAsync(cancellationToken);
+        return all.Select(u => new UserResponse(u.Id, u.Email, u.Nickname, u.FirstName, u.LastName)).ToArray();
     }
 
     public async Task<UserResponse> GetUserByIdAsync(int id, int? callerId, bool isAdmin, CancellationToken cancellationToken = default)

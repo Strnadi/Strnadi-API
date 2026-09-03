@@ -16,6 +16,8 @@ using Tenant.Infrastructure.Auth;
 using Tenant.Infrastructure.Extensions;
 using Tenant.Infrastructure.Persistence;
 
+LoadEnvFile(Path.Combine(AppContext.BaseDirectory, ".env.development"));
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
@@ -75,6 +77,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
     .Configure<IJwtSettings>((options, jwt) =>
     {
+        // Keep claim types as issued ("sub", "role", ...) instead of the default remap to
+        // long ClaimTypes.* URIs — GetCallerId()/IsAdmin() and the AdminOnly policy all look
+        // up claims by their original short JWT names.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
@@ -102,6 +108,9 @@ builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+
 app.MapDefaultEndpoints();
 
 app.UseHttpsRedirection();
@@ -125,30 +134,30 @@ app.UseSwaggerUI(options =>
 });
 
 app.Run();
-//
-// // Loads KEY=VALUE pairs from a .env file into the process environment so
-// // ASP.NET Core's built-in environment-variable configuration provider picks
-// // them up (Jwt__SecretKey -> config key "Jwt:SecretKey"). Variables already
-// // set in the environment take precedence over the file.
-// static void LoadEnvFile(string path)
-// {
-//     if (!File.Exists(path))
-//         return;
-//
-//     foreach (var line in File.ReadAllLines(path))
-//     {
-//         var trimmed = line.Trim();
-//         if (trimmed.Length == 0 || trimmed.StartsWith('#'))
-//             continue;
-//
-//         var separatorIndex = trimmed.IndexOf('=');
-//         if (separatorIndex < 0)
-//             continue;
-//
-//         var key = trimmed[..separatorIndex].Trim();
-//         var value = trimmed[(separatorIndex + 1)..].Trim().Trim('"');
-//
-//         if (Environment.GetEnvironmentVariable(key) is null)
-//             Environment.SetEnvironmentVariable(key, value);
-//     }
-// }
+
+// Loads KEY=VALUE pairs from a .env file into the process environment so
+// ASP.NET Core's built-in environment-variable configuration provider picks
+// them up (Jwt__SecretKey -> config key "Jwt:SecretKey"). Variables already
+// set in the environment take precedence over the file.
+static void LoadEnvFile(string path)
+{
+    if (!File.Exists(path))
+        return;
+
+    foreach (var line in File.ReadAllLines(path))
+    {
+        var trimmed = line.Trim();
+        if (trimmed.Length == 0 || trimmed.StartsWith('#'))
+            continue;
+
+        var separatorIndex = trimmed.IndexOf('=');
+        if (separatorIndex < 0)
+            continue;
+
+        var key = trimmed[..separatorIndex].Trim();
+        var value = trimmed[(separatorIndex + 1)..].Trim().Trim('"');
+
+        if (Environment.GetEnvironmentVariable(key) is null)
+            Environment.SetEnvironmentVariable(key, value);
+    }
+}

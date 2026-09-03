@@ -34,7 +34,7 @@ public class JwtTokenService(IJwtSettings jwtSettings) : ITokenService
 
     public bool ValidateToken(string token, out int userId, bool validateLifetime = true)
     {
-        var handler = new JwtSecurityTokenHandler();
+        var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
         var validationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
