@@ -1,0 +1,67 @@
+services:
+  api:
+    image: "${STRNADI_API_IMAGE:?STRNADI_API_IMAGE is required}"
+    pull_policy: always
+    restart: unless-stopped
+    init: true
+
+    env_file:
+      - "${STRNADI_API_RUNTIME_ENV_FILE:?STRNADI_API_RUNTIME_ENV_FILE is required}"
+
+    expose:
+      - "8080"
+
+    volumes:
+      - type: bind
+        source: "${STRNADI_API_STORAGE_DIR:?STRNADI_API_STORAGE_DIR is required}"
+        target: /var/lib/strnadi/storage
+
+    networks:
+      - proxy
+      - database
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    deploy:
+      resources:
+        limits:
+          cpus: "${STRNADI_API_CPU_LIMIT:-1.5}"
+          memory: "${STRNADI_API_MEMORY_LIMIT:-1G}"
+          pids: 256
+
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-proxy}"
+
+      - "traefik.http.routers.${STRNADI_API_TRAEFIK_NAME:?router name is required}.rule=Host(`${STRNADI_API_HOSTNAME:?hostname is required}`)"
+      - "traefik.http.routers.${STRNADI_API_TRAEFIK_NAME}.entrypoints=websecure"
+      - "traefik.http.routers.${STRNADI_API_TRAEFIK_NAME}.tls=true"
+      - "traefik.http.routers.${STRNADI_API_TRAEFIK_NAME}.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-le}"
+      - "traefik.http.routers.${STRNADI_API_TRAEFIK_NAME}.service=${STRNADI_API_TRAEFIK_NAME}"
+
+      - "traefik.http.services.${STRNADI_API_TRAEFIK_NAME}.loadbalancer.server.port=8080"
+      - "traefik.http.services.${STRNADI_API_TRAEFIK_NAME}.loadbalancer.server.scheme=http"
+
+networks:
+  proxy:
+    external: true
+    name: "${TRAEFIK_NETWORK:-proxy}"
+
+  database:
+    external: true
+    name: "${STRNADI_API_DATABASE_NETWORK:?database network is required}"
