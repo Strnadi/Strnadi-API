@@ -4,10 +4,11 @@ namespace Tenant.Application.Maps;
 
 public record MapClustersResult(MapBounds Bounds, int ClusterResolutionPx, double DetailZoomThreshold, MapCluster[] Clusters);
 
+public record Coords(double Latitude, double Longitude);
+
 public record MapCluster(
     string Id,
-    double CenterLatitude,
-    double CenterLongitude,
+    Coords Center,
     int Count,
     int RadiusPx,
     bool Expandable,
@@ -20,8 +21,7 @@ public record MapDialectBreakdown(int? DialectId, string Key, string Label, int 
 public record MapClusterItem(
     int RecordingId,
     int PartId,
-    double Latitude,
-    double Longitude,
+    Coords Location,
     DateTime CreatedAt,
     int? DialectId,
     string? DialectLabel,

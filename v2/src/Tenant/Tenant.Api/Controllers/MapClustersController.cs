@@ -42,14 +42,13 @@ public class MapClustersController(MapClustersService mapClusters) : ControllerB
         if (zoom is null && !hasBounds)
             return BadRequest(new { error = "invalid_viewport", message = "zoom is required" });
 
-        MapBounds? bounds = hasBounds ? new MapBounds(north!.Value, south!.Value, east!.Value, west!.Value) : null;
+        var bounds = hasBounds ? new MapBounds(north!.Value, south!.Value, east!.Value, west!.Value) : null;
 
         if (bounds is not null && (bounds.North <= bounds.South || bounds.East <= bounds.West))
             return UnprocessableEntity(new { error = "invalid_bounds" });
 
         var query = new MapClustersQuery(
-            centerLat,
-            centerLng,
+            hasCenterZoom ? new Coords(centerLat!.Value, centerLng!.Value) : null,
             zoom ?? 0,
             viewportWidthPx,
             viewportHeightPx,

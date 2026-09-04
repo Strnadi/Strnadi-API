@@ -10,7 +10,7 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
     public async Task<MapClustersResult> GetClustersAsync(MapClustersQuery query, CancellationToken cancellationToken = default)
     {
         var bounds = query.Bounds ?? ResolveBounds(
-            query.CenterLatitude!.Value, query.CenterLongitude!.Value, query.Zoom,
+            query.Center!.Latitude, query.Center!.Longitude, query.Zoom,
             query.ViewportWidthPx!.Value, query.ViewportHeightPx!.Value);
 
         var filters = new MapPointFilters(query.Verified, query.UserId, query.CreatedFrom, query.CreatedTo);
@@ -36,8 +36,7 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
     {
         int count = points.Length;
 
-        double centerLat = points.Average(p => p.Latitude);
-        double centerLng = points.Average(p => p.Longitude);
+        var center = new Coords(points.Average(p => p.Latitude), points.Average(p => p.Longitude));
 
         var dialectBreakdown = points
             .Select(p => ResolveDialectId(p, dialectMode))
@@ -61,12 +60,12 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
             {
                 var dialectId = ResolveDialectId(p, dialectMode);
                 string? label = dialectId is not null && dialectCodesById.TryGetValue(dialectId.Value, out var code) ? code : null;
-                return new MapClusterItem(p.RecordingId, p.PartId, p.Latitude, p.Longitude, p.CreatedAt,
+                return new MapClusterItem(p.RecordingId, p.PartId, new Coords(p.Latitude, p.Longitude), p.CreatedAt,
                     dialectId, label, ResolveDialectSource(p, dialectMode));
             }).ToArray()
             : null;
 
-        return new MapCluster(id, centerLat, centerLng, count, radiusPx, Expandable: !leaf, leaf, dialectBreakdown, items);
+        return new MapCluster(id, center, count, radiusPx, Expandable: !leaf, leaf, dialectBreakdown, items);
     }
 
     private static string ResolveDialectSource(MapPointCandidate point, DialectMode dialectMode) => dialectMode switch

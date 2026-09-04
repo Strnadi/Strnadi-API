@@ -5,8 +5,7 @@ namespace Tenant.Application.Maps;
 public enum DialectMode { All, AiAdmin, AdminOnly }
 
 public record MapClustersQuery(
-    double? CenterLatitude,
-    double? CenterLongitude,
+    Coords? Center,
     double Zoom,
     int? ViewportWidthPx,
     int? ViewportHeightPx,
