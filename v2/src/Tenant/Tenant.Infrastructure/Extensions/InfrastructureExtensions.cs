@@ -3,6 +3,9 @@ using Tenant.Domain.Configuration;
 using Tenant.Domain.Persistence;
 using Tenant.Domain.Persistence.Repositories;
 using Tenant.Domain.Services;
+using Tenant.Infrastructure.Ai;
+using Tenant.Infrastructure.Audio;
+using Tenant.Infrastructure.AudioProcessing;
 using Tenant.Infrastructure.Auth;
 using Tenant.Infrastructure.Configuration;
 using Tenant.Infrastructure.Email;
@@ -56,6 +59,15 @@ public static class InfrastructureExtensions
 
             serviceCollection.AddHttpClient<IMapyCzProxyService, MapyCzProxyService>();
             serviceCollection.AddHttpClient<IPushNotificationService, FirebaseNotificationService>();
+
+            serviceCollection.AddSingleton<IClassificationSettings, ClassificationSettings>();
+            serviceCollection.AddSingleton<IAudioNormalizer, FFmpegAudioNormalizer>();
+            serviceCollection.AddHttpClient<IDialectClassifier, AiModelDialectClassifier>((sp, client) =>
+                client.BaseAddress = new Uri(sp.GetRequiredService<IClassificationSettings>().BaseUrl));
+
+            serviceCollection.AddSingleton<ClassificationQueue>();
+            serviceCollection.AddSingleton<IClassificationQueue>(sp => sp.GetRequiredService<ClassificationQueue>());
+            serviceCollection.AddHostedService<ClassificationBackgroundService>();
 
             return serviceCollection;
         }

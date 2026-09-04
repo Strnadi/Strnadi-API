@@ -84,6 +84,24 @@ public class RecordingsController(RecordingsService recordingsService) : Control
         return Ok();
     }
 
+    /// <summary>
+    /// Confirms that every part of a recording arrived intact: the caller sends a hash it computed
+    /// from all parts' metadata and raw audio, which must match what the server independently
+    /// computes from what it stored.
+    /// </summary>
+    [Authorize]
+    [HttpPost("{id:int}/complete-upload")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CompleteUploadAsync([FromRoute] int id, [FromBody] CompleteUploadRequest request, CancellationToken cancellationToken)
+    {
+        bool confirmed = await recordingsService.CompleteUploadAsync(id, request.Hash, this.GetCallerId(), cancellationToken);
+        return confirmed ? Ok() : Conflict();
+    }
+
     /// <summary>All known bird dialects.</summary>
     [HttpGet("dialects")]
     [ProducesResponseType(typeof(Dialect[]), StatusCodes.Status200OK)]

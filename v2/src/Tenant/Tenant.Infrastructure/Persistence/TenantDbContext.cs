@@ -409,6 +409,9 @@ public partial class TenantDbContext : DbContext
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.NotePost).HasColumnName("note_post");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.UploadConfirmed)
+                .HasDefaultValue(false)
+                .HasColumnName("upload_confirmed");
 
             entity.HasOne(d => d.User).WithMany(p => p.Recordings)
                 .HasForeignKey(d => d.UserId)

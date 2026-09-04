@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Exceptions;
 using Tenant.Domain.Persistence;
@@ -62,7 +65,7 @@ public class RecordingsService(
         return new RecordingResponse(
             recording.Id, recording.CreatedAt, recording.EstimatedBirdsCount, recording.ByApp,
             recording.Name, recording.Note, recording.NotePost, recording.Device,
-            recording.UserId, recording.ExpectedPartsCount, parts);
+            recording.UserId, recording.ExpectedPartsCount, recording.UploadConfirmed, parts);
     }
 
     public async Task DeleteAsync(int id, bool final, int callerId, bool isAdmin, CancellationToken cancellationToken = default)
@@ -128,4 +131,41 @@ public class RecordingsService(
 
     public Task<Dialect[]> GetDialectsAsync(CancellationToken cancellationToken = default) =>
         dialects.GetAllAsync(cancellationToken);
+
+    // The mobile app computes the same hash client-side (before this server normalizes any audio)
+    // and sends it once it believes it has uploaded every part; a match is the client's proof that
+    // every part arrived intact, replacing the old delayed check-and-notify job.
+    public async Task<bool> CompleteUploadAsync(int id, string hash, int callerId, CancellationToken cancellationToken = default)
+    {
+        var recording = await recordings.GetByIdAsync(id, includeParts: true, cancellationToken)
+            ?? throw new NotFoundException(nameof(Recording), id);
+
+        if (recording.UserId != callerId)
+            throw new ForbiddenException("You are not the owner of this recording");
+
+        var content = new StringBuilder();
+        foreach (var part in recording.RecordingParts.OrderBy(p => p.StartDate))
+        {
+            var originalPath = RecordingPartsService.BuildOriginalPath(id, part.Id);
+            var original = await fileStorage.ReadAsync(originalPath, cancellationToken);
+            if (original is null)
+                return false;
+
+            content.Append(part.StartDate?.ToString("O"));
+            content.Append(part.EndDate?.ToString("O"));
+            content.Append(part.GpsLatitudeStart?.ToString(CultureInfo.InvariantCulture));
+            content.Append(part.GpsLongitudeStart?.ToString(CultureInfo.InvariantCulture));
+            content.Append(part.GpsLatitudeEnd?.ToString(CultureInfo.InvariantCulture));
+            content.Append(part.GpsLongitudeEnd?.ToString(CultureInfo.InvariantCulture));
+            content.Append(Convert.ToBase64String(original));
+        }
+
+        var computedHash = Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(content.ToString())));
+        if (!string.Equals(computedHash, hash, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        recording.UploadConfirmed = true;
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }
