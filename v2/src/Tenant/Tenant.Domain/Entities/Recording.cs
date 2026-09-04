@@ -1,5 +1,9 @@
 ﻿namespace Tenant.Domain.Entities;
 
+using Microsoft.EntityFrameworkCore;
+
+[Index(nameof(CreatedAt))]
+[Index(nameof(UserId), nameof(CreatedAt))]
 public partial class Recording
 {
     public int Id { get; set; }

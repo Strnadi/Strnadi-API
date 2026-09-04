@@ -1,111 +1,154 @@
 using Microsoft.EntityFrameworkCore;
-using Tenant.Domain.Enums;
 using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Infrastructure.Persistence.Repositories;
 
 public class MapPointsRepository(TenantDbContext db) : IMapPointsRepository
 {
-    // Same set as FilteredRecordingPartsRepository.VerifiedStates - anything except
-    // AwaitingProcession/UnableToConfirm.
-    private static readonly short[] VerifiedStates =
-    [
-        (short)FilteredRecordingPartState.ConfirmedWithCorrectGuess,
-        (short)FilteredRecordingPartState.ConfirmedWithWrongGuess,
-        (short)FilteredRecordingPartState.ConfirmedManually,
-        (short)FilteredRecordingPartState.DetectedByAi,
-        (short)FilteredRecordingPartState.DetectedByAiAndConfirmed,
-    ];
-
-    public async Task<MapPointCandidate[]> GetInBoundsAsync(MapBounds bounds, MapPointFilters filters, CancellationToken cancellationToken = default)
+    public async Task<MapRecordingCandidate[]> GetInBoundsAsync(
+        MapBounds bounds,
+        MapPointFilters filters,
+        CancellationToken cancellationToken = default)
     {
+        var recordingsQuery = db.Recordings
+            .AsNoTracking()
+            .Where(recording => recording.Deleted != true);
+
+        recordingsQuery = filters.OwnerScope switch
+        {
+            MapOwnerScope.Mine => recordingsQuery.Where(recording => recording.UserId == filters.UserId),
+            MapOwnerScope.Others => recordingsQuery.Where(recording =>
+                recording.UserId == null || recording.UserId != filters.UserId),
+            _ => recordingsQuery
+        };
+
+        if (filters.CreatedFromUtc is not null)
+            recordingsQuery = recordingsQuery.Where(recording => recording.CreatedAt >= filters.CreatedFromUtc.Value);
+
+        if (filters.CreatedToUtc is not null)
+            recordingsQuery = recordingsQuery.Where(recording => recording.CreatedAt < filters.CreatedToUtc.Value);
+
+        var candidateQuery = recordingsQuery
+            .Select(recording => new
+            {
+                Recording = recording,
+                RepresentativePart = recording.RecordingParts
+                    .Where(part =>
+                        part.EndDate != null &&
+                        part.GpsLatitudeEnd != null &&
+                        part.GpsLongitudeEnd != null &&
+                        part.GpsLatitudeEnd >= -90 && part.GpsLatitudeEnd <= 90 &&
+                        part.GpsLongitudeEnd >= -180 && part.GpsLongitudeEnd <= 180)
+                    .OrderByDescending(part => part.EndDate)
+                    .ThenByDescending(part => part.Id)
+                    .Select(part => new
+                    {
+                        PartId = (int?)part.Id,
+                        part.GpsLatitudeEnd,
+                        part.GpsLongitudeEnd
+                    })
+                    .FirstOrDefault()
+            })
+            .Where(candidate => candidate.RepresentativePart != null);
+
         var south = (decimal)bounds.South;
         var north = (decimal)bounds.North;
         var west = (decimal)bounds.West;
         var east = (decimal)bounds.East;
 
-        var partsQuery = db.RecordingParts
-            .Where(p => p.GpsLatitudeStart != null && p.GpsLongitudeStart != null)
-            .Where(p => p.GpsLatitudeStart >= south && p.GpsLatitudeStart <= north)
-            .Where(p => p.GpsLongitudeStart >= west && p.GpsLongitudeStart <= east)
-            .Where(p => p.Recording != null && p.Recording.Deleted != true);
+        candidateQuery = candidateQuery
+            .Where(candidate => candidate.RepresentativePart!.GpsLatitudeEnd >= south)
+            .Where(candidate => candidate.RepresentativePart!.GpsLatitudeEnd <= north);
 
-        if (filters.UserId is not null)
-            partsQuery = partsQuery.Where(p => p.Recording!.UserId == filters.UserId);
+        candidateQuery = bounds.West <= bounds.East
+            ? candidateQuery.Where(candidate =>
+                candidate.RepresentativePart!.GpsLongitudeEnd >= west &&
+                candidate.RepresentativePart.GpsLongitudeEnd <= east)
+            : candidateQuery.Where(candidate =>
+                candidate.RepresentativePart!.GpsLongitudeEnd >= west ||
+                candidate.RepresentativePart.GpsLongitudeEnd <= east);
 
-        if (filters.CreatedFrom is not null)
-        {
-            var from = filters.CreatedFrom.Value.ToDateTime(TimeOnly.MinValue);
-            partsQuery = partsQuery.Where(p => p.Recording!.CreatedAt >= from);
-        }
-
-        if (filters.CreatedTo is not null)
-        {
-            var to = filters.CreatedTo.Value.ToDateTime(TimeOnly.MaxValue);
-            partsQuery = partsQuery.Where(p => p.Recording!.CreatedAt <= to);
-        }
-
-        var parts = await partsQuery
-            .Where(p => p.StartDate != null && p.EndDate != null)
-            .Select(p => new
+        var recordings = await candidateQuery
+            .Select(candidate => new
             {
-                p.Id,
-                RecordingId = p.RecordingId!.Value,
-                Latitude = (double)p.GpsLatitudeStart!.Value,
-                Longitude = (double)p.GpsLongitudeStart!.Value,
-                StartDate = p.StartDate!.Value,
-                EndDate = p.EndDate!.Value,
-                p.Recording!.CreatedAt,
+                candidate.Recording.Id,
+                RepresentativePartId = candidate.RepresentativePart!.PartId!.Value,
+                Latitude = (double)candidate.RepresentativePart.GpsLatitudeEnd!.Value,
+                Longitude = (double)candidate.RepresentativePart.GpsLongitudeEnd!.Value,
+                candidate.Recording.CreatedAt,
+                candidate.Recording.UserId,
+                candidate.Recording.Name
             })
             .ToArrayAsync(cancellationToken);
 
-        if (parts.Length == 0)
+        if (recordings.Length == 0)
             return [];
 
-        var recordingIds = parts.Select(p => p.RecordingId).Distinct().ToArray();
+        var recordingIds = recordings.Select(recording => recording.Id).ToArray();
 
-        var filteredParts = await db.FilteredRecordingParts
-            .Where(fp => recordingIds.Contains(fp.RecordingId))
-            .Select(fp => new
+        var partRanges = await db.RecordingParts
+            .AsNoTracking()
+            .Where(part =>
+                part.RecordingId != null &&
+                recordingIds.Contains(part.RecordingId.Value) &&
+                part.StartDate != null &&
+                part.EndDate != null)
+            .Select(part => new
             {
-                fp.RecordingId,
-                fp.StartDate,
-                fp.EndDate,
-                fp.State,
-                ConfirmedDialectId = fp.DetectedDialect != null ? fp.DetectedDialect.ConfirmedDialectId : null,
-                PredictedDialectId = fp.DetectedDialect != null ? fp.DetectedDialect.PredictedDialectId : null,
-                UserGuessDialectId = fp.DetectedDialect != null ? fp.DetectedDialect.UserGuessDialectId : null,
+                RecordingId = part.RecordingId!.Value,
+                StartDate = part.StartDate!.Value,
+                EndDate = part.EndDate!.Value
             })
             .ToArrayAsync(cancellationToken);
 
-        var result = new List<MapPointCandidate>(parts.Length);
-
-        foreach (var part in parts)
-        {
-            var overlapping = filteredParts.Where(fp =>
-                fp.RecordingId == part.RecordingId &&
-                fp.StartDate < part.EndDate &&
-                fp.EndDate > part.StartDate);
-
-            if (filters.Verified)
-                overlapping = overlapping.Where(fp => fp.State != null && VerifiedStates.Contains(fp.State.Value));
-
-            var match = overlapping.FirstOrDefault();
-
-            if (filters.Verified && match is null)
-                continue;
-
-            result.Add(new MapPointCandidate(
+        var filteredParts = await db.FilteredRecordingParts
+            .AsNoTracking()
+            .Where(part => recordingIds.Contains(part.RecordingId))
+            .Select(part => new
+            {
                 part.RecordingId,
-                part.Id,
-                part.Latitude,
-                part.Longitude,
-                part.CreatedAt,
-                match?.ConfirmedDialectId,
-                match?.PredictedDialectId,
-                match?.UserGuessDialectId));
-        }
+                part.StartDate,
+                part.EndDate,
+                part.RepresentantFlag,
+                ConfirmedDialectId = part.DetectedDialect != null
+                    ? part.DetectedDialect.ConfirmedDialectId
+                    : null,
+                PredictedDialectId = part.DetectedDialect != null
+                    ? part.DetectedDialect.PredictedDialectId
+                    : null,
+                UserGuessDialectId = part.DetectedDialect != null
+                    ? part.DetectedDialect.UserGuessDialectId
+                    : null
+            })
+            .ToArrayAsync(cancellationToken);
 
-        return result.ToArray();
+        var rangesByRecording = partRanges
+            .GroupBy(part => part.RecordingId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(part => new MapRecordingPartRange(part.StartDate, part.EndDate)).ToArray());
+
+        var filteredByRecording = filteredParts
+            .GroupBy(part => part.RecordingId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(part => new MapFilteredPartCandidate(
+                    part.StartDate,
+                    part.EndDate,
+                    part.RepresentantFlag,
+                    part.ConfirmedDialectId,
+                    part.PredictedDialectId,
+                    part.UserGuessDialectId)).ToArray());
+
+        return recordings.Select(recording => new MapRecordingCandidate(
+            recording.Id,
+            recording.RepresentativePartId,
+            recording.Latitude,
+            recording.Longitude,
+            recording.CreatedAt,
+            recording.UserId,
+            recording.Name,
+            rangesByRecording.GetValueOrDefault(recording.Id) ?? [],
+            filteredByRecording.GetValueOrDefault(recording.Id) ?? [])).ToArray();
     }
 }

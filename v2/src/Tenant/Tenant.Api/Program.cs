@@ -23,6 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddControllers();
+builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
 
 builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
@@ -113,6 +114,7 @@ var app = builder.Build();
 // other instances or mutate a database other people are using.
 app.MapDefaultEndpoints();
 
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 
 app.UseCors(app.Services.GetRequiredService<ICorsSettings>().Default);

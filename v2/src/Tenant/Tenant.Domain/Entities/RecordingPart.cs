@@ -1,5 +1,13 @@
 ﻿namespace Tenant.Domain.Entities;
 
+using Microsoft.EntityFrameworkCore;
+
+[Index(nameof(GpsLatitudeEnd), nameof(GpsLongitudeEnd))]
+[Index(
+    nameof(RecordingId),
+    nameof(EndDate),
+    nameof(Id),
+    IsDescending = new[] { false, true, true })]
 public partial class RecordingPart
 {
     public int Id { get; set; }

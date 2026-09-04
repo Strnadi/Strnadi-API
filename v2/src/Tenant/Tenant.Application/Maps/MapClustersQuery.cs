@@ -2,19 +2,22 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Application.Maps;
 
-public enum DialectMode { All, AiAdmin, AdminOnly }
+public enum DialectMode
+{
+    All,
+    AiAdmin,
+    AdminOnly
+}
 
 public record MapClustersQuery(
-    double? CenterLatitude,
-    double? CenterLongitude,
+    MapBounds Bounds,
     double Zoom,
-    int? ViewportWidthPx,
-    int? ViewportHeightPx,
-    double DevicePixelRatio,
-    MapBounds? Bounds,
-    DialectMode DialectMode,
-    bool Verified,
+    bool Clustered,
+    int? ClusterResolutionPx,
+    MapOwnerScope OwnerScope,
     int? UserId,
-    DateOnly? CreatedFrom,
-    DateOnly? CreatedTo,
-    int MaxItemsPerCluster);
+    DateTime? CreatedFromUtc,
+    DateTime? CreatedToUtc,
+    bool OnlyMeaningfulDialects,
+    bool HideOthersWithoutMeaningfulDialect,
+    DialectMode DialectMode);
