@@ -40,6 +40,23 @@ RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing
       --output /app/publish \
       /p:UseAppHost=false
 
+# Build a one-shot migrator from exactly the same source as the API.
+FROM build AS migrations
+
+RUN mkdir -p /app \
+    && dotnet tool install dotnet-ef --tool-path /tools --version 10.0.11
+
+# Bundle generation needs a configured DbContext, but never connects to a DB.
+RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
+    ConnectionStrings__Default="Host=localhost;Database=bundle_build_only" \
+    /tools/dotnet-ef migrations bundle \
+      --project v2/src/Tenant/Tenant.Infrastructure/Tenant.Infrastructure.csproj \
+      --startup-project v2/src/Tenant/Tenant.Api/Tenant.Api.csproj \
+      --context TenantDbContext \
+      --configuration Release \
+      --no-build \
+      --output /app/efbundle
+
 FROM ${DOTNET_ASPNET_IMAGE} AS final
 
 WORKDIR /app
@@ -48,9 +65,11 @@ RUN mkdir -p /var/lib/strnadi/storage \
     && chown -R "$APP_UID:$APP_UID" /var/lib/strnadi
 
 COPY --from=publish /app/publish/ ./
+COPY --from=migrations --chmod=755 /app/efbundle /app/efbundle
 
 ENV ASPNETCORE_HTTP_PORTS=8080 \
-    DOTNET_EnableDiagnostics=0
+    DOTNET_EnableDiagnostics=0 \
+    DOTNET_BUNDLE_EXTRACT_BASE_DIR=/tmp/dotnet-bundle
 
 EXPOSE 8080
 
