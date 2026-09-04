@@ -119,6 +119,16 @@ app.UseCors(app.Services.GetRequiredService<ICorsSettings>().Default);
 
 app.UseExceptionHandler();
 
+app.Use(async (context, next) =>
+{
+    var requestLogger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Requests");
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    await next();
+    sw.Stop();
+    requestLogger.LogInformation("{Method} {Path} -> {StatusCode} ({ElapsedMs}ms)",
+        context.Request.Method, context.Request.Path, context.Response.StatusCode, sw.ElapsedMilliseconds);
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 

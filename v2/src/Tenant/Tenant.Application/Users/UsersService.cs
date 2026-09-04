@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Exceptions;
 using Tenant.Domain.Persistence;
@@ -6,10 +7,11 @@ using Tenant.Domain.Services;
 
 namespace Tenant.Application.Users;
 
-public class UsersService(IUsersRepository users, 
-    IUnitOfWork unitOfWork, 
+public class UsersService(IUsersRepository users,
+    IUnitOfWork unitOfWork,
     ITokenService tokenService,
-    IPasswordHasher passwordHasher)
+    IPasswordHasher passwordHasher,
+    ILogger<UsersService> logger)
 {
     public async Task<UserResponse[]> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
@@ -54,6 +56,7 @@ public class UsersService(IUsersRepository users,
 
         users.Remove(user);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("User {UserId} deleted by {CallerId}", id, callerId);
     }
 
     public async Task<bool> VerifyEmailAsync(int userId, string token, CancellationToken cancellationToken)
@@ -87,6 +90,7 @@ public class UsersService(IUsersRepository users,
 
         user.Password = passwordHasher.Hash(request.NewPassword);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("User {UserId} changed their password", userId);
     }
 
     public async Task<bool> ExistsAsync(int? userId, string? email, CancellationToken cancellationToken = default)

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Exceptions;
 using Tenant.Domain.Persistence;
@@ -11,7 +12,8 @@ public class RecordingPartsService(
     IFileStorage fileStorage,
     IAudioNormalizer audioNormalizer,
     IClassificationQueue classificationQueue,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ILogger<RecordingPartsService> logger)
 {
     public async Task<byte[]> GetSoundAsync(int partId, CancellationToken cancellationToken = default)
     {
@@ -46,6 +48,7 @@ public class RecordingPartsService(
         await SaveAudioAsync(part, fileContent, cancellationToken);
 
         await classificationQueue.EnqueueAsync(part.Id, cancellationToken);
+        logger.LogInformation("Recording part {PartId} uploaded for recording {RecordingId} and queued for classification", part.Id, part.RecordingId);
 
         return part.Id;
     }

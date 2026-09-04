@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Exceptions;
 using Tenant.Domain.Persistence;
@@ -13,7 +14,8 @@ public class RecordingsService(
     IRecordingsRepository recordings,
     IDialectsRepository dialects,
     IFileStorage fileStorage,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ILogger<RecordingsService> logger)
 {
     public async Task<RecordingResponse[]> GetAllAsync(int? userId, bool includeParts, bool includeSound, CancellationToken cancellationToken = default)
     {
@@ -84,6 +86,7 @@ public class RecordingsService(
             recording.Deleted = true;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Recording {RecordingId} {Action} by {CallerId}", id, final ? "permanently deleted" : "soft-deleted", callerId);
     }
 
     public async Task<int> CreateAsync(RecordingUploadRequest request, int callerId, CancellationToken cancellationToken = default)
@@ -102,6 +105,9 @@ public class RecordingsService(
 
         recordings.Add(recording);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Recording {RecordingId} created by user {CallerId} ({ExpectedParts} expected parts)",
+            recording.Id, callerId, recording.ExpectedPartsCount);
 
         return recording.Id;
     }
@@ -149,7 +155,10 @@ public class RecordingsService(
             var originalPath = RecordingPartsService.BuildOriginalPath(id, part.Id);
             var original = await fileStorage.ReadAsync(originalPath, cancellationToken);
             if (original is null)
+            {
+                logger.LogWarning("Upload completion for recording {RecordingId} failed: part {PartId} has no stored audio", id, part.Id);
                 return false;
+            }
 
             content.Append(part.StartDate?.ToString("O"));
             content.Append(part.EndDate?.ToString("O"));
@@ -162,10 +171,14 @@ public class RecordingsService(
 
         var computedHash = Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(content.ToString())));
         if (!string.Equals(computedHash, hash, StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogWarning("Upload completion for recording {RecordingId} failed: hash mismatch", id);
             return false;
+        }
 
         recording.UploadConfirmed = true;
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Recording {RecordingId} upload confirmed", id);
         return true;
     }
 }

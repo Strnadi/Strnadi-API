@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Enums;
 using Tenant.Domain.Persistence;
@@ -15,23 +16,35 @@ public class DialectClassificationService(
     IDialectsRepository dialects,
     IFileStorage fileStorage,
     IDialectClassifier classifier,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ILogger<DialectClassificationService> logger)
 {
     public async Task ClassifyPartAsync(int recordingPartId, CancellationToken cancellationToken = default)
     {
         var part = await recordingParts.GetByIdAsync(recordingPartId, cancellationToken);
         if (part?.FilePath is null || part.RecordingId is null || part.StartDate is null)
+        {
+            logger.LogWarning("Skipping classification for part {PartId}: part missing or not fully uploaded", recordingPartId);
             return;
+        }
 
         var partStartDate = part.StartDate.Value;
 
         var audio = await fileStorage.ReadAsync(part.FilePath, cancellationToken);
         if (audio is null)
+        {
+            logger.LogWarning("Skipping classification for part {PartId}: audio file not found at {FilePath}", recordingPartId, part.FilePath);
             return;
+        }
 
         var predictions = await classifier.ClassifyAsync(audio, part.FilePath, cancellationToken);
         if (predictions is null || predictions.Length == 0)
+        {
+            logger.LogInformation("Classification for part {PartId} produced no predictions", recordingPartId);
             return;
+        }
+
+        logger.LogInformation("Classification for part {PartId} produced {PredictionCount} prediction(s)", recordingPartId, predictions.Length);
 
         foreach (var prediction in predictions)
         {

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Exceptions;
 using Tenant.Domain.Persistence;
@@ -6,7 +7,7 @@ using Tenant.Domain.Services;
 
 namespace Tenant.Application.Photos;
 
-public class PhotosService(IFileStorage fileStorage, IPhotosRepository photos, IUnitOfWork unitOfWork)
+public class PhotosService(IFileStorage fileStorage, IPhotosRepository photos, IUnitOfWork unitOfWork, ILogger<PhotosService> logger)
 {
     public async Task<UserProfilePhotoModel> GetUserProfilePhotoAsync(int userId, CancellationToken cancellationToken = default)
     {
@@ -39,5 +40,6 @@ public class PhotosService(IFileStorage fileStorage, IPhotosRepository photos, I
         }
         
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Profile photo uploaded for user {UserId}", userId);
     }
 }
