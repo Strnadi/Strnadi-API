@@ -24,6 +24,8 @@ public class CompactConsoleFormatter() : ConsoleFormatter("compact")
         
         textWriter.Write($"[{level}] ");
         textWriter.Write(logEntry.Category.Split('.')[^1]);
+        if (!string.IsNullOrEmpty(message))
+            textWriter.Write($": {message}");
         if (logEntry.Exception is not null)
             textWriter.Write($"\n{logEntry.Exception}");
         textWriter.Write('\n');
