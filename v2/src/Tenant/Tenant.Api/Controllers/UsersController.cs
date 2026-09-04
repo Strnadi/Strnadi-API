@@ -14,6 +14,9 @@ public class UsersController(UsersService usersService) : ControllerBase
     /// <summary>All users. Admin only.</summary>
     [Authorize(Policy = "AdminOnly")]
     [HttpGet]
+    [ProducesResponseType(typeof(UserResponse[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
     {
         return Ok(await usersService.GetAllUsersAsync(cancellationToken));
@@ -22,6 +25,8 @@ public class UsersController(UsersService usersService) : ControllerBase
     /// <summary>The caller's own id, read straight off the JWT.</summary>
     [Authorize]
     [HttpGet("get-id")]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public IActionResult GetId()
     {
         return Ok(this.GetCallerId());
@@ -29,6 +34,8 @@ public class UsersController(UsersService usersService) : ControllerBase
 
     /// <summary>A user's profile; the email is only included for the user themselves or an admin.</summary>
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByIdAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
         return Ok(await usersService.GetUserByIdAsync(id, this.GetCallerIdOrDefault(), this.IsAdmin(), cancellationToken));
@@ -37,6 +44,10 @@ public class UsersController(UsersService usersService) : ControllerBase
     /// <summary>Updates a user's profile fields.</summary>
     [Authorize]
     [HttpPatch("{id:int}")]
+    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] UpdateUserRequest request, CancellationToken cancellationToken)
     {
         return Ok(await usersService.UpdateAsync(id, request, this.GetCallerId(), this.IsAdmin(), cancellationToken));
@@ -45,6 +56,10 @@ public class UsersController(UsersService usersService) : ControllerBase
     /// <summary>Deletes a user.</summary>
     [Authorize]
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
         await usersService.DeleteAsync(id, this.GetCallerId(), this.IsAdmin(), cancellationToken);
@@ -53,6 +68,7 @@ public class UsersController(UsersService usersService) : ControllerBase
 
     /// <summary>Landing point for the link in the verification email; redirects to the web confirmation page.</summary>
     [HttpGet("{userId:int}/verify-email")]
+    [ProducesResponseType(StatusCodes.Status301MovedPermanently)]
     public async Task<IActionResult> VerifyEmailAsync([FromRoute] int userId,
         [FromQuery] string jwt,
         [FromServices] LinkBuilder linkBuilder,
@@ -65,6 +81,10 @@ public class UsersController(UsersService usersService) : ControllerBase
     /// <summary>Sets a new password.</summary>
     [Authorize]
     [HttpPatch("{userId:int}/change-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangePasswordAsync([FromRoute] int userId,
         [FromBody] ChangePasswordRequest request,
         CancellationToken cancellationToken)
@@ -75,6 +95,9 @@ public class UsersController(UsersService usersService) : ControllerBase
 
     /// <summary>Whether a user with this id or email already exists.</summary>
     [HttpGet("exists")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Exists([FromQuery] int? userId,
         [FromQuery] string? email,
         CancellationToken cancellationToken)

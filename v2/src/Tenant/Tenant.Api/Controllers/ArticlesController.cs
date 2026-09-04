@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Tenant.Application.Articles;
+using Tenant.Domain.Entities;
 
 namespace Tenant.Api.Controllers;
 
@@ -10,6 +11,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 {
     /// <summary>All articles.</summary>
     [HttpGet]
+    [ProducesResponseType(typeof(Article[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
     {
         return Ok(await articlesService.GetAllAsync(cancellationToken));
@@ -17,6 +19,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Articles in a category.</summary>
     [HttpGet("{categoryName}")]
+    [ProducesResponseType(typeof(Article[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByCategoryAsync([FromRoute] string categoryName, CancellationToken cancellationToken)
     {
         return Ok(await articlesService.GetByCategoryAsync(categoryName, cancellationToken));
@@ -24,6 +27,8 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>An article by id.</summary>
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(Article), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByIdAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
         return Ok(await articlesService.GetByIdAsync(id, cancellationToken));
@@ -31,6 +36,8 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Downloads a file attached to an article.</summary>
     [HttpGet("{id:int}/{fileName}")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, "application/octet-stream")]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAttachmentAsync([FromRoute] int id, [FromRoute] string fileName, CancellationToken cancellationToken)
     {
         var content = await articlesService.GetAttachmentAsync(id, fileName, cancellationToken);
@@ -40,6 +47,8 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Creates an article.</summary>
     [Authorize]
     [HttpPost]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CreateAsync([FromBody] ArticleUploadRequest request, CancellationToken cancellationToken)
     {
         return Ok(await articlesService.CreateAsync(request, cancellationToken));
@@ -48,6 +57,9 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Attaches a file to an article.</summary>
     [Authorize]
     [HttpPost("{id:int}/{fileName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UploadAttachmentAsync([FromRoute] int id, [FromRoute] string fileName, [FromBody] string base64, CancellationToken cancellationToken)
     {
         await articlesService.UploadAttachmentAsync(id, fileName, base64, cancellationToken);
@@ -57,6 +69,9 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Updates an article.</summary>
     [Authorize]
     [HttpPatch("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] ArticleUpdateRequest request, CancellationToken cancellationToken)
     {
         await articlesService.UpdateAsync(id, request, cancellationToken);
@@ -65,6 +80,8 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>An article's translation.</summary>
     [HttpGet("translations/{id:int}")]
+    [ProducesResponseType(typeof(ArticleTranslation), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetTranslationAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
         return Ok(await articlesService.GetTranslationAsync(id, cancellationToken));
@@ -73,6 +90,9 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Updates an article's translation.</summary>
     [Authorize]
     [HttpPatch("translations/{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateTranslationAsync([FromRoute] int id, [FromBody] ArticleTranslationUpdateRequest request, CancellationToken cancellationToken)
     {
         await articlesService.UpdateTranslationAsync(id, request, cancellationToken);
@@ -82,6 +102,9 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Deletes an article's translation.</summary>
     [Authorize]
     [HttpDelete("translations/{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteTranslationAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
         await articlesService.DeleteTranslationAsync(id, cancellationToken);
@@ -91,6 +114,10 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Replaces an article's attachment. Admin only.</summary>
     [Authorize(Policy = "AdminOnly")]
     [HttpPatch("{id:int}/{fileName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAttachmentAsync([FromRoute] int id, [FromRoute] string fileName, [FromBody] string base64, CancellationToken cancellationToken)
     {
         await articlesService.UpdateAttachmentAsync(id, fileName, base64, cancellationToken);
@@ -100,6 +127,10 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Assigns an article to a category. Admin only.</summary>
     [Authorize(Policy = "AdminOnly")]
     [HttpPatch("{categoryName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AssignToCategoryAsync([FromRoute] string categoryName, [FromBody] AssignArticleToCategoryRequest request, CancellationToken cancellationToken)
     {
         await articlesService.AssignToCategoryAsync(categoryName, request, cancellationToken);
@@ -109,6 +140,9 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Deletes an article.</summary>
     [Authorize]
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
         await articlesService.DeleteAsync(id, cancellationToken);
@@ -118,6 +152,9 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
     /// <summary>Deletes a file attached to an article.</summary>
     [Authorize]
     [HttpDelete("{id:int}/{fileName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAttachmentAsync([FromRoute] int id, [FromRoute] string fileName, CancellationToken cancellationToken)
     {
         await articlesService.DeleteAttachmentAsync(id, fileName, cancellationToken);

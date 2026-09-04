@@ -10,6 +10,9 @@ public class MapClustersController(MapClustersService mapClusters) : ControllerB
 {
     /// <summary>Clusters recording points for the current map viewport, given either explicit bounds or a center/zoom.</summary>
     [HttpGet]
+    [ProducesResponseType(typeof(MapClustersResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> GetAsync(
         [FromQuery] double? centerLat,
         [FromQuery] double? centerLng,
