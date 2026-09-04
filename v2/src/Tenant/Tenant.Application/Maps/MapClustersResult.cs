@@ -5,12 +5,23 @@ namespace Tenant.Application.Maps;
 
 public record MapClustersResult(
     MapBounds Bounds,
-    double Zoom,
     bool Clustered,
-    int? ClusterResolutionPx,
-    double DetailZoomThreshold,
+    double? ClusterDistanceMeters,
     int VisibleRecordingCount,
     MapFeature[] Features);
+
+[JsonConverter(typeof(JsonStringEnumConverter<MapDialectSource>))]
+public enum MapDialectSource
+{
+    [JsonStringEnumMemberName("unknown")]
+    Unknown,
+    [JsonStringEnumMemberName("confirmed")]
+    Confirmed,
+    [JsonStringEnumMemberName("ai")]
+    Ai,
+    [JsonStringEnumMemberName("user")]
+    User
+}
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(MapRecordingFeature), "recording")]
@@ -25,7 +36,7 @@ public sealed record MapRecordingFeature(
     string? Name,
     DateTime CreatedAt,
     string[] DialectCodes,
-    string Source) : MapFeature;
+    MapDialectSource Source) : MapFeature;
 
 public sealed record MapClusterFeature(
     string Id,
@@ -33,10 +44,9 @@ public sealed record MapClusterFeature(
     double Longitude,
     MapBounds Bounds,
     int Count,
-    double ExpansionZoom,
     string[] DialectCodes,
-    string Source,
-    MapClusterItem[]? Items) : MapFeature;
+    MapDialectSource Source,
+    MapClusterItem[] Items) : MapFeature;
 
 public record MapClusterItem(
     int RecordingId,

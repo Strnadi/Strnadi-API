@@ -11,9 +11,8 @@ public enum DialectMode
 
 public record MapClustersQuery(
     MapBounds Bounds,
-    double Zoom,
     bool Clustered,
-    int? ClusterResolutionPx,
+    double ClusterDistanceMeters,
     MapOwnerScope OwnerScope,
     int? UserId,
     DateTime? CreatedFromUtc,

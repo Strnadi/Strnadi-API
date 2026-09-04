@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
 namespace Shared.Models.Database.Dialects;
 
 public class Dialect
@@ -20,8 +21,10 @@ public class Dialect
     public int Id { get; set; }
 
     public string DialectCode { get; set; }
-    
+
     public string Color { get; set; }
-    
+
     public int HintOrder { get; set; }
+
+    public bool IsDialect { get; set; }
 }

@@ -1,37 +1,14 @@
-using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.Logging;
 using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Application.Maps;
 
 public class MapClustersService(
     IMapPointsRepository mapPoints,
-    IDialectsRepository dialects,
-    ILogger<MapClustersService> logger)
+    IDialectsRepository dialects)
 {
-    public const double DetailZoomThreshold = 16;
-
-    private const double MaxMercatorLatitude = 85.05112878;
-
-    private static readonly HashSet<string> NonMeaningfulCodes =
-        new(StringComparer.Ordinal)
-        {
-            "none",
-            "nobird",
-            "no-bird",
-            "unfinished",
-            "unknown"
-        };
-
-    private static readonly HashSet<string> OmittedConfirmedCodes =
-        new(StringComparer.Ordinal)
-        {
-            "none",
-            "nobird",
-            "no-bird"
-        };
+    private const double EarthRadiusMeters = 6_371_008.8d;
 
     public async Task<MapClustersResult> GetClustersAsync(
         MapClustersQuery query,
@@ -44,26 +21,18 @@ public class MapClustersService(
             query.CreatedToUtc);
 
         var candidates = await mapPoints.GetInBoundsAsync(query.Bounds, filters, cancellationToken);
-        var allDialects = await dialects.GetAllAsync(cancellationToken);
-        var dialectsById = allDialects.ToDictionary(
+        var dialectsById = (await dialects.GetAllAsync(cancellationToken)).ToDictionary(
             dialect => dialect.Id,
             dialect => new DialectInfo(dialect.Id, dialect.DialectCode, dialect.HintOrder));
-
-        var noneDialect = allDialects
-            .Where(dialect => NormalizeCode(dialect.DialectCode) == "none")
-            .OrderBy(dialect => dialect.HintOrder)
-            .ThenBy(dialect => dialect.Id)
-            .Select(dialect => new DialectInfo(dialect.Id, dialect.DialectCode, dialect.HintOrder))
-            .FirstOrDefault();
 
         var visible = new List<ProjectedRecording>(candidates.Length);
 
         foreach (var candidate in candidates)
         {
-            var dialectProjection = ResolveDialects(candidate, query.DialectMode, dialectsById, noneDialect);
+            var dialectProjection = ResolveDialects(candidate, query.DialectMode, dialectsById);
 
             if (dialectProjection.WinningTier == DialectTier.Confirmed &&
-                dialectProjection.Codes.All(code => OmittedConfirmedCodes.Contains(NormalizeCode(code))))
+                dialectProjection.Dialects.All(dialect => IsOmittedConfirmedDialect(dialect.Code)))
             {
                 continue;
             }
@@ -75,85 +44,72 @@ public class MapClustersService(
             if (query.HideOthersWithoutMeaningfulDialect && !isReferenceOwner && !dialectProjection.IsMeaningful)
                 continue;
 
-            visible.Add(new ProjectedRecording(
-                candidate,
-                dialectProjection.Codes,
-                dialectProjection.Source));
+            visible.Add(new ProjectedRecording(candidate, dialectProjection.Dialects, dialectProjection.Source));
         }
 
-        MapFeature[] features;
-        if (!query.Clustered)
-        {
-            features = visible
-                .OrderBy(point => SourceRank(point.Source))
-                .ThenByDescending(point => point.Candidate.CreatedAt)
-                .ThenBy(point => point.Candidate.RecordingId)
+        var features = query.Clustered
+            ? BuildClusteredFeatures(visible, query.ClusterDistanceMeters)
+            : visible
+                .OrderBy(recording => SourceRank(recording.Source))
+                .ThenByDescending(recording => recording.Candidate.CreatedAt)
+                .ThenBy(recording => recording.Candidate.RecordingId)
                 .Select(ToRecordingFeature)
                 .Cast<MapFeature>()
                 .ToArray();
-        }
-        else
-        {
-            features = BuildClusteredFeatures(visible, query.Zoom, query.ClusterResolutionPx!.Value);
-        }
 
         return new MapClustersResult(
             query.Bounds,
-            query.Zoom,
             query.Clustered,
-            query.Clustered ? query.ClusterResolutionPx : null,
-            DetailZoomThreshold,
+            query.Clustered ? query.ClusterDistanceMeters : null,
             visible.Count,
             features);
     }
 
     private static MapFeature[] BuildClusteredFeatures(
         IReadOnlyCollection<ProjectedRecording> recordings,
-        double zoom,
-        int resolutionPx)
+        double clusterDistanceMeters)
     {
         return recordings
-            .GroupBy(recording =>
-            {
-                var (x, y) = ProjectToWorldPixels(
-                    recording.Candidate.Latitude,
-                    recording.Candidate.Longitude,
-                    zoom);
-
-                return new CellGroupKey(
-                    (long)Math.Floor(x / resolutionPx),
-                    (long)Math.Floor(y / resolutionPx),
-                    recording.Source,
-                    string.Join('\u001f', recording.DialectCodes));
-            })
-            .OrderBy(group => group.Key.CellY)
-            .ThenBy(group => group.Key.CellX)
+            .GroupBy(recording => new ClusterKey(
+                GetGridCell(recording.Candidate, clusterDistanceMeters),
+                recording.Source,
+                string.Join('\u001f', recording.Dialects.Select(dialect => dialect.Code))))
+            .OrderBy(group => group.Key.Cell.LatitudeBand)
+            .ThenBy(group => group.Key.Cell.LongitudeBand)
             .ThenBy(group => SourceRank(group.Key.Source))
             .ThenBy(group => group.Key.DialectSignature, StringComparer.Ordinal)
-            .Select(group => BuildFeature(group.Key, group.ToArray(), zoom, resolutionPx))
+            .Select(group => BuildFeature(group.Key, group.ToArray(), clusterDistanceMeters))
+            .OrderBy(FeatureLatitude)
+            .ThenBy(FeatureLongitude)
+            .ThenBy(feature => feature is MapClusterFeature ? 0 : 1)
             .ToArray();
     }
 
+    private static GridCell GetGridCell(
+        MapRecordingCandidate recording,
+        double clusterDistanceMeters)
+    {
+        var cellHeightRadians = clusterDistanceMeters / EarthRadiusMeters;
+        var latitudeRadians = recording.Latitude * Math.PI / 180d;
+        var latitudeBand = (long)Math.Floor((latitudeRadians + Math.PI / 2d) / cellHeightRadians);
+        var bandCenterLatitude = latitudeBand * cellHeightRadians + cellHeightRadians / 2d - Math.PI / 2d;
+        bandCenterLatitude = Math.Clamp(bandCenterLatitude, -Math.PI / 2d, Math.PI / 2d);
+
+        var parallelRadius = EarthRadiusMeters * Math.Max(Math.Cos(bandCenterLatitude), 1e-12d);
+        var cellWidthRadians = clusterDistanceMeters / parallelRadius;
+        var longitudeRadians = (NormalizeLongitude(recording.Longitude) + 180d) * Math.PI / 180d;
+        var longitudeBand = (long)Math.Floor(longitudeRadians / cellWidthRadians);
+
+        return new GridCell(latitudeBand, longitudeBand);
+    }
+
     private static MapFeature BuildFeature(
-        CellGroupKey key,
+        ClusterKey key,
         ProjectedRecording[] recordings,
-        double zoom,
-        int resolutionPx)
+        double clusterDistanceMeters)
     {
         if (recordings.Length == 1)
             return ToRecordingFeature(recordings[0]);
-
-        var projected = recordings
-            .Select(recording => ProjectToWorldPixels(
-                recording.Candidate.Latitude,
-                recording.Candidate.Longitude,
-                zoom))
-            .ToArray();
-
-        var (latitude, longitude) = UnprojectFromWorldPixels(
-            projected.Average(point => point.X),
-            projected.Average(point => point.Y),
-            zoom);
 
         var orderedItems = recordings
             .OrderBy(recording => SourceRank(recording.Source))
@@ -161,26 +117,23 @@ public class MapClustersService(
             .ThenBy(recording => recording.Candidate.RecordingId)
             .ToArray();
 
-        var clusterBounds = new MapBounds(
-            orderedItems.Max(recording => recording.Candidate.Latitude),
-            orderedItems.Min(recording => recording.Candidate.Latitude),
-            orderedItems.Max(recording => recording.Candidate.Longitude),
-            orderedItems.Min(recording => recording.Candidate.Longitude));
-
-        var items = zoom >= DetailZoomThreshold
-            ? orderedItems.Select(ToClusterItem).ToArray()
-            : null;
+        var (longitude, west, east) = SummarizeLongitudes(
+            recordings.Select(recording => recording.Candidate.Longitude).ToArray());
+        var bounds = new MapBounds(
+            recordings.Max(recording => recording.Candidate.Latitude),
+            recordings.Min(recording => recording.Candidate.Latitude),
+            east,
+            west);
 
         return new MapClusterFeature(
-            CreateClusterId(key, recordings, zoom, resolutionPx),
-            latitude,
+            CreateClusterId(key, recordings, clusterDistanceMeters),
+            recordings.Average(recording => recording.Candidate.Latitude),
             longitude,
-            clusterBounds,
+            bounds,
             recordings.Length,
-            FindExpansionZoom(recordings, zoom, resolutionPx),
-            recordings[0].DialectCodes,
+            recordings[0].Dialects.Select(dialect => dialect.Code).ToArray(),
             recordings[0].Source,
-            items);
+            orderedItems.Select(ToClusterItem).ToArray());
     }
 
     private static MapRecordingFeature ToRecordingFeature(ProjectedRecording recording)
@@ -193,7 +146,7 @@ public class MapClustersService(
             candidate.Longitude,
             candidate.Name,
             candidate.CreatedAt,
-            recording.DialectCodes,
+            recording.Dialects.Select(dialect => dialect.Code).ToArray(),
             recording.Source);
     }
 
@@ -211,8 +164,7 @@ public class MapClustersService(
     private static DialectProjection ResolveDialects(
         MapRecordingCandidate candidate,
         DialectMode mode,
-        IReadOnlyDictionary<int, DialectInfo> dialectsById,
-        DialectInfo? noneDialect)
+        IReadOnlyDictionary<int, DialectInfo> dialectsById)
     {
         var relevantParts = candidate.FilteredParts
             .Where(filtered => candidate.PartRanges.Any(part =>
@@ -222,7 +174,7 @@ public class MapClustersService(
         var confirmed = SelectTier(
             relevantParts.Select(part => part.ConfirmedDialectId),
             DialectTier.Confirmed,
-            "confirmed",
+            MapDialectSource.Confirmed,
             dialectsById);
         if (confirmed is not null)
             return confirmed;
@@ -236,7 +188,7 @@ public class MapClustersService(
             var predicted = SelectTier(
                 representativeParts.Select(part => part.PredictedDialectId),
                 DialectTier.Ai,
-                "ai",
+                MapDialectSource.Ai,
                 dialectsById);
             if (predicted is not null)
                 return predicted;
@@ -247,145 +199,155 @@ public class MapClustersService(
             var user = SelectTier(
                 representativeParts.Select(part => part.UserGuessDialectId),
                 DialectTier.User,
-                "user",
+                MapDialectSource.User,
                 dialectsById);
             if (user is not null)
                 return user;
         }
 
-        return new DialectProjection(
-            [noneDialect?.Code ?? "None"],
-            "unknown",
-            IsMeaningful: false,
-            DialectTier.None);
+        return new DialectProjection([], MapDialectSource.Unknown, IsMeaningful: false, DialectTier.None);
     }
 
     private static DialectProjection? SelectTier(
         IEnumerable<int?> dialectIds,
         DialectTier tier,
-        string source,
+        MapDialectSource source,
         IReadOnlyDictionary<int, DialectInfo> dialectsById)
     {
-        var dialects = dialectIds
+        var dialectValues = dialectIds
             .Where(id => id is not null && dialectsById.ContainsKey(id.Value))
             .Select(id => dialectsById[id!.Value])
             .DistinctBy(dialect => dialect.Id)
             .ToArray();
 
-        if (dialects.Length == 0)
+        if (dialectValues.Length == 0)
             return null;
 
-        var meaningful = dialects
-            .Where(dialect => !NonMeaningfulCodes.Contains(NormalizeCode(dialect.Code)))
+        var meaningful = dialectValues
+            .Where(dialect => IsMeaningfulDialect(dialect.Code))
             .ToArray();
-
-        var selected = meaningful.Length > 0 ? meaningful : dialects;
-        var codes = selected
-            .OrderBy(dialect => dialect.HintOrder)
-            .ThenBy(dialect => dialect.Id)
-            .Select(dialect => dialect.Code)
-            .ToArray();
+        var selected = meaningful.Length > 0 ? meaningful : dialectValues;
 
         return new DialectProjection(
-            codes,
-            meaningful.Length > 0 ? source : "unknown",
+            selected
+                .OrderBy(dialect => dialect.HintOrder)
+                .ThenBy(dialect => dialect.Id)
+                .ToArray(),
+            meaningful.Length > 0 ? source : MapDialectSource.Unknown,
             meaningful.Length > 0,
             tier);
     }
 
+    private static bool IsMeaningfulDialect(string code) =>
+        !Enum.TryParse<NonMeaningfulDialect>(NormalizeDialectName(code), ignoreCase: true, out _);
+
+    private static bool IsOmittedConfirmedDialect(string code) =>
+        Enum.TryParse<OmittedConfirmedDialect>(NormalizeDialectName(code), ignoreCase: true, out _);
+
+    private static string NormalizeDialectName(string code) =>
+        string.Concat(code.Where(char.IsLetterOrDigit));
+
     private static string CreateClusterId(
-        CellGroupKey key,
+        ClusterKey key,
         IEnumerable<ProjectedRecording> recordings,
-        double zoom,
-        int resolutionPx)
+        double clusterDistanceMeters)
     {
         var recordingIds = recordings
             .Select(recording => recording.Candidate.RecordingId)
             .OrderBy(id => id);
         var identity = FormattableString.Invariant(
-            $"{zoom:R}|{resolutionPx}|{key.CellX}|{key.CellY}|{key.Source}|{key.DialectSignature}|{string.Join(",", recordingIds)}");
+            $"{clusterDistanceMeters:R}|{key.Cell.LatitudeBand}|{key.Cell.LongitudeBand}|{key.Source}|{key.DialectSignature}|{string.Join(',', recordingIds)}");
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(identity));
         return $"map_{Convert.ToHexString(hash.AsSpan(0, 12)).ToLowerInvariant()}";
     }
 
-    private static double FindExpansionZoom(
-        ProjectedRecording[] recordings,
-        double currentZoom,
-        int resolutionPx)
+    private static (double Center, double West, double East) SummarizeLongitudes(double[] longitudes)
     {
-        var firstZoom = Math.Max((int)Math.Floor(currentZoom) + 1, 1);
-        var lastZoom = (int)DetailZoomThreshold;
+        var center = Math.Atan2(
+            longitudes.Average(longitude => Math.Sin(longitude * Math.PI / 180d)),
+            longitudes.Average(longitude => Math.Cos(longitude * Math.PI / 180d))) * 180d / Math.PI;
 
-        for (var zoom = firstZoom; zoom <= lastZoom; zoom++)
+        var ordered = longitudes
+            .Select(longitude => longitude + 180d)
+            .OrderBy(longitude => longitude)
+            .ToArray();
+        var largestGapIndex = 0;
+        var largestGap = double.NegativeInfinity;
+
+        for (var index = 0; index < ordered.Length; index++)
         {
-            var cellCount = recordings
-                .Select(recording =>
-                {
-                    var (x, y) = ProjectToWorldPixels(
-                        recording.Candidate.Latitude,
-                        recording.Candidate.Longitude,
-                        zoom);
-                    return ((long)Math.Floor(x / resolutionPx), (long)Math.Floor(y / resolutionPx));
-                })
-                .Distinct()
-                .Take(2)
-                .Count();
-
-            if (cellCount > 1)
-                return zoom;
+            var next = index + 1 < ordered.Length ? ordered[index + 1] : ordered[0] + 360d;
+            var gap = next - ordered[index];
+            if (gap > largestGap)
+            {
+                largestGap = gap;
+                largestGapIndex = index;
+            }
         }
 
-        return DetailZoomThreshold;
+        var west = NormalizeLongitude(ordered[(largestGapIndex + 1) % ordered.Length] - 180d);
+        var east = NormalizeLongitude(ordered[largestGapIndex] - 180d);
+        return (NormalizeLongitude(center), west, east);
     }
 
-    private static (double X, double Y) ProjectToWorldPixels(double latitude, double longitude, double zoom)
-    {
-        var scale = 256d * Math.Pow(2d, zoom);
-        var clampedLatitude = Math.Clamp(latitude, -MaxMercatorLatitude, MaxMercatorLatitude);
-        var sinLatitude = Math.Sin(clampedLatitude * Math.PI / 180d);
-        var x = (longitude + 180d) / 360d * scale;
-        var y = (0.5d - Math.Log((1d + sinLatitude) / (1d - sinLatitude)) / (4d * Math.PI)) * scale;
-        return (x, y);
-    }
+    private static double NormalizeLongitude(double longitude) =>
+        (longitude + 540d) % 360d - 180d;
 
-    private static (double Latitude, double Longitude) UnprojectFromWorldPixels(double x, double y, double zoom)
+    private static double FeatureLatitude(MapFeature feature) => feature switch
     {
-        var scale = 256d * Math.Pow(2d, zoom);
-        var longitude = x / scale * 360d - 180d;
-        var n = Math.PI - 2d * Math.PI * y / scale;
-        var latitude = 180d / Math.PI * Math.Atan(Math.Sinh(n));
-        return (latitude, longitude);
-    }
-
-    private static int SourceRank(string source) => source switch
-    {
-        "confirmed" => 0,
-        "ai" => 1,
-        "user" => 2,
-        _ => 3
+        MapClusterFeature cluster => cluster.Latitude,
+        MapRecordingFeature recording => recording.Latitude,
+        _ => double.NaN
     };
 
-    private static string NormalizeCode(string code) =>
-        string.Concat(code.Where(character => !char.IsWhiteSpace(character))).ToLowerInvariant();
+    private static double FeatureLongitude(MapFeature feature) => feature switch
+    {
+        MapClusterFeature cluster => cluster.Longitude,
+        MapRecordingFeature recording => recording.Longitude,
+        _ => double.NaN
+    };
+
+    private static int SourceRank(MapDialectSource source) => source switch
+    {
+        MapDialectSource.Confirmed => 0,
+        MapDialectSource.Ai => 1,
+        MapDialectSource.User => 2,
+        _ => 3
+    };
 
     private sealed record DialectInfo(int Id, string Code, int HintOrder);
 
     private sealed record DialectProjection(
-        string[] Codes,
-        string Source,
+        DialectInfo[] Dialects,
+        MapDialectSource Source,
         bool IsMeaningful,
         DialectTier WinningTier);
 
     private sealed record ProjectedRecording(
         MapRecordingCandidate Candidate,
-        string[] DialectCodes,
-        string Source);
+        DialectInfo[] Dialects,
+        MapDialectSource Source);
 
-    private sealed record CellGroupKey(
-        long CellX,
-        long CellY,
-        string Source,
+    private sealed record GridCell(long LatitudeBand, long LongitudeBand);
+
+    private sealed record ClusterKey(
+        GridCell Cell,
+        MapDialectSource Source,
         string DialectSignature);
+
+    private enum NonMeaningfulDialect
+    {
+        None,
+        NoBird,
+        Unfinished,
+        Unknown
+    }
+
+    private enum OmittedConfirmedDialect
+    {
+        None,
+        NoBird
+    }
 
     private enum DialectTier
     {
