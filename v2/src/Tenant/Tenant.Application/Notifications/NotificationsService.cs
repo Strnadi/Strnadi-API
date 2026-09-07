@@ -33,7 +33,7 @@ public class NotificationsService(
             catch (Exception ex)
             {
                 // Best-effort broadcast: one stale/invalid device token shouldn't fail the whole send.
-                logger.LogError(ex, "Failed to send notification to device {FcmToken}", device.FcmToken);
+                logger.LogError(ex, "Failed to send notification to device {Id}", device.Id);
             }
         }
     }

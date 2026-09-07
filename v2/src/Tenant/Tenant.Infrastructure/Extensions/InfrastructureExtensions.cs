@@ -13,6 +13,7 @@ using Tenant.Infrastructure.MapyCz;
 using Tenant.Infrastructure.Notifications;
 using Tenant.Infrastructure.Persistence;
 using Tenant.Infrastructure.Persistence.Repositories;
+using Tenant.Infrastructure.Security;
 using Tenant.Infrastructure.Storage;
 
 namespace Tenant.Infrastructure.Extensions;
@@ -34,8 +35,14 @@ public static class InfrastructureExtensions
             serviceCollection.AddSingleton<IAppleAuthSettings, AppleAuthSettings>();
             serviceCollection.AddSingleton<IAuthSettings, AuthSettings>();
             serviceCollection.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
-            
+            serviceCollection.AddSingleton<IEncryptionSettings, EncryptionSettings>();
+
             serviceCollection.AddSingleton<IFileStorage, LocalStorage>();
+            // Singleton is required, not just convenient: TenantDbContext bakes the converter
+            // instance into the EF model, which EF builds once and caches for the app's lifetime.
+            // A Scoped/Transient instance captured there would silently pin whichever request
+            // happened to trigger the first model build.
+            serviceCollection.AddSingleton<IEncryptionService, AesEncryptionService>();
 
             serviceCollection.AddScoped<IUnitOfWork, UnitOfWork>();
 

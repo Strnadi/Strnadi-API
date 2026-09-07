@@ -18,9 +18,10 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
 
         var allDialects = await dialects.GetAllAsync(cancellationToken);
         var dialectCodesById = allDialects.ToDictionary(d => d.Id, d => d.DialectCode);
+        var dialectColorsById = allDialects.ToDictionary(d => d.Id, d => d.Color);
 
         var clusters = GroupIntoCells(points, query.Zoom, ClusterResolutionPx)
-            .Select(group => BuildCluster(group.Key, group.ToArray(), dialectCodesById, query.Zoom, query.DialectMode, query.MaxItemsPerCluster))
+            .Select(group => BuildCluster(group.Key, group.ToArray(), dialectCodesById, dialectColorsById, query.Zoom, query.DialectMode, query.MaxItemsPerCluster))
             .ToArray();
 
         return new MapClustersResult(bounds, ClusterResolutionPx, DetailZoomThreshold, clusters);
@@ -30,6 +31,7 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
         (long CellX, long CellY) cellKey,
         MapPointCandidate[] points,
         IReadOnlyDictionary<int, string> dialectCodesById,
+        IReadOnlyDictionary<int, string> dialectColorsById,
         double zoom,
         DialectMode dialectMode,
         int maxItemsPerCluster)
@@ -44,7 +46,8 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
             .Select(g =>
             {
                 string label = g.Key is not null && dialectCodesById.TryGetValue(g.Key.Value, out var code) ? code : "unknown";
-                return new MapDialectBreakdown(g.Key, label, label, g.Count(), (double)g.Count() / count);
+                string color = g.Key is not null && dialectColorsById.TryGetValue(g.Key.Value, out var hex) ? hex : "#808080";
+                return new MapDialectBreakdown(g.Key, color, label, g.Count(), (double)g.Count() / count);
             })
             .ToArray();
 

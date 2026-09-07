@@ -16,7 +16,12 @@ public record MapCluster(
     MapDialectBreakdown[] Dialects,
     MapClusterItem[]? Items);
 
-public record MapDialectBreakdown(int? DialectId, string Key, string Label, int Count, double Ratio);
+public record MapDialectBreakdown(
+    int? DialectId, 
+    string Key,
+    string Label,
+    int Count,
+    double Ratio);
 
 public record MapClusterItem(
     int RecordingId,

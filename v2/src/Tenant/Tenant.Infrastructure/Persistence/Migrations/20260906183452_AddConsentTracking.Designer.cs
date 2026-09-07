@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Tenant.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Tenant.Infrastructure.Persistence;
 namespace Tenant.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906183452_AddConsentTracking")]
+    partial class AddConsentTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -712,7 +715,8 @@ namespace Tenant.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("first_name");
 
                     b.Property<string>("GoogleId")
@@ -728,7 +732,8 @@ namespace Tenant.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("last_name");
 
                     b.Property<bool>("Legacy")

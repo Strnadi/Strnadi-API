@@ -52,6 +52,12 @@ public class AuthService(
 
     public async Task<AuthResponse> SignUpAsync(SignUpRequest request, CancellationToken cancellationToken = default)
     {
+        if (!request.Consent)
+            throw new ValidationException("Consent to data processing is required to create an account");
+
+        if (string.IsNullOrWhiteSpace(request.ConsentVersion))
+            throw new ValidationException("ConsentVersion is required to create an account");
+
         var email = request.Email.Trim().ToLowerInvariant();
         if (await users.ExistsAsync(email, cancellationToken))
             throw new ConflictException("User already exists");
@@ -67,6 +73,8 @@ public class AuthService(
             PostCode = request.PostCode,
             City = request.City,
             Consent = request.Consent,
+            ConsentGivenAt = DateTime.UtcNow,
+            ConsentVersion = request.ConsentVersion,
             Password = regularRegister ? passwordHasher.Hash(request.Password!) : null,
             GoogleId = request.GoogleId,
             Appleid = request.AppleId,

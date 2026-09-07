@@ -20,6 +20,10 @@ public partial class User
 
     public bool? Consent { get; set; }
 
+    public DateTime? ConsentGivenAt { get; set; }
+
+    public string? ConsentVersion { get; set; }
+
     public string Role { get; set; } = null!;
 
     public int? PostCode { get; set; }

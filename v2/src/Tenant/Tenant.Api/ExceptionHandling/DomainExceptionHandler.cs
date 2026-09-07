@@ -15,6 +15,7 @@ public class DomainExceptionHandler(ILogger<DomainExceptionHandler> logger) : IE
             ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
             ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden"),
             UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+            ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
             _ => (StatusCodes.Status500InternalServerError, "Unexpected error")
         };
 
