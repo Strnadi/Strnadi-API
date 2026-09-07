@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tenant.Application.Common;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Exceptions;
@@ -15,7 +16,8 @@ public class AuthService(
     IGoogleIdTokenValidator googleIdTokenValidator,
     IAppleIdTokenValidator appleIdTokenValidator,
     IEmailSender emailSender,
-    LinkBuilder linkBuilder)
+    LinkBuilder linkBuilder,
+    ILogger<AuthService> logger)
 {
     public async Task<bool> IsEmailVerifiedAsync(int callerId, CancellationToken cancellationToken = default)
     {
@@ -39,13 +41,23 @@ public class AuthService(
         var user = await users.GetByEmailAsync(email, cancellationToken) ?? throw new ConflictException("User doesn't exist");
 
         if (user.Password is null || !passwordHasher.Verify(request.Password, user.Password))
+        {
+            logger.LogWarning("Failed login attempt for {Email}", email);
             throw new UnauthorizedException("Invalid password");
+        }
 
+        logger.LogInformation("User {UserId} logged in", user.Id);
         return new AuthResponse(tokenService.GenerateToken(user.Id, user.Email!, user.Role));
     }
 
     public async Task<AuthResponse> SignUpAsync(SignUpRequest request, CancellationToken cancellationToken = default)
     {
+        if (!request.Consent)
+            throw new ValidationException("Consent to data processing is required to create an account");
+
+        if (string.IsNullOrWhiteSpace(request.ConsentVersion))
+            throw new ValidationException("ConsentVersion is required to create an account");
+
         var email = request.Email.Trim().ToLowerInvariant();
         if (await users.ExistsAsync(email, cancellationToken))
             throw new ConflictException("User already exists");
@@ -61,6 +73,8 @@ public class AuthService(
             PostCode = request.PostCode,
             City = request.City,
             Consent = request.Consent,
+            ConsentGivenAt = DateTime.UtcNow,
+            ConsentVersion = request.ConsentVersion,
             Password = regularRegister ? passwordHasher.Hash(request.Password!) : null,
             GoogleId = request.GoogleId,
             Appleid = request.AppleId,
@@ -82,6 +96,7 @@ public class AuthService(
             await emailSender.SendEmailVerificationAsync(user.Email!, user.Nickname, link, cancellationToken);
         }
 
+        logger.LogInformation("User {UserId} signed up ({Method})", user.Id, regularRegister ? "password" : "social");
         return new AuthResponse(jwt);
     }
 
@@ -108,6 +123,7 @@ public class AuthService(
         var jwt = tokenService.GenerateToken(user.Id, user.Email!, user.Role);
         var link = linkBuilder.PasswordResetLink(user.Id, jwt);
         await emailSender.SendPasswordResetAsync(user.Email!, user.Nickname, link, cancellationToken);
+        logger.LogInformation("Password reset requested for user {UserId}", user.Id);
     }
 
     public async Task<bool> HasGoogleIdAsync(int userId, CancellationToken cancellationToken = default)
@@ -230,5 +246,6 @@ public class AuthService(
         user.IsEmailVerified = true;
         users.Update(user);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("User {UserId} email verified via social sign-in", user.Id);
     }
 }

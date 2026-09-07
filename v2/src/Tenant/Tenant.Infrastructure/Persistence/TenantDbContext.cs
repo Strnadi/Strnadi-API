@@ -1,15 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tenant.Domain.Entities;
+using Tenant.Domain.Services;
+using Tenant.Infrastructure.Security;
 
 namespace Tenant.Infrastructure.Persistence;
 
-public partial class TenantDbContext : DbContext
+public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, IEncryptionService encryption) : DbContext(options)
 {
-    public TenantDbContext(DbContextOptions<TenantDbContext> options)
-        : base(options)
-    {
-    }
+    private readonly EncryptedStringConverter _encryptedString = new(encryption);
 
     // Columns are "timestamp without time zone" (Database-First from the existing schema), but
     // application code sets them with DateTime.UtcNow (Kind=Utc); Npgsql rejects that mismatch,
@@ -409,6 +408,9 @@ public partial class TenantDbContext : DbContext
             entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.NotePost).HasColumnName("note_post");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.UploadConfirmed)
+                .HasDefaultValue(false)
+                .HasColumnName("upload_confirmed");
 
             entity.HasOne(d => d.User).WithMany(p => p.Recordings)
                 .HasForeignKey(d => d.UserId)
@@ -459,10 +461,21 @@ public partial class TenantDbContext : DbContext
             entity.Property(e => e.Appleid)
                 .HasMaxLength(255)
                 .HasColumnName("appleid");
+            // string and string? are the same runtime type (nullability is compile-time-only for
+            // reference types), and Encrypt/Decrypt already short-circuit on null - the mismatch
+            // below is a harmless EF Core nullable-annotation wart, not a real type error.
+#pragma warning disable CS8620
             entity.Property(e => e.City)
-                .HasMaxLength(255)
-                .HasColumnName("city");
+                .HasColumnName("city")
+                .HasConversion(_encryptedString);
+#pragma warning restore CS8620
             entity.Property(e => e.Consent).HasColumnName("consent");
+            entity.Property(e => e.ConsentGivenAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("consent_given_at");
+            entity.Property(e => e.ConsentVersion)
+                .HasMaxLength(32)
+                .HasColumnName("consent_version");
             entity.Property(e => e.CreationDate)
                 .HasDefaultValueSql("now()")
                 .HasColumnType("timestamp without time zone")
@@ -472,8 +485,8 @@ public partial class TenantDbContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("email");
             entity.Property(e => e.FirstName)
-                .HasMaxLength(50)
-                .HasColumnName("first_name");
+                .HasColumnName("first_name")
+                .HasConversion(_encryptedString);
             entity.Property(e => e.GoogleId)
                 .HasMaxLength(255)
                 .HasColumnName("google_id");
@@ -481,8 +494,8 @@ public partial class TenantDbContext : DbContext
                 .HasDefaultValue(false)
                 .HasColumnName("is_email_verified");
             entity.Property(e => e.LastName)
-                .HasMaxLength(50)
-                .HasColumnName("last_name");
+                .HasColumnName("last_name")
+                .HasConversion(_encryptedString);
             entity.Property(e => e.Legacy).HasColumnName("legacy");
             entity.Property(e => e.Nickname)
                 .HasMaxLength(50)

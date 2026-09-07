@@ -14,6 +14,10 @@ public class AuthController(AuthService authService) : ControllerBase
     /// <summary>Whether the caller's email is verified; getting past auth already means the JWT itself is valid.</summary>
     [Authorize]
     [HttpGet("verify-jwt")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> VerifyJwtAsync(CancellationToken cancellationToken)
     {
         bool verified = await authService.IsEmailVerifiedAsync(this.GetCallerId(), cancellationToken);
@@ -22,6 +26,10 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Issues a fresh JWT from an old one, even one that just expired.</summary>
     [HttpGet("renew-jwt")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RenewJwtAsync(CancellationToken cancellationToken)
     {
         var header = Request.Headers.Authorization.ToString();
@@ -34,6 +42,9 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Validates a Google ID token for a brand-new account; the account itself is created by a later sign-up call.</summary>
     [HttpPost("sign-up-google")]
+    [ProducesResponseType(typeof(GoogleSignUpResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SignUpGoogleAsync([FromBody] GoogleAuthRequest request, CancellationToken cancellationToken)
     {
         return Ok(await authService.SignUpGoogleAsync(request, cancellationToken));
@@ -41,6 +52,9 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Logs in with an already-linked Google account.</summary>
     [HttpPost("login-google")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> LoginGoogleAsync([FromBody] GoogleAuthRequest request, CancellationToken cancellationToken)
     {
         return Ok(await authService.LoginGoogleAsync(request, cancellationToken));
@@ -48,6 +62,9 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Links, logs in, or starts sign-up with Google, depending on what's already on file.</summary>
     [HttpPost("google")]
+    [ProducesResponseType(typeof(SocialAuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GoogleAsync([FromBody] GoogleAuthRequest request, CancellationToken cancellationToken)
     {
         var result = await authService.GoogleAsync(request, this.GetCallerIdOrDefault(), cancellationToken);
@@ -56,6 +73,10 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Same as <see cref="GoogleAsync"/>, for Sign in with Apple.</summary>
     [HttpPost("apple")]
+    [ProducesResponseType(typeof(SocialAuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> AppleAsync([FromBody] AppleAuthRequest request, CancellationToken cancellationToken)
     {
         var result = await authService.AppleAsync(request, this.GetCallerIdOrDefault(), cancellationToken);
@@ -64,6 +85,8 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Apple's web redirect after sign-in; relays the result to the app's return URL.</summary>
     [HttpPost("apple-callback")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult AppleCallback(
         [FromForm(Name = "user")] string? user,
         [FromForm(Name = "state")] string? state,
@@ -78,6 +101,7 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Apple's redirect for the Android app; relays the result as a deep link instead of a URL fragment.</summary>
     [HttpPost("apple/callback")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     public IActionResult AppleCallbackMobile(
         [FromServices] IConfiguration configuration,
         [FromForm(Name = "user")] string? user,
@@ -98,6 +122,8 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Whether this user has an Apple account linked.</summary>
     [HttpGet("has-apple-id")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> HasAppleIdAsync([FromQuery] int userId, CancellationToken cancellationToken)
     {
         return await authService.HasAppleIdAsync(userId, cancellationToken) ? Ok() : Conflict();
@@ -105,6 +131,8 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Whether this user has a Google account linked.</summary>
     [HttpGet("has-google-id")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> HasGoogleIdAsync([FromQuery] int userId, CancellationToken cancellationToken)
     {
         return await authService.HasGoogleIdAsync(userId, cancellationToken) ? Ok() : Conflict();
@@ -112,6 +140,9 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Logs in with email and password.</summary>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         return Ok(await authService.LoginAsync(request, cancellationToken));
@@ -119,6 +150,8 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Creates an account.</summary>
     [HttpPost("sign-up")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SignUpAsync([FromBody] SignUpRequest request, CancellationToken cancellationToken)
     {
         return Ok(await authService.SignUpAsync(request, cancellationToken));
@@ -127,6 +160,11 @@ public class AuthController(AuthService authService) : ControllerBase
     /// <summary>Resends the verification email.</summary>
     [Authorize]
     [HttpGet("{userId:int}/resend-verify-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ResendVerifyEmailAsync([FromRoute] int userId, CancellationToken cancellationToken)
     {
         await authService.ResendVerificationEmailAsync(userId, this.GetCallerId(), cancellationToken);
@@ -135,6 +173,8 @@ public class AuthController(AuthService authService) : ControllerBase
 
     /// <summary>Sends a password-reset email.</summary>
     [HttpGet("{email}/reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResetPasswordAsync([FromRoute] string email, CancellationToken cancellationToken)
     {
         await authService.RequestPasswordResetAsync(email, cancellationToken);

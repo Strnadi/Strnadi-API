@@ -11,6 +11,7 @@ public record RecordingResponse(
     string? Device,
     int? UserId,
     int? ExpectedPartsCount,
+    bool UploadConfirmed,
     RecordingPartResponse[]? Parts);
 
 public record RecordingPartResponse(

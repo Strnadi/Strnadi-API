@@ -10,6 +10,9 @@ public class MapClustersController(MapClustersService mapClusters) : ControllerB
 {
     /// <summary>Clusters recording points for the current map viewport, given either explicit bounds or a center/zoom.</summary>
     [HttpGet]
+    [ProducesResponseType(typeof(MapClustersResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> GetAsync(
         [FromQuery] double? centerLat,
         [FromQuery] double? centerLng,
@@ -39,14 +42,13 @@ public class MapClustersController(MapClustersService mapClusters) : ControllerB
         if (zoom is null && !hasBounds)
             return BadRequest(new { error = "invalid_viewport", message = "zoom is required" });
 
-        MapBounds? bounds = hasBounds ? new MapBounds(north!.Value, south!.Value, east!.Value, west!.Value) : null;
+        var bounds = hasBounds ? new MapBounds(north!.Value, south!.Value, east!.Value, west!.Value) : null;
 
         if (bounds is not null && (bounds.North <= bounds.South || bounds.East <= bounds.West))
             return UnprocessableEntity(new { error = "invalid_bounds" });
 
         var query = new MapClustersQuery(
-            centerLat,
-            centerLng,
+            hasCenterZoom ? new Coords(centerLat!.Value, centerLng!.Value) : null,
             zoom ?? 0,
             viewportWidthPx,
             viewportHeightPx,

@@ -592,6 +592,12 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("note_post");
 
+                    b.Property<bool>("UploadConfirmed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("upload_confirmed");
+
                     b.Property<int?>("UserId")
                         .HasColumnType("integer")
                         .HasColumnName("user_id");
@@ -673,13 +679,21 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                         .HasColumnName("appleid");
 
                     b.Property<string>("City")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("text")
                         .HasColumnName("city");
 
                     b.Property<bool?>("Consent")
                         .HasColumnType("boolean")
                         .HasColumnName("consent");
+
+                    b.Property<DateTime?>("ConsentGivenAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("consent_given_at");
+
+                    b.Property<string>("ConsentVersion")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("consent_version");
 
                     b.Property<DateTime?>("CreationDate")
                         .ValueGeneratedOnAdd()
@@ -698,8 +712,7 @@ namespace Tenant.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("text")
                         .HasColumnName("first_name");
 
                     b.Property<string>("GoogleId")
@@ -715,8 +728,7 @@ namespace Tenant.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("text")
                         .HasColumnName("last_name");
 
                     b.Property<bool>("Legacy")

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Exceptions;
 using Tenant.Domain.Persistence;
@@ -5,7 +6,7 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Application.Devices;
 
-public class DevicesService(IDevicesRepository devices, IUnitOfWork unitOfWork)
+public class DevicesService(IDevicesRepository devices, IUnitOfWork unitOfWork, ILogger<DevicesService> logger)
 {
     public async Task AddAsync(AddDeviceRequest request, int callerId, CancellationToken cancellationToken = default)
     {
@@ -32,6 +33,7 @@ public class DevicesService(IDevicesRepository devices, IUnitOfWork unitOfWork)
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Device registered for user {UserId} ({Platform})", request.UserId, request.DevicePlatform);
     }
 
     public async Task UpdateAsync(UpdateDeviceRequest request, int callerId, CancellationToken cancellationToken = default)
@@ -56,5 +58,6 @@ public class DevicesService(IDevicesRepository devices, IUnitOfWork unitOfWork)
 
         devices.Remove(device);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Device removed for user {UserId}", device.UserId);
     }
 }

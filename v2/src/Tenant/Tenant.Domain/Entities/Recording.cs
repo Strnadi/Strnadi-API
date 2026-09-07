@@ -26,6 +26,8 @@ public partial class Recording
 
     public int? ExpectedPartsCount { get; set; }
 
+    public bool UploadConfirmed { get; set; }
+
     public virtual ICollection<FilteredRecordingPart> FilteredRecordingParts { get; set; } = new List<FilteredRecordingPart>();
 
     public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();

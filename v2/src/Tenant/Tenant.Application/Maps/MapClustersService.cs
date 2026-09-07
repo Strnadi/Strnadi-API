@@ -10,7 +10,7 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
     public async Task<MapClustersResult> GetClustersAsync(MapClustersQuery query, CancellationToken cancellationToken = default)
     {
         var bounds = query.Bounds ?? ResolveBounds(
-            query.CenterLatitude!.Value, query.CenterLongitude!.Value, query.Zoom,
+            query.Center!.Latitude, query.Center!.Longitude, query.Zoom,
             query.ViewportWidthPx!.Value, query.ViewportHeightPx!.Value);
 
         var filters = new MapPointFilters(query.Verified, query.UserId, query.CreatedFrom, query.CreatedTo);
@@ -18,9 +18,10 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
 
         var allDialects = await dialects.GetAllAsync(cancellationToken);
         var dialectCodesById = allDialects.ToDictionary(d => d.Id, d => d.DialectCode);
+        var dialectColorsById = allDialects.ToDictionary(d => d.Id, d => d.Color);
 
         var clusters = GroupIntoCells(points, query.Zoom, ClusterResolutionPx)
-            .Select(group => BuildCluster(group.Key, group.ToArray(), dialectCodesById, query.Zoom, query.DialectMode, query.MaxItemsPerCluster))
+            .Select(group => BuildCluster(group.Key, group.ToArray(), dialectCodesById, dialectColorsById, query.Zoom, query.DialectMode, query.MaxItemsPerCluster))
             .ToArray();
 
         return new MapClustersResult(bounds, ClusterResolutionPx, DetailZoomThreshold, clusters);
@@ -30,14 +31,14 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
         (long CellX, long CellY) cellKey,
         MapPointCandidate[] points,
         IReadOnlyDictionary<int, string> dialectCodesById,
+        IReadOnlyDictionary<int, string> dialectColorsById,
         double zoom,
         DialectMode dialectMode,
         int maxItemsPerCluster)
     {
         int count = points.Length;
 
-        double centerLat = points.Average(p => p.Latitude);
-        double centerLng = points.Average(p => p.Longitude);
+        var center = new Coords(points.Average(p => p.Latitude), points.Average(p => p.Longitude));
 
         var dialectBreakdown = points
             .Select(p => ResolveDialectId(p, dialectMode))
@@ -45,7 +46,8 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
             .Select(g =>
             {
                 string label = g.Key is not null && dialectCodesById.TryGetValue(g.Key.Value, out var code) ? code : "unknown";
-                return new MapDialectBreakdown(g.Key, label, label, g.Count(), (double)g.Count() / count);
+                string color = g.Key is not null && dialectColorsById.TryGetValue(g.Key.Value, out var hex) ? hex : "#808080";
+                return new MapDialectBreakdown(g.Key, color, label, g.Count(), (double)g.Count() / count);
             })
             .ToArray();
 
@@ -61,12 +63,12 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
             {
                 var dialectId = ResolveDialectId(p, dialectMode);
                 string? label = dialectId is not null && dialectCodesById.TryGetValue(dialectId.Value, out var code) ? code : null;
-                return new MapClusterItem(p.RecordingId, p.PartId, p.Latitude, p.Longitude, p.CreatedAt,
+                return new MapClusterItem(p.RecordingId, p.PartId, new Coords(p.Latitude, p.Longitude), p.CreatedAt,
                     dialectId, label, ResolveDialectSource(p, dialectMode));
             }).ToArray()
             : null;
 
-        return new MapCluster(id, centerLat, centerLng, count, radiusPx, Expandable: !leaf, leaf, dialectBreakdown, items);
+        return new MapCluster(id, center, count, radiusPx, Expandable: !leaf, leaf, dialectBreakdown, items);
     }
 
     private static string ResolveDialectSource(MapPointCandidate point, DialectMode dialectMode) => dialectMode switch

@@ -12,6 +12,7 @@ public class AchievementsController(AchievementsService achievementsService) : C
 {
     /// <summary>All achievements, or just the ones this user earned (awards any newly qualified ones first).</summary>
     [HttpGet]
+    [ProducesResponseType(typeof(AchievementResponse[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAsync([FromQuery] int? userId, CancellationToken cancellationToken)
     {
         return Ok(await achievementsService.GetAllAsync(userId, cancellationToken));
@@ -19,6 +20,8 @@ public class AchievementsController(AchievementsService achievementsService) : C
 
     /// <summary>The achievement's icon, as a PNG.</summary>
     [HttpGet("{achievementId:int}/photo")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, "image/png")]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPhotoAsync([FromRoute] int achievementId, CancellationToken cancellationToken)
     {
         var bytes = await achievementsService.GetPhotoAsync(achievementId, cancellationToken);
@@ -30,6 +33,10 @@ public class AchievementsController(AchievementsService achievementsService) : C
     [Authorize(Policy = "AdminOnly")]
     [HttpPost]
     [RequestSizeLimit(int.MaxValue)]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateAsync([FromForm] string sql, [FromForm] string contents, IFormFile file, CancellationToken cancellationToken)
     {
         List<AchievementContentRequest>? parsedContents;

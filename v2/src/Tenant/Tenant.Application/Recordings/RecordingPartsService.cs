@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Exceptions;
 using Tenant.Domain.Persistence;
@@ -6,7 +7,13 @@ using Tenant.Domain.Services;
 
 namespace Tenant.Application.Recordings;
 
-public class RecordingPartsService(IRecordingPartsRepository recordingParts, IFileStorage fileStorage, IUnitOfWork unitOfWork)
+public class RecordingPartsService(
+    IRecordingPartsRepository recordingParts,
+    IFileStorage fileStorage,
+    IAudioNormalizer audioNormalizer,
+    IClassificationQueue classificationQueue,
+    IUnitOfWork unitOfWork,
+    ILogger<RecordingPartsService> logger)
 {
     public async Task<byte[]> GetSoundAsync(int partId, CancellationToken cancellationToken = default)
     {
@@ -40,20 +47,26 @@ public class RecordingPartsService(IRecordingPartsRepository recordingParts, IFi
 
         await SaveAudioAsync(part, fileContent, cancellationToken);
 
-        // NOTE: old code enqueued this part for AI dialect classification here. Deferred on purpose -
-        // the audio processing pipeline (FFmpeg/AI model/queue) is a separate, later step.
-        // TODO
+        await classificationQueue.EnqueueAsync(part.Id, cancellationToken);
+        logger.LogInformation("Recording part {PartId} uploaded for recording {RecordingId} and queued for classification", part.Id, part.RecordingId);
 
         return part.Id;
     }
 
     private async Task SaveAudioAsync(RecordingPart part, byte[] content, CancellationToken cancellationToken)
     {
-        var path = BuildPath(part.RecordingId!.Value, part.Id);
-        await fileStorage.SaveAsync(path, content, cancellationToken);
+        // Keep the original bytes exactly as uploaded (needed later to verify the upload-completion
+        // hash, which is computed by the client from the pre-normalization audio) alongside a
+        // normalized copy used for playback and AI classification.
+        var originalPath = BuildOriginalPath(part.RecordingId!.Value, part.Id);
+        await fileStorage.SaveAsync(originalPath, content, cancellationToken);
 
-        part.FilePath = path;
-        part.Length = content.Length;
+        var normalizedContent = await audioNormalizer.NormalizeAsync(content, cancellationToken);
+        var normalizedPath = BuildNormalizedPath(part.RecordingId!.Value, part.Id);
+        await fileStorage.SaveAsync(normalizedPath, normalizedContent, cancellationToken);
+
+        part.FilePath = normalizedPath;
+        part.Length = normalizedContent.Length;
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
@@ -68,5 +81,7 @@ public class RecordingPartsService(IRecordingPartsRepository recordingParts, IFi
         GpsLongitudeEnd = request.GpsLongitudeEnd,
     };
 
-    private static string BuildPath(int recordingId, int partId) => $"recordings/{recordingId}/{recordingId}_{partId}.original.wav";
+    internal static string BuildOriginalPath(int recordingId, int partId) => $"recordings/{recordingId}/{recordingId}_{partId}.original.wav";
+
+    private static string BuildNormalizedPath(int recordingId, int partId) => $"recordings/{recordingId}/{recordingId}_{partId}.normalized.wav";
 }

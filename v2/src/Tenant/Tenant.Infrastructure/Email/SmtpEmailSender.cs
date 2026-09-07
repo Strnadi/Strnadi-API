@@ -10,27 +10,37 @@ public class SmtpEmailSender(ISmtpSettings smtpSettings, ILogger<SmtpEmailSender
 {
     public Task SendEmailVerificationAsync(string email, string? nickname, string verificationLink, CancellationToken cancellationToken = default)
     {
-        var greeting = string.IsNullOrWhiteSpace(nickname) ? "Ahoj" : $"Ahoj {nickname}";
+        var nicknamePart = string.IsNullOrEmpty(nickname) ? "" : $" s přezdívkou <strong>{nickname}</strong>";
         var body = $"""
-                    <p>{greeting},</p>
-                    <p>Pro dokončení registrace potvrďte prosím svůj e-mail kliknutím na odkaz níže.</p>
-                    <p><a href="{verificationLink}">Ověřit e-mail</a></p>
+                    <p style='font-size:1rem'>
+                    Děkujeme za zájem o projekt občanské vědy Nářečí českých strnadů.<br>
+                    <br>
+                    Registraci nového uživatele{nicknamePart} potvrdíte kliknutím na <a href='{verificationLink}'>tento link</a>.<br>
+
+                    Pokud jste se do projektu neregistrovali nebo jste zadali tuto e-mailovou adresu omylem, zprávu ignorujte.<br>
+                    <br>
+                    </p>
+                    <h3>Vaši strnadi</h3><br>
+                    <br>
+                    <a href='https://www.strnadi.cz'>www.strnadi.cz</a>
                     """;
 
-        return SendAsync(email, "Ověření e-mailu — Strnadi", body);
+        return SendAsync(email, "Nářečí českých strnadů – potvrzení nového uživatele", body);
     }
 
     public Task SendPasswordResetAsync(string email, string? nickname, string resetLink, CancellationToken cancellationToken = default)
     {
-        var greeting = string.IsNullOrWhiteSpace(nickname) ? "Ahoj" : $"Ahoj {nickname}";
+        var nicknamePart = string.IsNullOrEmpty(nickname) ? "" : $" s přezdívkou <strong>{nickname}</strong>";
         var body = $"""
-                    <p>{greeting},</p>
-                    <p>Pro obnovení hesla klikněte na odkaz níže.</p>
-                    <p><a href="{resetLink}">Obnovit heslo</a></p>
-                    <p>Pokud jste o obnovení hesla nežádali, tento e-mail ignorujte.</p>
+                    Nové heslo pro váš uživatelský účet v projektu Nářečí českých strnadů{nicknamePart} můžete zvolit online po kliknutí na <a href='{resetLink}'>tento link</a>. <br>
+                    Pokud heslo měnit nechcete, zprávu ignorujte. <br>
+                    <br>
+                    <h5>Vaši strnadi</h5><br>
+                    <br>
+                    <a href='https://www.strnadi.cz'>www.strnadi.cz</a>
                     """;
 
-        return SendAsync(email, "Obnova hesla — Strnadi", body);
+        return SendAsync(email, "Nářečí českých strnadů – zapomenuté heslo", body);
     }
 
     private async Task SendAsync(string toEmail, string subject, string htmlBody)
@@ -48,7 +58,7 @@ public class SmtpEmailSender(ISmtpSettings smtpSettings, ILogger<SmtpEmailSender
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Failed to send email to {Email}", toEmail);
+            logger.LogError(e, "Failed to send email");
         }
     }
 }
