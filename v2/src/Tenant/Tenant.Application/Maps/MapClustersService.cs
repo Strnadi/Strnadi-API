@@ -23,19 +23,13 @@ public class MapClustersService(
         var candidates = await mapPoints.GetInBoundsAsync(query.Bounds, filters, cancellationToken);
         var dialectsById = (await dialects.GetAllAsync(cancellationToken)).ToDictionary(
             dialect => dialect.Id,
-            dialect => new DialectInfo(dialect.Id, dialect.DialectCode, dialect.HintOrder));
+            dialect => new DialectInfo(dialect.Id, dialect.DialectCode, dialect.HintOrder, dialect.IsDialect));
 
         var visible = new List<ProjectedRecording>(candidates.Length);
 
         foreach (var candidate in candidates)
         {
             var dialectProjection = ResolveDialects(candidate, query.DialectMode, dialectsById);
-
-            if (dialectProjection.WinningTier == DialectTier.Confirmed &&
-                dialectProjection.Dialects.All(dialect => IsOmittedConfirmedDialect(dialect.Code)))
-            {
-                continue;
-            }
 
             if (query.OnlyMeaningfulDialects && !dialectProjection.IsMeaningful)
                 continue;
@@ -224,7 +218,7 @@ public class MapClustersService(
             return null;
 
         var meaningful = dialectValues
-            .Where(dialect => IsMeaningfulDialect(dialect.Code))
+            .Where(dialect => dialect.IsDialect)
             .ToArray();
         var selected = meaningful.Length > 0 ? meaningful : dialectValues;
 
@@ -237,12 +231,6 @@ public class MapClustersService(
             meaningful.Length > 0,
             tier);
     }
-
-    private static bool IsMeaningfulDialect(string code) =>
-        !Enum.TryParse<NonMeaningfulDialect>(NormalizeDialectName(code), ignoreCase: true, out _);
-
-    private static bool IsOmittedConfirmedDialect(string code) =>
-        Enum.TryParse<OmittedConfirmedDialect>(NormalizeDialectName(code), ignoreCase: true, out _);
 
     private static string NormalizeDialectName(string code) =>
         string.Concat(code.Where(char.IsLetterOrDigit));
@@ -315,7 +303,7 @@ public class MapClustersService(
         _ => 3
     };
 
-    private sealed record DialectInfo(int Id, string Code, int HintOrder);
+    private sealed record DialectInfo(int Id, string Code, int HintOrder, bool IsDialect);
 
     private sealed record DialectProjection(
         DialectInfo[] Dialects,
@@ -334,20 +322,6 @@ public class MapClustersService(
         GridCell Cell,
         MapDialectSource Source,
         string DialectSignature);
-
-    private enum NonMeaningfulDialect
-    {
-        None,
-        NoBird,
-        Unfinished,
-        Unknown
-    }
-
-    private enum OmittedConfirmedDialect
-    {
-        None,
-        NoBird
-    }
 
     private enum DialectTier
     {

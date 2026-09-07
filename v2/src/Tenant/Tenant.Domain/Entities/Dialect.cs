@@ -10,6 +10,8 @@ public partial class Dialect
 
     public int HintOrder { get; set; }
 
+    public bool IsDialect { get; set; }
+
     public virtual ICollection<DetectedDialect> DetectedDialectConfirmedDialects { get; set; } = new List<DetectedDialect>();
 
     public virtual ICollection<DetectedDialect> DetectedDialectUserGuessDialects { get; set; } = new List<DetectedDialect>();

@@ -282,6 +282,7 @@ public partial class TenantDbContext : DbContext
                 .HasMaxLength(15)
                 .HasColumnName("dialect_code");
             entity.Property(e => e.HintOrder).HasColumnName("hint_order");
+            entity.Property(e => e.IsDialect).HasColumnName("is_dialect");
         });
 
         modelBuilder.Entity<DialectsToDo>(entity =>
