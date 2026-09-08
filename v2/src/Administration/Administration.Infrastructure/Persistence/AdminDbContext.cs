@@ -1,16 +1,23 @@
 using Administration.Domain.Entities;
+using Administration.Domain.Services;
+using Administration.Infrastructure.Security;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Administration.Infrastructure.Persistence;
 
-public class AdminDbContext(DbContextOptions<AdminDbContext> options) : DbContext(options)
+public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptionService encryption)
+    : IdentityDbContext<User, Role, Guid, IdentityUserClaim<Guid>, IdentityUserRole<Guid>, IdentityUserLogin<Guid>,
+        IdentityRoleClaim<Guid>, IdentityUserToken<Guid>>(options)
 {
-    public virtual DbSet<AdminUser> Users { get; set; }
+    private readonly EncryptedStringConverter _encryptedString = new(encryption);
 
-    // Columns are "timestamp without time zone", but application code sets them with
-    // DateTime.UtcNow (Kind=Utc); Npgsql rejects that mismatch, so strip/restore the Kind
-    // on the way in/out instead of touching every call site.
+    public virtual DbSet<Project> Projects { get; set; }
+
+    public virtual DbSet<ProjectMembership> ProjectMemberships { get; set; }
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<DateTime>()
@@ -30,53 +37,55 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options) : DbContex
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         modelBuilder.UseOpenIddict();
-        
-        modelBuilder.Entity<AdminUser>(entity =>
+
+        modelBuilder.Entity<User>(entity =>
         {
-            entity.ToTable("admin_users");
+            entity.ToTable("users");
 
-            entity.HasKey(e => e.Id).HasName("admin_users_pkey");
+            entity.HasIndex(u => u.NormalizedEmail).IsUnique();
 
-            entity.HasIndex(e => e.Email, "admin_users_email_key").IsUnique();
-            entity.HasIndex(e => e.GoogleId, "admin_users_google_id_key").IsUnique();
-            entity.HasIndex(e => e.AppleId, "admin_users_apple_id_key").IsUnique();
+            entity.Property(e => e.FirstName).HasConversion(_encryptedString);
+            entity.Property(e => e.LastName).HasConversion(_encryptedString);
 
-            entity.Property(e => e.Id).HasColumnName("id");
+#pragma warning disable CS8620
+            entity.Property(e => e.City).HasConversion(_encryptedString);
+#pragma warning restore CS8620
+        });
 
-            entity.Property(e => e.Email)
-                .HasMaxLength(255)
-                .HasColumnName("email");
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.ToTable("roles");
+            entity.HasIndex(r => r.NormalizedName).IsUnique(false);
+            entity.HasIndex(r => new { r.NormalizedName, r.ProjectId }).IsUnique();
+        });
 
-            entity.Property(e => e.IsEmailConfirmed)
-                .HasDefaultValue(false)
-                .HasColumnName("is_email_confirmed");
+        modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("user_roles");
+        modelBuilder.Entity<IdentityUserClaim<Guid>>().ToTable("user_claims");
+        modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("user_logins");
+        modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("user_tokens");
+        modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("role_claims");
 
-            entity.Property(e => e.PasswordHash)
-                .HasMaxLength(255)
-                .HasColumnName("password_hash");
+        modelBuilder.Entity<Project>(entity =>
+        {
+            entity.Property(p => p.Name).HasMaxLength(256);
+            entity.Property(p => p.State).HasConversion<string>().HasMaxLength(32);
+        });
 
-            entity.Property(e => e.GoogleId)
-                .HasMaxLength(255)
-                .HasColumnName("google_id");
+        modelBuilder.Entity<ProjectMembership>(entity =>
+        {
+            entity.HasOne(pm => pm.User)
+                .WithMany()
+                .HasForeignKey(pm => pm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.Property(e => e.AppleId)
-                .HasMaxLength(255)
-                .HasColumnName("apple_id");
+            entity.HasOne(pm => pm.Project)
+                .WithMany()
+                .HasForeignKey(pm => pm.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.Property(e => e.Role)
-                .HasMaxLength(32)
-                .HasDefaultValue("user")
-                .HasColumnName("role");
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("created_at");
-
-            entity.Property(e => e.Deleted)
-                .HasDefaultValue(false)
-                .HasColumnName("deleted");
+            entity.HasIndex(pm => new { pm.UserId, pm.ProjectId }).IsUnique();
         });
     }
 }
