@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
@@ -19,6 +20,10 @@ const string clientId = "strnadi-app";
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddTrustedReverseProxy();
+if (builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+builder.Services.AddHealthChecks().AddDbContextCheck<AdminDbContext>();
 
 builder.Services.AddDbContext<AdminDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
@@ -108,6 +113,7 @@ builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
+app.UseForwardedHeaders();
 
 using (var scope = app.Services.CreateScope())
     await SyncOpenIddictClientAsync(scope.ServiceProvider);

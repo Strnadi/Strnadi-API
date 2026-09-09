@@ -41,8 +41,8 @@ pipeline {
                     test -f deployment/compose.yaml
                     test -f deployment/env.example
 
-                    test ! -f appsettings.json
-                    test ! -f Host/appsettings.json
+                    test -f deployment/administration.compose.yaml
+                    test -f deployment/administration.env.example
 
                     docker buildx version
                     docker buildx inspect --bootstrap
@@ -61,6 +61,10 @@ pipeline {
                       --target test \
                       --output=type=cacheonly \
                       .
+
+                    docker buildx build \
+                      --pull --progress=plain --target administration-test \
+                      --output=type=cacheonly .
                 '''
             }
         }
@@ -75,50 +79,16 @@ pipeline {
                       --target final \
                       --output=type=cacheonly \
                       .
+
+                    docker buildx build \
+                      --progress=plain --target administration-final \
+                      --output=type=cacheonly .
                 '''
             }
         }
 
-        stage('Request trusted publication') {
-            when {
-                anyOf {
-                    branch 'develop'
-                    branch 'master'
-                    buildingTag()
-                }
-            }
-
-            steps {
-                script {
-                    String targetEnvironment =
-                        env.BRANCH_NAME == 'master' ? 'production' : 'dev'
-
-                    build(
-                        job: '/Trusted/BuildApplication',
-                        wait: true,
-                        propagate: true,
-                        parameters: [
-                            string(
-                                name: 'APPLICATION',
-                                value: env.APPLICATION
-                            ),
-                            string(
-                                name: 'ENVIRONMENT',
-                                value: targetEnvironment
-                            ),
-                            string(
-                                name: 'GIT_SHA',
-                                value: env.RESOLVED_GIT_SHA
-                            ),
-                            string(
-                                name: 'SOURCE_BUILD_URL',
-                                value: env.BUILD_URL
-                            )
-                        ]
-                    )
-                }
-            }
-        }
+        // Publication and deployment are owned by the trusted infrastructure
+        // pipeline: StrnadiAPI/{tenant|administration}/{dev|preprod|production}.
     }
 
     post {
