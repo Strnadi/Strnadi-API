@@ -41,6 +41,11 @@ ADMIN_ROLE_ID = "01a0860e-9248-718e-b041-2794b8e3b940"
 # TODO: fill in with the real base64 Encryption:Key before running for real.
 ENCRYPTION_KEY_B64 = "PLACEHOLDER_BASE64_KEY"
 
+# Old articles/article_categories had no language_code at all (single untranslated text) -
+# this is the language the old data is assumed to already be in, used to seed the one
+# DEFAULT_LANGUAGE_CODE row in the new article_translations/article_category_translations tables.
+DEFAULT_LANGUAGE_CODE = "cs"
+
 
 # --- uuid v7 (time-ordered, matches Guid.CreateVersion7() on the C# side) ---
 
@@ -257,18 +262,35 @@ def migrate_achievements(old, tenant) -> None:
 def migrate_articles(old, tenant) -> None:
     with old.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as old_cur, tenant.cursor() as t_cur:
         old_cur.execute("SELECT * FROM articles")
-        for row in old_cur.fetchall():
+        article_rows = old_cur.fetchall()
+        for row in article_rows:
             t_cur.execute(
                 "INSERT INTO articles (id, name, description) VALUES (%s, %s, %s)",
                 (row["id"], row["name"], row["description"]),
             )
+            # article_translations is new in v2 - old data had no language_code at all, so the
+            # single old name/description becomes the DEFAULT_LANGUAGE_CODE row.
+            t_cur.execute(
+                "INSERT INTO article_translations (article_id, language_code, name_value, description_value) "
+                "VALUES (%s, %s, %s, %s)",
+                (row["id"], DEFAULT_LANGUAGE_CODE, row["name"], row["description"]),
+            )
         reset_serial(t_cur, "articles")
 
         old_cur.execute("SELECT * FROM article_categories")
-        for row in old_cur.fetchall():
+        category_rows = old_cur.fetchall()
+        for row in category_rows:
             t_cur.execute(
                 'INSERT INTO article_categories (id, label, name, "order") VALUES (%s, %s, %s, %s)',
                 (row["id"], row["label"], row["name"], row["order"]),
+            )
+            # Same as above; old had no description field for categories, so description_value
+            # is seeded from `label` - it read as the more free-text of the two old columns.
+            # Double-check this mapping (name_value=name, description_value=label) is what you want.
+            t_cur.execute(
+                "INSERT INTO article_category_translations "
+                "(article_category_id, language_code, name_value, description_value) VALUES (%s, %s, %s, %s)",
+                (row["id"], DEFAULT_LANGUAGE_CODE, row["name"], row["label"]),
             )
         reset_serial(t_cur, "article_categories")
 
