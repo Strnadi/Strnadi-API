@@ -27,6 +27,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="OpenIddict.AspNetCore" Version="8.0.0-preview.3.26427.30" />
+    <PackageReference Include="OpenIddict.Validation.AspNetCore" Version="8.0.0-preview.3.26427.30" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.17.3" />
   </ItemGroup>
 

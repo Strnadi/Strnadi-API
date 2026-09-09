@@ -3,10 +3,13 @@ using Administration.Application.Auth;
 using Administration.Application.Users;
 using Administration.Domain.Entities;
 using Administration.Domain.Services;
+using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Administration.Api.Controllers;
 
@@ -16,7 +19,8 @@ public class AccountController(
     UserManager<User> users,
     SignInManager<User> signIn,
     IEmailSender<User> emailSender,
-    IFileStorage fileStorage) : Controller
+    IFileStorage fileStorage,
+    AdminDbContext db) : Controller
 {
     /// <summary>Confirms a user's email using the token from the confirmation link.</summary>
     [HttpGet("confirm-email")]
@@ -62,24 +66,16 @@ public class AccountController(
         return Ok();
     }
 
-    /// <summary>Sets a new password using a password reset token.</summary>
-    [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequest request)
-    {
-        var user = await users.FindByEmailAsync(request.Email);
-        if (user is null)
-            return BadRequest("Invalid token");
-
-        var result = await users.ResetPasswordAsync(user, request.Token, request.NewPassword);
-        return result.Succeeded ? Ok() : BadRequest("Invalid token");
-    }
+    // Password reset is now handled entirely by Pages/Account/ResetPassword.cshtml (same
+    // /account/reset-password URL the email link already points to) - no separate JSON action
+    // needed, and one would collide with the page's own POST handler on that route.
 
     /// <summary>Changes the caller's own password.</summary>
-    [Authorize]
+    [Authorize(Policy = "AccountMutation")]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequest request)
     {
-        var user = await users.GetUserAsync(User);
+        var user = await GetCurrentUserAsync();
         if (user is null)
             return Unauthorized();
 
@@ -88,11 +84,11 @@ public class AccountController(
     }
 
     /// <summary>Deletes the caller's own account.</summary>
-    [Authorize]
+    [Authorize(Policy = "AccountMutation")]
     [HttpDelete]
     public async Task<IActionResult> DeleteAccountAsync()
     {
-        var user = await users.GetUserAsync(User);
+        var user = await GetCurrentUserAsync();
         if (user is null)
             return Unauthorized();
 
@@ -164,11 +160,11 @@ public class AccountController(
     }
 
     /// <summary>Lists the external login providers linked to the caller's account.</summary>
-    [Authorize]
+    [Authorize(Policy = "AccountMutation")]
     [HttpGet("external-logins")]
     public async Task<IActionResult> GetExternalLoginsAsync()
     {
-        var user = await users.GetUserAsync(User);
+        var user = await GetCurrentUserAsync();
         if (user is null)
             return Unauthorized();
 
@@ -176,13 +172,55 @@ public class AccountController(
         return Ok(logins.Select(l => l.LoginProvider));
     }
 
+    /// <summary>Gets the caller's own profile, including their role(s) in the current project if the token is project-scoped.</summary>
+    [Authorize(Policy = "AccountMutation")]
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfileAsync()
+    {
+        var user = await GetCurrentUserAsync();
+        if (user is null)
+            return Unauthorized();
+
+        var roles = await GetCurrentProjectRolesAsync(user.Id);
+        return Ok(new UserProfileResponse(user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.City, user.PostCode, roles));
+    }
+
+    /// <summary>Updates the caller's own profile fields.</summary>
+    [Authorize(Policy = "AccountMutation")]
+    [HttpPatch("profile")]
+    public async Task<IActionResult> UpdateProfileAsync([FromBody] UpdateProfileRequest request)
+    {
+        var user = await GetCurrentUserAsync();
+        if (user is null)
+            return Unauthorized();
+
+        if (request.UserName != user.UserName)
+        {
+            var userNameResult = await users.SetUserNameAsync(user, request.UserName);
+            if (!userNameResult.Succeeded)
+                return BadRequest(userNameResult.Errors);
+        }
+
+        user.FirstName = request.FirstName;
+        user.LastName = request.LastName;
+        user.City = request.City;
+        user.PostCode = request.PostCode;
+
+        var result = await users.UpdateAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        var roles = await GetCurrentProjectRolesAsync(user.Id);
+        return Ok(new UserProfileResponse(user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.City, user.PostCode, roles));
+    }
+
     /// <summary>Uploads or replaces the caller's own profile photo.</summary>
-    [Authorize]
+    [Authorize(Policy = "AccountMutation")]
     [HttpPost("profile-photo")]
     [RequestSizeLimit(130023424)]
     public async Task<IActionResult> UploadProfilePhotoAsync([FromBody] UserProfilePhotoModel request)
     {
-        var user = await users.GetUserAsync(User);
+        var user = await GetCurrentUserAsync();
         if (user is null)
             return Unauthorized();
 
@@ -203,5 +241,29 @@ public class AccountController(
     {
         await signIn.SignOutAsync();
         return Ok();
+    }
+
+    // UserManager.GetUserAsync(User) looks up ClaimTypes.NameIdentifier, which is what cookie
+    // sign-in sets - but a Bearer-authenticated (mobile) principal carries the claim as OpenIddict
+    // issued it, "sub" (Claims.Subject), unmapped. Check both so either caller resolves correctly.
+    private Task<User?> GetCurrentUserAsync()
+    {
+        var userId = User.FindFirstValue(Claims.Subject) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return userId is null ? Task.FromResult<User?>(null) : users.FindByIdAsync(userId);
+    }
+
+    // "project role" only makes sense relative to a project - only project-scoped tokens (from
+    // the token-exchange grant) carry a project_id claim; a base authorization_code token has
+    // none, so this returns no roles rather than guessing which project was meant.
+    private async Task<string[]> GetCurrentProjectRolesAsync(Guid userId)
+    {
+        var projectIdClaim = User.FindFirstValue("project_id");
+        if (projectIdClaim is null || !Guid.TryParse(projectIdClaim, out var projectId))
+            return [];
+
+        return await db.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .Join(db.Roles.Where(r => r.ProjectId == projectId), ur => ur.RoleId, r => r.Id, (_, r) => r.Name!)
+            .ToArrayAsync();
     }
 }

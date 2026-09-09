@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using Scalar.AspNetCore;
 using ServiceDefaults;
 
@@ -82,7 +83,12 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
         options.SignInScheme = IdentityConstants.ExternalScheme;
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    // Accepts either the Identity cookie (web) or an OpenIddict-issued Bearer access token
+    // (mobile) - AccountController's own mutation endpoints need both callers to work.
+    .AddPolicy("AccountMutation", policy => policy
+        .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme, OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+        .RequireAuthenticatedUser());
 
 builder.Services.AddOpenIddict()
     .AddCore(o => o.UseEntityFrameworkCore().UseDbContext<AdminDbContext>())
@@ -96,6 +102,7 @@ builder.Services.AddOpenIddict()
             .RequireProofKeyForCodeExchange()
             .AllowRefreshTokenFlow()
             .AllowTokenExchangeFlow()
+            .DisableAccessTokenEncryption()
             .UseAspNetCore()
             .EnableAuthorizationEndpointPassthrough()
             .EnableTokenEndpointPassthrough()
@@ -112,6 +119,11 @@ builder.Services.AddOpenIddict()
             o.AddSigningCertificate(LoadCertificate(builder.Configuration, "OAuth:Signing"))
                 .AddEncryptionCertificate(LoadCertificate(builder.Configuration, "OAuth:Encryption"));
         }
+    })
+    .AddValidation(o =>
+    {
+        o.UseLocalServer();
+        o.UseAspNetCore();
     });
 
 builder.Services.AddControllers();
