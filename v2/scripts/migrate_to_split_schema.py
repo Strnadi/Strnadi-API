@@ -368,9 +368,10 @@ def main() -> int:
         id_map = migrate_users(old, admin, args.dry_run)
         migrate_devices(old, tenant, id_map)
         migrate_recordings(old, tenant, id_map)
-        migrate_user_achievements(old, tenant, id_map)
+        # achievements/achievement_content/user_achievement are deliberately skipped here -
+        # eligibility criteria need to be redesigned first (see AchievementsRepository TODO),
+        # migrating them is a separate follow-up run once that's decided.
         migrate_recording_photos(old, tenant)
-        migrate_achievements(old, tenant)
         migrate_articles(old, tenant)
         migrate_dialects_and_parts(old, tenant)
 
