@@ -17,6 +17,7 @@ LoadEnvFile(Path.Combine(AppContext.BaseDirectory, ".env.development"));
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddTrustedReverseProxy();
 
 builder.Services.AddControllers();
 
@@ -93,6 +94,7 @@ builder.Services.AddSingleton<ConsoleFormatter, CompactConsoleFormatter>();
 builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
+app.UseForwardedHeaders();
 
 app.MapDefaultEndpoints();
 app.UseHttpsRedirection();
