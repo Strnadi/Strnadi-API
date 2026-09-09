@@ -170,7 +170,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.MapOpenApi();
-app.MapScalarApiReference();
+app.MapScalarApiReference(o => o.WithOperationTitleSource(OperationTitleSource.Path));
 
 app.Run();
 
