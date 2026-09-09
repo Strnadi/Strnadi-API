@@ -19,9 +19,15 @@ namespace Administration.Api.Controllers;
 [Route("connect")]
 public class AuthorizationController(UserManager<User> users, AdminDbContext db) : ControllerBase
 {
-    /// <summary>OAuth2/OIDC authorization endpoint. Redirects to login if the caller has no session, otherwise issues an authorization code.</summary>
     [HttpGet("authorize"), HttpPost("authorize"), IgnoreAntiforgeryToken]
-    public async Task<IActionResult> AuthorizeAsync()
+    public async Task<IActionResult> AuthorizeAsync(
+        [FromQuery(Name = "client_id")] string? clientId,
+        [FromQuery(Name = "response_type")] string? responseType,
+        [FromQuery(Name = "redirect_uri")] string? redirectUri,
+        [FromQuery] string? scope,
+        [FromQuery] string? state,
+        [FromQuery(Name = "code_challenge")] string? codeChallenge,
+        [FromQuery(Name = "code_challenge_method")] string? codeChallengeMethod)
     {
         var request = HttpContext.GetOpenIddictServerRequest()
                       ?? throw new InvalidOperationException("Cannot retrieve OpenIddict request");
