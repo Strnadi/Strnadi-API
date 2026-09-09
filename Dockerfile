@@ -47,8 +47,11 @@ RUN mkdir -p /app \
     && dotnet tool install dotnet-ef --tool-path /tools --version 10.0.11
 
 # Bundle generation needs a configured DbContext, but never connects to a DB.
+# Use a non-secret 32-byte placeholder key only for model construction in this command.
+# The deployed API and migration runner must receive the real key at runtime.
 RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
     ConnectionStrings__Default="Host=localhost;Database=bundle_build_only" \
+    Encryption__Key="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" \
     /tools/dotnet-ef migrations bundle \
       --project v2/src/Tenant/Tenant.Infrastructure/Tenant.Infrastructure.csproj \
       --startup-project v2/src/Tenant/Tenant.Api/Tenant.Api.csproj \
