@@ -18,6 +18,7 @@ public class AccountController(
     IEmailSender<User> emailSender,
     IFileStorage fileStorage) : Controller
 {
+    /// <summary>Confirms a user's email using the token from the confirmation link.</summary>
     [HttpGet("confirm-email")]
     public async Task<IActionResult> ConfirmEmailAsync([FromQuery] Guid userId, [FromQuery] string token)
     {
@@ -29,6 +30,7 @@ public class AccountController(
         return result.Succeeded ? Ok() : BadRequest(result.Errors);
     }
 
+    /// <summary>Resends the email confirmation link for the given email, if it belongs to a user.</summary>
     [HttpPost("resend-confirmation-email")]
     public async Task<IActionResult> ResendConfirmationEmailAsync([FromBody] ResendConfirmationRequest request)
     {
@@ -44,6 +46,7 @@ public class AccountController(
         return Ok();
     }
 
+    /// <summary>Sends a password reset link for the given email, if it belongs to a user.</summary>
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPasswordAsync([FromBody] ForgotPasswordRequest request)
     {
@@ -59,6 +62,7 @@ public class AccountController(
         return Ok();
     }
 
+    /// <summary>Sets a new password using a password reset token.</summary>
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPasswordAsync([FromBody] ResetPasswordRequest request)
     {
@@ -70,6 +74,7 @@ public class AccountController(
         return result.Succeeded ? Ok() : BadRequest("Invalid token");
     }
 
+    /// <summary>Changes the caller's own password.</summary>
     [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequest request)
@@ -82,6 +87,7 @@ public class AccountController(
         return result.Succeeded ? Ok() : BadRequest(result.Errors);
     }
 
+    /// <summary>Deletes the caller's own account.</summary>
     [Authorize]
     [HttpDelete]
     public async Task<IActionResult> DeleteAccountAsync()
@@ -97,7 +103,8 @@ public class AccountController(
         await signIn.SignOutAsync();
         return Ok();
     }
-    
+
+    /// <summary>Starts an external login (Google/Apple) by challenging the given provider.</summary>
     [HttpGet("external-login/{provider}")]
     public IActionResult ExternalLogin(string provider, [FromQuery] string? returnUrl)
     {
@@ -106,6 +113,7 @@ public class AccountController(
         return Challenge(properties, provider);
     }
 
+    /// <summary>Handles the external provider's callback: signs in an existing user, or links/creates one by verified email.</summary>
     [HttpGet("external-login-callback")]
     public async Task<IActionResult> ExternalLoginCallback([FromQuery] string? returnUrl)
     {
@@ -155,6 +163,7 @@ public class AccountController(
         return LocalRedirect(returnUrl ?? "/");
     }
 
+    /// <summary>Lists the external login providers linked to the caller's account.</summary>
     [Authorize]
     [HttpGet("external-logins")]
     public async Task<IActionResult> GetExternalLoginsAsync()
@@ -167,6 +176,7 @@ public class AccountController(
         return Ok(logins.Select(l => l.LoginProvider));
     }
 
+    /// <summary>Uploads or replaces the caller's own profile photo.</summary>
     [Authorize]
     [HttpPost("profile-photo")]
     [RequestSizeLimit(130023424)]
@@ -186,6 +196,7 @@ public class AccountController(
         return result.Succeeded ? Ok() : BadRequest(result.Errors);
     }
 
+    /// <summary>Signs the caller out of the cookie session.</summary>
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> LogoutAsync()

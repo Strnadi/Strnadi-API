@@ -19,6 +19,7 @@ namespace Administration.Api.Controllers;
 [Route("connect")]
 public class AuthorizationController(UserManager<User> users, AdminDbContext db) : ControllerBase
 {
+    /// <summary>OAuth2/OIDC authorization endpoint. Redirects to login if the caller has no session, otherwise issues an authorization code.</summary>
     [HttpGet("authorize"), HttpPost("authorize"), IgnoreAntiforgeryToken]
     public async Task<IActionResult> AuthorizeAsync()
     {
@@ -50,6 +51,7 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
         return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
+    /// <summary>Token endpoint. Exchanges an authorization code, refresh token, or project token-exchange request for an access token.</summary>
     [HttpGet("token"), HttpPost("token")]
     public async Task<IActionResult> IssueTokenAsync()
     {
@@ -75,6 +77,7 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
         });
     }
 
+    /// <summary>OIDC userinfo endpoint. Returns claims for the caller's access token.</summary>
     [HttpGet("user-info"), HttpPost("user-info")]
     public async Task<IActionResult> GetUserInfoAsync()
     {
@@ -97,6 +100,7 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
         return Ok(claims);
     }
 
+    /// <summary>Signs the caller out and ends the OpenIddict session.</summary>
     [Route("logout")]
     public async Task<IActionResult> LogoutAsync()
     {

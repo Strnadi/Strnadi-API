@@ -10,6 +10,7 @@ namespace Administration.Api.Controllers;
 [Route("users")]
 public class UserPhotosController(UserManager<User> users, IFileStorage fileStorage) : ControllerBase
 {
+    /// <summary>Gets a user's profile photo.</summary>
     [HttpGet("{userId:guid}/profile-photo")]
     public async Task<IActionResult> GetProfilePhotoAsync(Guid userId, CancellationToken cancellationToken)
     {

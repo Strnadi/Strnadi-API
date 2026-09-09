@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenIddict.Abstractions;
+using Scalar.AspNetCore;
 using ServiceDefaults;
 
 const string clientId = "strnadi-app";
@@ -111,6 +112,7 @@ builder.Services.AddOpenIddict()
 
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 app.UseForwardedHeaders();
@@ -131,6 +133,12 @@ app.MapControllers();
 app.MapRazorPages();
 app.MapDefaultEndpoints();
 app.MapHealthChecks("/utils/health");
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 app.Run();
 
