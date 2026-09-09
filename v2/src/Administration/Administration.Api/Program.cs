@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Administration.Api.Logging;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
 using Administration.Domain.Services;
@@ -13,6 +14,7 @@ using Administration.Infrastructure.Storage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging.Console;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using Scalar.AspNetCore;
@@ -129,6 +131,9 @@ builder.Services.AddOpenIddict()
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 builder.Services.AddOpenApi();
+
+builder.Services.AddSingleton<ConsoleFormatter, CompactConsoleFormatter>();
+builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
 app.UseForwardedHeaders();
