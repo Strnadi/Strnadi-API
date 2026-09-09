@@ -20,6 +20,8 @@ public class User : IdentityUser<Guid>
 
     public bool Deleted { get; set; }
 
+    public bool Consent { get; set; }
+
     public string? ProfilePhotoPath { get; set; }
 
     public string? ProfilePhotoFormat { get; set; }

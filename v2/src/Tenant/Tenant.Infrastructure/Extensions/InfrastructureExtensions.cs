@@ -46,6 +46,7 @@ public static class InfrastructureExtensions
             serviceCollection.AddScoped<IFilteredRecordingPartsRepository, FilteredRecordingPartsRepository>();
             serviceCollection.AddScoped<IDetectedDialectsRepository, DetectedDialectsRepository>();
             serviceCollection.AddScoped<IDevicesRepository, DevicesRepository>();
+            serviceCollection.AddScoped<IRecordingPhotosRepository, RecordingPhotosRepository>();
             serviceCollection.AddScoped<IAchievementsRepository, AchievementsRepository>();
             serviceCollection.AddScoped<IArticlesRepository, ArticlesRepository>();
             serviceCollection.AddScoped<IArticleCategoriesRepository, ArticleCategoriesRepository>();

@@ -61,6 +61,8 @@ public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, 
 
     public virtual DbSet<RecordingPart> RecordingParts { get; set; }
 
+    public virtual DbSet<RecordingPhoto> RecordingPhotos { get; set; }
+
     public virtual DbSet<UserAchievement> UserAchievements { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -378,6 +380,27 @@ public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, 
             entity.Property(e => e.UploadConfirmed)
                 .HasDefaultValue(false)
                 .HasColumnName("upload_confirmed");
+        });
+
+        modelBuilder.Entity<RecordingPhoto>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("recording_photos_pkey");
+
+            entity.ToTable("recording_photos");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.RecordingId).HasColumnName("recording_id");
+            entity.Property(e => e.FilePath)
+                .HasMaxLength(255)
+                .HasColumnName("file_path");
+            entity.Property(e => e.Format)
+                .HasMaxLength(10)
+                .HasColumnName("format");
+
+            entity.HasOne(e => e.Recording).WithMany(r => r.Photos)
+                .HasForeignKey(e => e.RecordingId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("recording_photos_recording_id_fkey");
         });
 
         modelBuilder.Entity<RecordingPart>(entity =>

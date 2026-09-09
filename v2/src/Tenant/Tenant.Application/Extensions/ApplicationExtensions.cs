@@ -5,6 +5,7 @@ using Tenant.Application.Common;
 using Tenant.Application.Devices;
 using Tenant.Application.Maps;
 using Tenant.Application.Notifications;
+using Tenant.Application.Photos;
 using Tenant.Application.Recordings;
 
 namespace Tenant.Application.Extensions;
@@ -23,6 +24,7 @@ public static class ApplicationExtensions
             serviceCollection.AddScoped<ArticlesService>();
             serviceCollection.AddScoped<ArticleCategoriesService>();
             serviceCollection.AddScoped<RecordingsService>();
+            serviceCollection.AddScoped<RecordingPhotosService>();
             serviceCollection.AddScoped<RecordingPartsService>();
             serviceCollection.AddScoped<FilteredRecordingPartsService>();
             serviceCollection.AddScoped<LinkBuilder>();

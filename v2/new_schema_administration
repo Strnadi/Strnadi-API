@@ -1,0 +1,551 @@
+strnadi_administration=> \d+ public.*
+                                   Index "public.EmailIndex"
+      Column      |          Type          | Key? |    Definition    | Storage  | Stats target 
+------------------+------------------------+------+------------------+----------+--------------
+ normalized_email | character varying(256) | yes  | normalized_email | extended | 
+unique, btree, for table "public.users"
+
+                                                   Table "public.OpenIddictApplications"
+          Column           |          Type          | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+---------------------------+------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id                        | character varying(100) |           | not null |         | extended |             |              | 
+ application_type          | character varying(50)  |           |          |         | extended |             |              | 
+ client_id                 | character varying(100) |           |          |         | extended |             |              | 
+ client_secret             | text                   |           |          |         | extended |             |              | 
+ client_type               | character varying(50)  |           |          |         | extended |             |              | 
+ concurrency_token         | character varying(50)  |           |          |         | extended |             |              | 
+ consent_type              | character varying(50)  |           |          |         | extended |             |              | 
+ display_name              | text                   |           |          |         | extended |             |              | 
+ display_names             | text                   |           |          |         | extended |             |              | 
+ json_web_key_set          | text                   |           |          |         | extended |             |              | 
+ permissions               | text[]                 |           |          |         | extended |             |              | 
+ post_logout_redirect_uris | text[]                 |           |          |         | extended |             |              | 
+ properties                | text                   |           |          |         | extended |             |              | 
+ redirect_uris             | text[]                 |           |          |         | extended |             |              | 
+ requirements              | text[]                 |           |          |         | extended |             |              | 
+ settings                  | text                   |           |          |         | extended |             |              | 
+Indexes:
+    "pk_open_iddict_applications" PRIMARY KEY, btree (id)
+    "ix_open_iddict_applications_client_id" UNIQUE, btree (client_id)
+Referenced by:
+    TABLE ""OpenIddictAuthorizations"" CONSTRAINT "fk_open_iddict_authorizations_open_iddict_applications_applicat" FOREIGN KEY (application_id) REFERENCES "OpenIddictApplications"(id)
+    TABLE ""OpenIddictSessions"" CONSTRAINT "fk_open_iddict_sessions_open_iddict_applications_application_id" FOREIGN KEY (application_id) REFERENCES "OpenIddictApplications"(id)
+    TABLE ""OpenIddictTokens"" CONSTRAINT "fk_open_iddict_tokens_open_iddict_applications_application_id" FOREIGN KEY (application_id) REFERENCES "OpenIddictApplications"(id)
+Access method: heap
+
+                                               Table "public.OpenIddictAuthorizations"
+      Column       |           Type           | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-------------------+--------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id                | character varying(100)   |           | not null |         | extended |             |              | 
+ application_id    | character varying(100)   |           |          |         | extended |             |              | 
+ concurrency_token | character varying(50)    |           |          |         | extended |             |              | 
+ creation_date     | timestamp with time zone |           |          |         | plain    |             |              | 
+ properties        | text                     |           |          |         | extended |             |              | 
+ scopes            | text[]                   |           |          |         | extended |             |              | 
+ status            | character varying(50)    |           |          |         | extended |             |              | 
+ subject           | character varying(400)   |           |          |         | extended |             |              | 
+ type              | character varying(50)    |           |          |         | extended |             |              | 
+Indexes:
+    "pk_open_iddict_authorizations" PRIMARY KEY, btree (id)
+    "ix_open_iddict_authorizations_application_id_status_subject_typ" btree (application_id, status, subject, type)
+Foreign-key constraints:
+    "fk_open_iddict_authorizations_open_iddict_applications_applicat" FOREIGN KEY (application_id) REFERENCES "OpenIddictApplications"(id)
+Referenced by:
+    TABLE ""OpenIddictSessions"" CONSTRAINT "fk_open_iddict_sessions_open_iddict_authorizations_authorizatio" FOREIGN KEY (authorization_id) REFERENCES "OpenIddictAuthorizations"(id)
+    TABLE ""OpenIddictTokens"" CONSTRAINT "fk_open_iddict_tokens_open_iddict_authorizations_authorization_" FOREIGN KEY (authorization_id) REFERENCES "OpenIddictAuthorizations"(id)
+Access method: heap
+
+                                                Table "public.OpenIddictResources"
+      Column       |          Type          | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-------------------+------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id                | character varying(100) |           | not null |         | extended |             |              | 
+ concurrency_token | character varying(50)  |           |          |         | extended |             |              | 
+ description       | text                   |           |          |         | extended |             |              | 
+ descriptions      | text                   |           |          |         | extended |             |              | 
+ display_name      | text                   |           |          |         | extended |             |              | 
+ display_names     | text                   |           |          |         | extended |             |              | 
+ name              | character varying(200) |           |          |         | extended |             |              | 
+ properties        | text                   |           |          |         | extended |             |              | 
+Indexes:
+    "pk_open_iddict_resources" PRIMARY KEY, btree (id)
+    "ix_open_iddict_resources_name" UNIQUE, btree (name)
+Access method: heap
+
+                                                  Table "public.OpenIddictScopes"
+      Column       |          Type          | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-------------------+------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id                | character varying(100) |           | not null |         | extended |             |              | 
+ concurrency_token | character varying(50)  |           |          |         | extended |             |              | 
+ description       | text                   |           |          |         | extended |             |              | 
+ descriptions      | text                   |           |          |         | extended |             |              | 
+ display_name      | text                   |           |          |         | extended |             |              | 
+ display_names     | text                   |           |          |         | extended |             |              | 
+ name              | character varying(200) |           |          |         | extended |             |              | 
+ properties        | text                   |           |          |         | extended |             |              | 
+ resources         | text[]                 |           |          |         | extended |             |              | 
+Indexes:
+    "pk_open_iddict_scopes" PRIMARY KEY, btree (id)
+    "ix_open_iddict_scopes_name" UNIQUE, btree (name)
+Access method: heap
+
+                                                  Table "public.OpenIddictSessions"
+      Column       |           Type           | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-------------------+--------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id                | character varying(100)   |           | not null |         | extended |             |              | 
+ application_id    | character varying(100)   |           |          |         | extended |             |              | 
+ authorization_id  | character varying(100)   |           |          |         | extended |             |              | 
+ concurrency_token | character varying(50)    |           |          |         | extended |             |              | 
+ creation_date     | timestamp with time zone |           |          |         | plain    |             |              | 
+ login_id          | character varying(100)   |           |          |         | extended |             |              | 
+ properties        | text                     |           |          |         | extended |             |              | 
+ status            | character varying(50)    |           |          |         | extended |             |              | 
+ subject           | character varying(400)   |           |          |         | extended |             |              | 
+Indexes:
+    "pk_open_iddict_sessions" PRIMARY KEY, btree (id)
+    "ix_open_iddict_sessions_application_id" btree (application_id)
+    "ix_open_iddict_sessions_authorization_id" btree (authorization_id)
+    "ix_open_iddict_sessions_login_id" btree (login_id)
+Foreign-key constraints:
+    "fk_open_iddict_sessions_open_iddict_applications_application_id" FOREIGN KEY (application_id) REFERENCES "OpenIddictApplications"(id)
+    "fk_open_iddict_sessions_open_iddict_authorizations_authorizatio" FOREIGN KEY (authorization_id) REFERENCES "OpenIddictAuthorizations"(id)
+Referenced by:
+    TABLE ""OpenIddictTokens"" CONSTRAINT "fk_open_iddict_tokens_open_iddict_sessions_session_id" FOREIGN KEY (session_id) REFERENCES "OpenIddictSessions"(id)
+Access method: heap
+
+                                                   Table "public.OpenIddictTokens"
+      Column       |           Type           | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-------------------+--------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id                | character varying(100)   |           | not null |         | extended |             |              | 
+ application_id    | character varying(100)   |           |          |         | extended |             |              | 
+ authorization_id  | character varying(100)   |           |          |         | extended |             |              | 
+ concurrency_token | character varying(50)    |           |          |         | extended |             |              | 
+ creation_date     | timestamp with time zone |           |          |         | plain    |             |              | 
+ expiration_date   | timestamp with time zone |           |          |         | plain    |             |              | 
+ payload           | text                     |           |          |         | extended |             |              | 
+ properties        | text                     |           |          |         | extended |             |              | 
+ redemption_date   | timestamp with time zone |           |          |         | plain    |             |              | 
+ reference_id      | character varying(100)   |           |          |         | extended |             |              | 
+ session_id        | character varying(100)   |           |          |         | extended |             |              | 
+ status            | character varying(50)    |           |          |         | extended |             |              | 
+ subject           | character varying(400)   |           |          |         | extended |             |              | 
+ type              | character varying(150)   |           |          |         | extended |             |              | 
+Indexes:
+    "pk_open_iddict_tokens" PRIMARY KEY, btree (id)
+    "ix_open_iddict_tokens_application_id_status_subject_type" btree (application_id, status, subject, type)
+    "ix_open_iddict_tokens_authorization_id" btree (authorization_id)
+    "ix_open_iddict_tokens_reference_id" UNIQUE, btree (reference_id)
+    "ix_open_iddict_tokens_session_id" btree (session_id)
+Foreign-key constraints:
+    "fk_open_iddict_tokens_open_iddict_applications_application_id" FOREIGN KEY (application_id) REFERENCES "OpenIddictApplications"(id)
+    "fk_open_iddict_tokens_open_iddict_authorizations_authorization_" FOREIGN KEY (authorization_id) REFERENCES "OpenIddictAuthorizations"(id)
+    "fk_open_iddict_tokens_open_iddict_sessions_session_id" FOREIGN KEY (session_id) REFERENCES "OpenIddictSessions"(id)
+Access method: heap
+
+                                Index "public.RoleNameIndex"
+     Column      |          Type          | Key? |   Definition    | Storage  | Stats target 
+-----------------+------------------------+------+-----------------+----------+--------------
+ normalized_name | character varying(256) | yes  | normalized_name | extended | 
+btree, for table "public.roles"
+
+                                     Index "public.UserNameIndex"
+        Column        |          Type          | Key? |      Definition      | Storage  | Stats target 
+----------------------+------------------------+------+----------------------+----------+--------------
+ normalized_user_name | character varying(256) | yes  | normalized_user_name | extended | 
+unique, btree, for table "public.users"
+
+                                              Table "public.__EFMigrationsHistory"
+     Column      |          Type          | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-----------------+------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ migration_id    | character varying(150) |           | not null |         | extended |             |              | 
+ product_version | character varying(32)  |           | not null |         | extended |             |              | 
+Indexes:
+    "pk___ef_migrations_history" PRIMARY KEY, btree (migration_id)
+Access method: heap
+
+               Index "public.ix_open_iddict_applications_client_id"
+  Column   |          Type          | Key? | Definition | Storage  | Stats target 
+-----------+------------------------+------+------------+----------+--------------
+ client_id | character varying(100) | yes  | client_id  | extended | 
+unique, btree, for table "public.OpenIddictApplications"
+
+      Index "public.ix_open_iddict_authorizations_application_id_status_subject_typ"
+     Column     |          Type          | Key? |   Definition   | Storage  | Stats target 
+----------------+------------------------+------+----------------+----------+--------------
+ application_id | character varying(100) | yes  | application_id | extended | 
+ status         | character varying(50)  | yes  | status         | extended | 
+ subject        | character varying(400) | yes  | subject        | extended | 
+ type           | character varying(50)  | yes  | type           | extended | 
+btree, for table "public.OpenIddictAuthorizations"
+
+                 Index "public.ix_open_iddict_resources_name"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ name   | character varying(200) | yes  | name       | extended | 
+unique, btree, for table "public.OpenIddictResources"
+
+                   Index "public.ix_open_iddict_scopes_name"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ name   | character varying(200) | yes  | name       | extended | 
+unique, btree, for table "public.OpenIddictScopes"
+
+                   Index "public.ix_open_iddict_sessions_application_id"
+     Column     |          Type          | Key? |   Definition   | Storage  | Stats target 
+----------------+------------------------+------+----------------+----------+--------------
+ application_id | character varying(100) | yes  | application_id | extended | 
+btree, for table "public.OpenIddictSessions"
+
+                    Index "public.ix_open_iddict_sessions_authorization_id"
+      Column      |          Type          | Key? |    Definition    | Storage  | Stats target 
+------------------+------------------------+------+------------------+----------+--------------
+ authorization_id | character varying(100) | yes  | authorization_id | extended | 
+btree, for table "public.OpenIddictSessions"
+
+                 Index "public.ix_open_iddict_sessions_login_id"
+  Column  |          Type          | Key? | Definition | Storage  | Stats target 
+----------+------------------------+------+------------+----------+--------------
+ login_id | character varying(100) | yes  | login_id   | extended | 
+btree, for table "public.OpenIddictSessions"
+
+          Index "public.ix_open_iddict_tokens_application_id_status_subject_type"
+     Column     |          Type          | Key? |   Definition   | Storage  | Stats target 
+----------------+------------------------+------+----------------+----------+--------------
+ application_id | character varying(100) | yes  | application_id | extended | 
+ status         | character varying(50)  | yes  | status         | extended | 
+ subject        | character varying(400) | yes  | subject        | extended | 
+ type           | character varying(150) | yes  | type           | extended | 
+btree, for table "public.OpenIddictTokens"
+
+                     Index "public.ix_open_iddict_tokens_authorization_id"
+      Column      |          Type          | Key? |    Definition    | Storage  | Stats target 
+------------------+------------------------+------+------------------+----------+--------------
+ authorization_id | character varying(100) | yes  | authorization_id | extended | 
+btree, for table "public.OpenIddictTokens"
+
+                   Index "public.ix_open_iddict_tokens_reference_id"
+    Column    |          Type          | Key? |  Definition  | Storage  | Stats target 
+--------------+------------------------+------+--------------+----------+--------------
+ reference_id | character varying(100) | yes  | reference_id | extended | 
+unique, btree, for table "public.OpenIddictTokens"
+
+                  Index "public.ix_open_iddict_tokens_session_id"
+   Column   |          Type          | Key? | Definition | Storage  | Stats target 
+------------+------------------------+------+------------+----------+--------------
+ session_id | character varying(100) | yes  | session_id | extended | 
+btree, for table "public.OpenIddictTokens"
+
+        Index "public.ix_project_memberships_project_id"
+   Column   | Type | Key? | Definition | Storage | Stats target 
+------------+------+------+------------+---------+--------------
+ project_id | uuid | yes  | project_id | plain   | 
+btree, for table "public.project_memberships"
+
+    Index "public.ix_project_memberships_user_id_project_id"
+   Column   | Type | Key? | Definition | Storage | Stats target 
+------------+------+------+------------+---------+--------------
+ user_id    | uuid | yes  | user_id    | plain   | 
+ project_id | uuid | yes  | project_id | plain   | 
+unique, btree, for table "public.project_memberships"
+
+                       Index "public.ix_projects_domain"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ domain | character varying(256) | yes  | domain     | extended | 
+unique, btree, for table "public.projects"
+
+            Index "public.ix_role_claims_role_id"
+ Column  | Type | Key? | Definition | Storage | Stats target 
+---------+------+------+------------+---------+--------------
+ role_id | uuid | yes  | role_id    | plain   | 
+btree, for table "public.role_claims"
+
+                     Index "public.ix_roles_normalized_name_project_id"
+     Column      |          Type          | Key? |   Definition    | Storage  | Stats target 
+-----------------+------------------------+------+-----------------+----------+--------------
+ normalized_name | character varying(256) | yes  | normalized_name | extended | 
+ project_id      | uuid                   | yes  | project_id      | plain    | 
+unique, btree, for table "public.roles"
+
+            Index "public.ix_user_claims_user_id"
+ Column  | Type | Key? | Definition | Storage | Stats target 
+---------+------+------+------------+---------+--------------
+ user_id | uuid | yes  | user_id    | plain   | 
+btree, for table "public.user_claims"
+
+            Index "public.ix_user_logins_user_id"
+ Column  | Type | Key? | Definition | Storage | Stats target 
+---------+------+------+------------+---------+--------------
+ user_id | uuid | yes  | user_id    | plain   | 
+btree, for table "public.user_logins"
+
+            Index "public.ix_user_roles_role_id"
+ Column  | Type | Key? | Definition | Storage | Stats target 
+---------+------+------+------------+---------+--------------
+ role_id | uuid | yes  | role_id    | plain   | 
+btree, for table "public.user_roles"
+
+                       Index "public.pk___ef_migrations_history"
+    Column    |          Type          | Key? |  Definition  | Storage  | Stats target 
+--------------+------------------------+------+--------------+----------+--------------
+ migration_id | character varying(150) | yes  | migration_id | extended | 
+primary key, btree, for table "public.__EFMigrationsHistory"
+
+                  Index "public.pk_open_iddict_applications"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ id     | character varying(100) | yes  | id         | extended | 
+primary key, btree, for table "public.OpenIddictApplications"
+
+                 Index "public.pk_open_iddict_authorizations"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ id     | character varying(100) | yes  | id         | extended | 
+primary key, btree, for table "public.OpenIddictAuthorizations"
+
+                    Index "public.pk_open_iddict_resources"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ id     | character varying(100) | yes  | id         | extended | 
+primary key, btree, for table "public.OpenIddictResources"
+
+                     Index "public.pk_open_iddict_scopes"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ id     | character varying(100) | yes  | id         | extended | 
+primary key, btree, for table "public.OpenIddictScopes"
+
+                    Index "public.pk_open_iddict_sessions"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ id     | character varying(100) | yes  | id         | extended | 
+primary key, btree, for table "public.OpenIddictSessions"
+
+                     Index "public.pk_open_iddict_tokens"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ id     | character varying(100) | yes  | id         | extended | 
+primary key, btree, for table "public.OpenIddictTokens"
+
+           Index "public.pk_project_memberships"
+ Column | Type | Key? | Definition | Storage | Stats target 
+--------+------+------+------------+---------+--------------
+ id     | uuid | yes  | id         | plain   | 
+primary key, btree, for table "public.project_memberships"
+
+                 Index "public.pk_projects"
+ Column | Type | Key? | Definition | Storage | Stats target 
+--------+------+------+------------+---------+--------------
+ id     | uuid | yes  | id         | plain   | 
+primary key, btree, for table "public.projects"
+
+                 Index "public.pk_role_claims"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.role_claims"
+
+                  Index "public.pk_roles"
+ Column | Type | Key? | Definition | Storage | Stats target 
+--------+------+------+------------+---------+--------------
+ id     | uuid | yes  | id         | plain   | 
+primary key, btree, for table "public.roles"
+
+                 Index "public.pk_user_claims"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.user_claims"
+
+                      Index "public.pk_user_logins"
+     Column     | Type | Key? |   Definition   | Storage  | Stats target 
+----------------+------+------+----------------+----------+--------------
+ login_provider | text | yes  | login_provider | extended | 
+ provider_key   | text | yes  | provider_key   | extended | 
+primary key, btree, for table "public.user_logins"
+
+                Index "public.pk_user_roles"
+ Column  | Type | Key? | Definition | Storage | Stats target 
+---------+------+------+------------+---------+--------------
+ user_id | uuid | yes  | user_id    | plain   | 
+ role_id | uuid | yes  | role_id    | plain   | 
+primary key, btree, for table "public.user_roles"
+
+                      Index "public.pk_user_tokens"
+     Column     | Type | Key? |   Definition   | Storage  | Stats target 
+----------------+------+------+----------------+----------+--------------
+ user_id        | uuid | yes  | user_id        | plain    | 
+ login_provider | text | yes  | login_provider | extended | 
+ name           | text | yes  | name           | extended | 
+primary key, btree, for table "public.user_tokens"
+
+                  Index "public.pk_users"
+ Column | Type | Key? | Definition | Storage | Stats target 
+--------+------+------+------------+---------+--------------
+ id     | uuid | yes  | id         | plain   | 
+primary key, btree, for table "public.users"
+
+                                   Table "public.project_memberships"
+   Column   | Type | Collation | Nullable | Default | Storage | Compression | Stats target | Description 
+------------+------+-----------+----------+---------+---------+-------------+--------------+-------------
+ id         | uuid |           | not null |         | plain   |             |              | 
+ user_id    | uuid |           | not null |         | plain   |             |              | 
+ project_id | uuid |           | not null |         | plain   |             |              | 
+Indexes:
+    "pk_project_memberships" PRIMARY KEY, btree (id)
+    "ix_project_memberships_project_id" btree (project_id)
+    "ix_project_memberships_user_id_project_id" UNIQUE, btree (user_id, project_id)
+Foreign-key constraints:
+    "fk_project_memberships_projects_project_id" FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    "fk_project_memberships_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+                                                Table "public.projects"
+ Column |          Type          | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+--------+------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id     | uuid                   |           | not null |         | plain    |             |              | 
+ name   | character varying(256) |           | not null |         | extended |             |              | 
+ domain | character varying(256) |           | not null |         | extended |             |              | 
+ state  | character varying(32)  |           | not null |         | extended |             |              | 
+Indexes:
+    "pk_projects" PRIMARY KEY, btree (id)
+    "ix_projects_domain" UNIQUE, btree (domain)
+Referenced by:
+    TABLE "project_memberships" CONSTRAINT "fk_project_memberships_projects_project_id" FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+Access method: heap
+
+                                                      Table "public.role_claims"
+   Column    |  Type   | Collation | Nullable |             Default              | Storage  | Compression | Stats target | Description 
+-------------+---------+-----------+----------+----------------------------------+----------+-------------+--------------+-------------
+ id          | integer |           | not null | generated by default as identity | plain    |             |              | 
+ role_id     | uuid    |           | not null |                                  | plain    |             |              | 
+ claim_type  | text    |           |          |                                  | extended |             |              | 
+ claim_value | text    |           |          |                                  | extended |             |              | 
+Indexes:
+    "pk_role_claims" PRIMARY KEY, btree (id)
+    "ix_role_claims_role_id" btree (role_id)
+Foreign-key constraints:
+    "fk_role_claims_roles_role_id" FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+Access method: heap
+
+                 Sequence "public.role_claims_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Sequence for identity column: public.role_claims.id
+
+                                                       Table "public.roles"
+      Column       |          Type          | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-------------------+------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id                | uuid                   |           | not null |         | plain    |             |              | 
+ project_id        | uuid                   |           | not null |         | plain    |             |              | 
+ description       | text                   |           |          |         | extended |             |              | 
+ name              | character varying(256) |           |          |         | extended |             |              | 
+ normalized_name   | character varying(256) |           |          |         | extended |             |              | 
+ concurrency_stamp | text                   |           |          |         | extended |             |              | 
+Indexes:
+    "pk_roles" PRIMARY KEY, btree (id)
+    "RoleNameIndex" btree (normalized_name)
+    "ix_roles_normalized_name_project_id" UNIQUE, btree (normalized_name, project_id)
+Referenced by:
+    TABLE "role_claims" CONSTRAINT "fk_role_claims_roles_role_id" FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+    TABLE "user_roles" CONSTRAINT "fk_user_roles_roles_role_id" FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+Access method: heap
+
+                                                      Table "public.user_claims"
+   Column    |  Type   | Collation | Nullable |             Default              | Storage  | Compression | Stats target | Description 
+-------------+---------+-----------+----------+----------------------------------+----------+-------------+--------------+-------------
+ id          | integer |           | not null | generated by default as identity | plain    |             |              | 
+ user_id     | uuid    |           | not null |                                  | plain    |             |              | 
+ claim_type  | text    |           |          |                                  | extended |             |              | 
+ claim_value | text    |           |          |                                  | extended |             |              | 
+Indexes:
+    "pk_user_claims" PRIMARY KEY, btree (id)
+    "ix_user_claims_user_id" btree (user_id)
+Foreign-key constraints:
+    "fk_user_claims_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+                 Sequence "public.user_claims_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Sequence for identity column: public.user_claims.id
+
+                                             Table "public.user_logins"
+        Column         | Type | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-----------------------+------+-----------+----------+---------+----------+-------------+--------------+-------------
+ login_provider        | text |           | not null |         | extended |             |              | 
+ provider_key          | text |           | not null |         | extended |             |              | 
+ provider_display_name | text |           |          |         | extended |             |              | 
+ user_id               | uuid |           | not null |         | plain    |             |              | 
+Indexes:
+    "pk_user_logins" PRIMARY KEY, btree (login_provider, provider_key)
+    "ix_user_logins_user_id" btree (user_id)
+Foreign-key constraints:
+    "fk_user_logins_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+                                      Table "public.user_roles"
+ Column  | Type | Collation | Nullable | Default | Storage | Compression | Stats target | Description 
+---------+------+-----------+----------+---------+---------+-------------+--------------+-------------
+ user_id | uuid |           | not null |         | plain   |             |              | 
+ role_id | uuid |           | not null |         | plain   |             |              | 
+Indexes:
+    "pk_user_roles" PRIMARY KEY, btree (user_id, role_id)
+    "ix_user_roles_role_id" btree (role_id)
+Foreign-key constraints:
+    "fk_user_roles_roles_role_id" FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+    "fk_user_roles_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+                                          Table "public.user_tokens"
+     Column     | Type | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+----------------+------+-----------+----------+---------+----------+-------------+--------------+-------------
+ user_id        | uuid |           | not null |         | plain    |             |              | 
+ login_provider | text |           | not null |         | extended |             |              | 
+ name           | text |           | not null |         | extended |             |              | 
+ value          | text |           |          |         | extended |             |              | 
+Indexes:
+    "pk_user_tokens" PRIMARY KEY, btree (user_id, login_provider, name)
+Foreign-key constraints:
+    "fk_user_tokens_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+                                                           Table "public.users"
+         Column         |           Type           | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+------------------------+--------------------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id                     | uuid                     |           | not null |         | plain    |             |              | 
+ first_name             | text                     |           | not null |         | extended |             |              | 
+ last_name              | text                     |           | not null |         | extended |             |              | 
+ created_at             | timestamp with time zone |           | not null |         | plain    |             |              | 
+ post_code              | integer                  |           |          |         | plain    |             |              | 
+ city                   | text                     |           |          |         | extended |             |              | 
+ legacy                 | boolean                  |           | not null |         | plain    |             |              | 
+ deleted                | boolean                  |           | not null |         | plain    |             |              | 
+ profile_photo_path     | text                     |           |          |         | extended |             |              | 
+ profile_photo_format   | text                     |           |          |         | extended |             |              | 
+ user_name              | character varying(256)   |           |          |         | extended |             |              | 
+ normalized_user_name   | character varying(256)   |           |          |         | extended |             |              | 
+ email                  | character varying(256)   |           |          |         | extended |             |              | 
+ normalized_email       | character varying(256)   |           |          |         | extended |             |              | 
+ email_confirmed        | boolean                  |           | not null |         | plain    |             |              | 
+ password_hash          | text                     |           |          |         | extended |             |              | 
+ security_stamp         | text                     |           |          |         | extended |             |              | 
+ concurrency_stamp      | text                     |           |          |         | extended |             |              | 
+ phone_number           | text                     |           |          |         | extended |             |              | 
+ phone_number_confirmed | boolean                  |           | not null |         | plain    |             |              | 
+ two_factor_enabled     | boolean                  |           | not null |         | plain    |             |              | 
+ lockout_end            | timestamp with time zone |           |          |         | plain    |             |              | 
+ lockout_enabled        | boolean                  |           | not null |         | plain    |             |              | 
+ access_failed_count    | integer                  |           | not null |         | plain    |             |              | 
+Indexes:
+    "pk_users" PRIMARY KEY, btree (id)
+    "EmailIndex" UNIQUE, btree (normalized_email)
+    "UserNameIndex" UNIQUE, btree (normalized_user_name)
+Referenced by:
+    TABLE "project_memberships" CONSTRAINT "fk_project_memberships_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "user_claims" CONSTRAINT "fk_user_claims_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "user_logins" CONSTRAINT "fk_user_logins_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "user_roles" CONSTRAINT "fk_user_roles_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "user_tokens" CONSTRAINT "fk_user_tokens_users_user_id" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap

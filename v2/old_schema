@@ -1,0 +1,493 @@
+                                                                   Table "public.achievement_content"
+     Column     |          Type          | Collation | Nullable |                     Default                     | Storage  | Compression | Stats target | Description 
+----------------+------------------------+-----------+----------+-------------------------------------------------+----------+-------------+--------------+-------------
+ id             | integer                |           | not null | nextval('achievement_content_id_seq'::regclass) | plain    |             |              | 
+ title          | character varying(255) |           | not null |                                                 | extended |             |              | 
+ description    | character varying(255) |           | not null |                                                 | extended |             |              | 
+ language_code  | character varying(10)  |           | not null |                                                 | extended |             |              | 
+ achievement_id | integer                |           | not null |                                                 | plain    |             |              | 
+Indexes:
+    "achievement_content_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "achievement_content_achievement_id_fkey" FOREIGN KEY (achievement_id) REFERENCES achievements(id) ON DELETE CASCADE
+Access method: heap
+
+             Sequence "public.achievement_content_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.achievement_content.id
+
+            Index "public.achievement_content_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.achievement_content"
+
+                                                                 Table "public.achievements"
+   Column   |          Type          | Collation | Nullable |                 Default                  | Storage  | Compression | Stats target | Description 
+------------+------------------------+-----------+----------+------------------------------------------+----------+-------------+--------------+-------------
+ id         | integer                |           | not null | nextval('achievements_id_seq'::regclass) | plain    |             |              | 
+ image_path | text                   |           |          |                                          | extended |             |              | 
+ sql        | character varying(255) |           | not null |                                          | extended |             |              | 
+Indexes:
+    "achievements_pkey" PRIMARY KEY, btree (id)
+Referenced by:
+    TABLE "achievement_content" CONSTRAINT "achievement_content_achievement_id_fkey" FOREIGN KEY (achievement_id) REFERENCES achievements(id) ON DELETE CASCADE
+    TABLE "user_achievement" CONSTRAINT "user_achievement_achievement_id_fkey" FOREIGN KEY (achievement_id) REFERENCES achievements(id) ON DELETE CASCADE
+Access method: heap
+
+                Sequence "public.achievements_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.achievements.id
+
+               Index "public.achievements_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.achievements"
+
+                                                                 Table "public.article_attachments"
+   Column   |          Type          | Collation | Nullable |                     Default                     | Storage  | Compression | Stats target | Description 
+------------+------------------------+-----------+----------+-------------------------------------------------+----------+-------------+--------------+-------------
+ file_name  | character varying(255) |           | not null |                                                 | extended |             |              | 
+ article_id | integer                |           |          |                                                 | plain    |             |              | 
+ id         | integer                |           | not null | nextval('article_attachments_id_seq'::regclass) | plain    |             |              | 
+Indexes:
+    "article_attachments_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "article_attachments_article_fkey" FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+Access method: heap
+
+                 Sequence "public.article_attachments_id_seq"
+  Type  | Start | Minimum |       Maximum       | Increment | Cycles? | Cache 
+--------+-------+---------+---------------------+-----------+---------+-------
+ bigint |     1 |       1 | 9223372036854775807 |         1 | no      |     1
+Owned by: public.article_attachments.id
+
+            Index "public.article_attachments_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.article_attachments"
+
+                                                               Table "public.article_categories"
+ Column |          Type          | Collation | Nullable |                    Default                     | Storage  | Compression | Stats target | Description 
+--------+------------------------+-----------+----------+------------------------------------------------+----------+-------------+--------------+-------------
+ id     | integer                |           | not null | nextval('article_categories_id_seq'::regclass) | plain    |             |              | 
+ label  | character varying(255) |           |          |                                                | extended |             |              | 
+ name   | character varying(255) |           | not null |                                                | extended |             |              | 
+ order  | integer                |           |          |                                                | plain    |             |              | 
+Indexes:
+    "article_categories_pkey" PRIMARY KEY, btree (id)
+Referenced by:
+    TABLE "article_category_assignment" CONSTRAINT "article_category_assignment_category_id_fkey" FOREIGN KEY (category_id) REFERENCES article_categories(id) ON DELETE CASCADE
+Access method: heap
+
+                 Sequence "public.article_categories_id_seq"
+  Type  | Start | Minimum |       Maximum       | Increment | Cycles? | Cache 
+--------+-------+---------+---------------------+-----------+---------+-------
+ bigint |     1 |       1 | 9223372036854775807 |         1 | no      |     1
+Owned by: public.article_categories.id
+
+            Index "public.article_categories_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.article_categories"
+
+                                 Table "public.article_category_assignment"
+   Column    |  Type   | Collation | Nullable | Default | Storage | Compression | Stats target | Description 
+-------------+---------+-----------+----------+---------+---------+-------------+--------------+-------------
+ article_id  | integer |           | not null |         | plain   |             |              | 
+ category_id | integer |           | not null |         | plain   |             |              | 
+ order       | integer |           | not null | 0       | plain   |             |              | 
+Indexes:
+    "article_category_assignment_pkey" PRIMARY KEY, btree (article_id, category_id)
+Foreign-key constraints:
+    "article_category_assignment_article_id_fkey" FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+    "article_category_assignment_category_id_fkey" FOREIGN KEY (category_id) REFERENCES article_categories(id) ON DELETE CASCADE
+Access method: heap
+
+           Index "public.article_category_assignment_pkey"
+   Column    |  Type   | Key? | Definition  | Storage | Stats target 
+-------------+---------+------+-------------+---------+--------------
+ article_id  | integer | yes  | article_id  | plain   | 
+ category_id | integer | yes  | category_id | plain   | 
+primary key, btree, for table "public.article_category_assignment"
+
+                                                                 Table "public.articles"
+   Column    |          Type          | Collation | Nullable |               Default                | Storage  | Compression | Stats target | Description 
+-------------+------------------------+-----------+----------+--------------------------------------+----------+-------------+--------------+-------------
+ name        | character varying(64)  |           | not null |                                      | extended |             |              | 
+ id          | integer                |           | not null | nextval('articles_id_seq'::regclass) | plain    |             |              | 
+ description | character varying(255) |           |          |                                      | extended |             |              | 
+Indexes:
+    "articles_pkey" PRIMARY KEY, btree (id)
+Referenced by:
+    TABLE "article_attachments" CONSTRAINT "article_attachments_article_fkey" FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+    TABLE "article_category_assignment" CONSTRAINT "article_category_assignment_article_id_fkey" FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+Access method: heap
+
+                      Sequence "public.articles_id_seq"
+  Type  | Start | Minimum |       Maximum       | Increment | Cycles? | Cache 
+--------+-------+---------+---------------------+-----------+---------+-------
+ bigint |     1 |       1 | 9223372036854775807 |         1 | no      |     1
+Owned by: public.articles.id
+
+                 Index "public.articles_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.articles"
+
+                                                                 Table "public.detected_dialects"
+           Column           |  Type   | Collation | Nullable |                    Default                    | Storage | Compression | Stats target | Description 
+----------------------------+---------+-----------+----------+-----------------------------------------------+---------+-------------+--------------+-------------
+ id                         | integer |           | not null | nextval('detected_dialects_id_seq'::regclass) | plain   |             |              | 
+ user_guess_dialect_id      | integer |           |          |                                               | plain   |             |              | 
+ confirmed_dialect_id       | integer |           |          |                                               | plain   |             |              | 
+ filtered_recording_part_id | integer |           | not null |                                               | plain   |             |              | 
+ predicted_dialect_id       | integer |           |          |                                               | plain   |             |              | 
+Indexes:
+    "detected_dialects_pkey" PRIMARY KEY, btree (id)
+    "detected_dialects_filtered_part_id" UNIQUE CONSTRAINT, btree (filtered_recording_part_id)
+Foreign-key constraints:
+    "detected_dialects_confirmed_dialect_id_fkey" FOREIGN KEY (confirmed_dialect_id) REFERENCES dialects(id) ON DELETE CASCADE
+    "detected_dialects_filtered_recording_part_id_fkey" FOREIGN KEY (filtered_recording_part_id) REFERENCES filtered_recording_parts(id) ON DELETE CASCADE
+    "detected_dialects_user_guess_dialect_id_fkey" FOREIGN KEY (user_guess_dialect_id) REFERENCES dialects(id) ON DELETE CASCADE
+Access method: heap
+
+                         Index "public.detected_dialects_filtered_part_id"
+           Column           |  Type   | Key? |         Definition         | Storage | Stats target 
+----------------------------+---------+------+----------------------------+---------+--------------
+ filtered_recording_part_id | integer | yes  | filtered_recording_part_id | plain   | 
+unique, btree, for table "public.detected_dialects"
+
+              Sequence "public.detected_dialects_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.detected_dialects.id
+
+             Index "public.detected_dialects_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.detected_dialects"
+
+                                                                   Table "public.devices"
+     Column      |          Type          | Collation | Nullable |               Default               | Storage  | Compression | Stats target | Description 
+-----------------+------------------------+-----------+----------+-------------------------------------+----------+-------------+--------------+-------------
+ id              | integer                |           | not null | nextval('devices_id_seq'::regclass) | plain    |             |              | 
+ fcm_token       | character varying(255) |           | not null |                                     | extended |             |              | 
+ device_platform | character varying(255) |           | not null |                                     | extended |             |              | 
+ device_model    | character varying(255) |           | not null |                                     | extended |             |              | 
+ user_id         | integer                |           | not null |                                     | plain    |             |              | 
+Indexes:
+    "devices_pkey" PRIMARY KEY, btree (id)
+    "devices_fcm_token_key" UNIQUE CONSTRAINT, btree (fcm_token)
+Foreign-key constraints:
+    "fk_devices_user" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+                       Index "public.devices_fcm_token_key"
+  Column   |          Type          | Key? | Definition | Storage  | Stats target 
+-----------+------------------------+------+------------+----------+--------------
+ fcm_token | character varying(255) | yes  | fcm_token  | extended | 
+unique, btree, for table "public.devices"
+
+                   Sequence "public.devices_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.devices.id
+
+                  Index "public.devices_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.devices"
+
+                                                                 Table "public.dialects"
+    Column    |         Type          | Collation | Nullable |               Default                | Storage  | Compression | Stats target | Description 
+--------------+-----------------------+-----------+----------+--------------------------------------+----------+-------------+--------------+-------------
+ id           | integer               |           | not null | nextval('dialects_id_seq'::regclass) | plain    |             |              | 
+ dialect_code | character varying(15) |           | not null |                                      | extended |             |              | 
+ color        | character varying(7)  |           | not null | ''::character varying                | extended |             |              | 
+ hint_order   | integer               |           | not null | 0                                    | plain    |             |              | 
+Indexes:
+    "dialects_pkey" PRIMARY KEY, btree (id)
+Referenced by:
+    TABLE "detected_dialects" CONSTRAINT "detected_dialects_confirmed_dialect_id_fkey" FOREIGN KEY (confirmed_dialect_id) REFERENCES dialects(id) ON DELETE CASCADE
+    TABLE "detected_dialects" CONSTRAINT "detected_dialects_user_guess_dialect_id_fkey" FOREIGN KEY (user_guess_dialect_id) REFERENCES dialects(id) ON DELETE CASCADE
+Access method: heap
+
+                  Sequence "public.dialects_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.dialects.id
+
+                 Index "public.dialects_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.dialects"
+
+                                            View "public.dialects_to_do"
+           Column           |            Type             | Collation | Nullable | Default | Storage  | Description 
+----------------------------+-----------------------------+-----------+----------+---------+----------+-------------
+ first_name                 | character varying(50)       |           |          |         | extended | 
+ last_name                  | character varying(50)       |           |          |         | extended | 
+ recording_id               | integer                     |           |          |         | plain    | 
+ recording_parts_id         | integer                     |           |          |         | plain    | 
+ start_date                 | timestamp without time zone |           |          |         | plain    | 
+ end_date                   | timestamp without time zone |           |          |         | plain    | 
+ gps_latitude_start         | numeric                     |           |          |         | main     | 
+ gps_longitude_start        | numeric                     |           |          |         | main     | 
+ file_path                  | character varying(255)      |           |          |         | extended | 
+ filtered_recording_part_id | integer                     |           |          |         | plain    | 
+ probability_vector         | character varying(255)      |           |          |         | extended | 
+ filtered_start_date        | timestamp without time zone |           |          |         | plain    | 
+ filtered_end_date          | timestamp without time zone |           |          |         | plain    | 
+ guess_dialect              | character varying(15)       |           |          |         | extended | 
+ confirmed_dialect          | character varying(15)       |           |          |         | extended | 
+View definition:
+ SELECT users.first_name,
+    users.last_name,
+    recordings.id AS recording_id,
+    recording_parts.id AS recording_parts_id,
+    recording_parts.start_date,
+    recording_parts.end_date,
+    recording_parts.gps_latitude_start,
+    recording_parts.gps_longitude_start,
+    recording_parts.file_path,
+    filtered_recording_parts.id AS filtered_recording_part_id,
+    filtered_recording_parts.probability_vector,
+    filtered_recording_parts.start_date AS filtered_start_date,
+    filtered_recording_parts.end_date AS filtered_end_date,
+    guess.dialect_code AS guess_dialect,
+    confirmed.dialect_code AS confirmed_dialect
+   FROM recordings
+     LEFT JOIN recording_parts ON recordings.id = recording_parts.recording_id
+     LEFT JOIN users ON recordings.user_id = users.id
+     LEFT JOIN filtered_recording_parts ON recordings.id = filtered_recording_parts.recording_id
+     LEFT JOIN detected_dialects ON detected_dialects.filtered_recording_part_id = filtered_recording_parts.id
+     LEFT JOIN dialects guess ON guess.id = detected_dialects.user_guess_dialect_id
+     LEFT JOIN dialects confirmed ON confirmed.id = detected_dialects.confirmed_dialect_id
+  ORDER BY recording_parts.id DESC, recordings.id DESC, recording_parts.start_date DESC;
+
+                                                                       Table "public.filtered_recording_parts"
+       Column       |            Type             | Collation | Nullable |                       Default                        | Storage  | Compression | Stats target | Description 
+--------------------+-----------------------------+-----------+----------+------------------------------------------------------+----------+-------------+--------------+-------------
+ id                 | integer                     |           | not null | nextval('filtered_recording_parts_id_seq'::regclass) | plain    |             |              | 
+ start_date         | timestamp without time zone |           | not null | now()                                                | plain    |             |              | 
+ end_date           | timestamp without time zone |           | not null | now()                                                | plain    |             |              | 
+ probability_vector | character varying(255)      |           |          |                                                      | extended |             |              | 
+ state              | smallint                    |           |          | 0                                                    | plain    |             |              | 
+ representant_flag  | boolean                     |           |          |                                                      | plain    |             |              | 
+ recording_id       | integer                     |           | not null |                                                      | plain    |             |              | 
+Indexes:
+    "filtered_recording_parts_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "filtered_recording_parts_recording_id_fkey" FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE CASCADE
+Referenced by:
+    TABLE "detected_dialects" CONSTRAINT "detected_dialects_filtered_recording_part_id_fkey" FOREIGN KEY (filtered_recording_part_id) REFERENCES filtered_recording_parts(id) ON DELETE CASCADE
+Access method: heap
+
+          Sequence "public.filtered_recording_parts_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.filtered_recording_parts.id
+
+         Index "public.filtered_recording_parts_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.filtered_recording_parts"
+
+                                                                  Table "public.photos"
+    Column    |          Type          | Collation | Nullable |              Default               | Storage  | Compression | Stats target | Description 
+--------------+------------------------+-----------+----------+------------------------------------+----------+-------------+--------------+-------------
+ id           | integer                |           | not null | nextval('photos_id_seq'::regclass) | plain    |             |              | 
+ file_path    | character varying(255) |           |          |                                    | extended |             |              | 
+ recording_id | integer                |           |          |                                    | plain    |             |              | 
+ format       | character varying(10)  |           |          |                                    | extended |             |              | 
+ user_id      | integer                |           |          |                                    | plain    |             |              | 
+Indexes:
+    "photos_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_photos_user" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    "photos_recording_id_fkey" FOREIGN KEY (recording_id) REFERENCES recordings(id)
+Access method: heap
+
+                   Sequence "public.photos_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.photos.id
+
+                  Index "public.photos_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.photos"
+
+                                                                        Table "public.recording_parts"
+       Column        |            Type             | Collation | Nullable |                   Default                   | Storage  | Compression | Stats target | Description 
+---------------------+-----------------------------+-----------+----------+---------------------------------------------+----------+-------------+--------------+-------------
+ id                  | integer                     |           | not null | nextval('recording_parts_id_seq'::regclass) | plain    |             |              | 
+ recording_id        | integer                     |           |          |                                             | plain    |             |              | 
+ start_date          | timestamp without time zone |           |          |                                             | plain    |             |              | 
+ end_date            | timestamp without time zone |           |          |                                             | plain    |             |              | 
+ gps_latitude_start  | numeric                     |           |          |                                             | main     |             |              | 
+ gps_longitude_start | numeric                     |           |          |                                             | main     |             |              | 
+ gps_latitude_end    | numeric                     |           |          |                                             | main     |             |              | 
+ gps_longitude_end   | numeric                     |           |          |                                             | main     |             |              | 
+ file_path           | character varying(255)      |           |          |                                             | extended |             |              | 
+ length              | integer                     |           |          |                                             | plain    |             |              | 
+Indexes:
+    "recording_parts_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "recording_parts_recording_id_fkey" FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE CASCADE
+Access method: heap
+
+               Sequence "public.recording_parts_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.recording_parts.id
+
+              Index "public.recording_parts_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.recording_parts"
+
+                                                                         Table "public.recordings"
+        Column         |            Type             | Collation | Nullable |                Default                 | Storage  | Compression | Stats target | Description 
+-----------------------+-----------------------------+-----------+----------+----------------------------------------+----------+-------------+--------------+-------------
+ id                    | integer                     |           | not null | nextval('recordings_id_seq'::regclass) | plain    |             |              | 
+ created_at            | timestamp without time zone |           | not null | now()                                  | plain    |             |              | 
+ estimated_birds_count | smallint                    |           |          |                                        | plain    |             |              | 
+ by_app                | boolean                     |           | not null |                                        | plain    |             |              | 
+ name                  | character varying(49)       |           |          |                                        | extended |             |              | 
+ note                  | text                        |           |          |                                        | extended |             |              | 
+ note_post             | text                        |           |          |                                        | extended |             |              | 
+ device                | character varying(255)      |           |          |                                        | extended |             |              | 
+ user_id               | integer                     |           |          |                                        | plain    |             |              | 
+ deleted               | boolean                     |           |          | false                                  | plain    |             |              | 
+ legacy                | boolean                     |           | not null | false                                  | plain    |             |              | 
+ expected_parts_count  | integer                     |           |          |                                        | plain    |             |              | 
+Indexes:
+    "recordings_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "fk_recordings_user" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+Referenced by:
+    TABLE "filtered_recording_parts" CONSTRAINT "filtered_recording_parts_recording_id_fkey" FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE CASCADE
+    TABLE "photos" CONSTRAINT "photos_recording_id_fkey" FOREIGN KEY (recording_id) REFERENCES recordings(id)
+    TABLE "recording_parts" CONSTRAINT "recording_parts_recording_id_fkey" FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE CASCADE
+Access method: heap
+
+                 Sequence "public.recordings_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.recordings.id
+
+                Index "public.recordings_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.recordings"
+
+                                                           Table "public.user_achievement"
+     Column     |  Type   | Collation | Nullable |                   Default                    | Storage | Compression | Stats target | Description 
+----------------+---------+-----------+----------+----------------------------------------------+---------+-------------+--------------+-------------
+ id             | integer |           | not null | nextval('user_achievement_id_seq'::regclass) | plain   |             |              | 
+ user_id        | integer |           | not null |                                              | plain   |             |              | 
+ achievement_id | integer |           | not null |                                              | plain   |             |              | 
+Indexes:
+    "user_achievement_pkey" PRIMARY KEY, btree (id)
+    "user_achievement_unique" UNIQUE CONSTRAINT, btree (user_id, achievement_id)
+Foreign-key constraints:
+    "user_achievement_achievement_id_fkey" FOREIGN KEY (achievement_id) REFERENCES achievements(id) ON DELETE CASCADE
+    "user_achievement_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+              Sequence "public.user_achievement_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.user_achievement.id
+
+             Index "public.user_achievement_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.user_achievement"
+
+                  Index "public.user_achievement_unique"
+     Column     |  Type   | Key? |   Definition   | Storage | Stats target 
+----------------+---------+------+----------------+---------+--------------
+ user_id        | integer | yes  | user_id        | plain   | 
+ achievement_id | integer | yes  | achievement_id | plain   | 
+unique, btree, for table "public.user_achievement"
+
+                                                                       Table "public.users"
+      Column       |            Type             | Collation | Nullable |              Default              | Storage  | Compression | Stats target | Description 
+-------------------+-----------------------------+-----------+----------+-----------------------------------+----------+-------------+--------------+-------------
+ id                | integer                     |           | not null | nextval('users_id_seq'::regclass) | plain    |             |              | 
+ email             | character varying(255)      |           |          |                                   | extended |             |              | 
+ nickname          | character varying(50)       |           |          |                                   | extended |             |              | 
+ first_name        | character varying(50)       |           | not null |                                   | extended |             |              | 
+ last_name         | character varying(50)       |           | not null |                                   | extended |             |              | 
+ password          | character varying(255)      |           |          |                                   | extended |             |              | 
+ creation_date     | timestamp without time zone |           |          | now()                             | plain    |             |              | 
+ is_email_verified | boolean                     |           |          | false                             | plain    |             |              | 
+ consent           | boolean                     |           |          |                                   | plain    |             |              | 
+ role              | character varying(32)       |           | not null | 'user'::character varying         | extended |             |              | 
+ post_code         | integer                     |           |          |                                   | plain    |             |              | 
+ city              | character varying(255)      |           |          |                                   | extended |             |              | 
+ legacy            | boolean                     |           | not null | false                             | plain    |             |              | 
+ deleted           | boolean                     |           | not null | false                             | plain    |             |              | 
+ appleid           | character varying(255)      |           |          |                                   | extended |             |              | 
+ google_id         | character varying(255)      |           |          |                                   | extended |             |              | 
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+    "users_email_key" UNIQUE CONSTRAINT, btree (email)
+    "users_nickname_key" UNIQUE CONSTRAINT, btree (nickname)
+Referenced by:
+    TABLE "devices" CONSTRAINT "fk_devices_user" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "photos" CONSTRAINT "fk_photos_user" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    TABLE "recordings" CONSTRAINT "fk_recordings_user" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    TABLE "user_achievement" CONSTRAINT "user_achievement_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+Access method: heap
+
+                        Index "public.users_email_key"
+ Column |          Type          | Key? | Definition | Storage  | Stats target 
+--------+------------------------+------+------------+----------+--------------
+ email  | character varying(255) | yes  | email      | extended | 
+unique, btree, for table "public.users"
+
+                    Sequence "public.users_id_seq"
+  Type   | Start | Minimum |  Maximum   | Increment | Cycles? | Cache 
+---------+-------+---------+------------+-----------+---------+-------
+ integer |     1 |       1 | 2147483647 |         1 | no      |     1
+Owned by: public.users.id
+
+                       Index "public.users_nickname_key"
+  Column  |         Type          | Key? | Definition | Storage  | Stats target 
+----------+-----------------------+------+------------+----------+--------------
+ nickname | character varying(50) | yes  | nickname   | extended | 
+unique, btree, for table "public.users"
+
+                   Index "public.users_pkey"
+ Column |  Type   | Key? | Definition | Storage | Stats target 
+--------+---------+------+------------+---------+--------------
+ id     | integer | yes  | id         | plain   | 
+primary key, btree, for table "public.users"

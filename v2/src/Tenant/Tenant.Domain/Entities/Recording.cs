@@ -31,4 +31,6 @@ public partial class Recording
     public virtual ICollection<FilteredRecordingPart> FilteredRecordingParts { get; set; } = new List<FilteredRecordingPart>();
 
     public virtual ICollection<RecordingPart> RecordingParts { get; set; } = new List<RecordingPart>();
+
+    public virtual ICollection<RecordingPhoto> Photos { get; set; } = new List<RecordingPhoto>();
 }
