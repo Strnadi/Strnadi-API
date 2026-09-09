@@ -1,34 +1,13 @@
 #!/usr/bin/env python3
-"""Fix a pg_dump SQL file where filtered_recording_parts.representant_flag was
-dumped as a bare integer (0/1) instead of a boolean literal.
+"""Fix bare 0/1 values in boolean columns of an INSERT-format SQL dump.
 
-Postgres rejects INSERT INTO ... VALUES (..., 0, ...) for a boolean column with:
-    ERROR: column "representant_flag" is of type boolean but expression is of type integer
-(an unquoted 0/1 is typed as integer by the parser before any cast to boolean is
-even considered - quoted '0'/'1' would have worked fine, but that's not what got dumped here.)
-
-This script finds every `INSERT INTO ... filtered_recording_parts ... VALUES (...);`
-statement, parses each VALUES tuple with a real (quote-aware) tokenizer - not a
-naive comma split, since probability_vector is a free-text varchar that may itself
-contain commas inside quotes - and rewrites ONLY the representant_flag value:
-    0    -> FALSE
-    1    -> TRUE
-    NULL -> left untouched
-Every other value on the line, and every other line in the file, is left
-byte-for-byte identical.
-
-The representant_flag column index is taken from the statement's own explicit
-column list when present (--column-inserts style dumps), otherwise from the
-table's CREATE TABLE column order found earlier in the same file (plain
---inserts style dumps have no column list per statement).
+Supports multiline INSERTs and quoted strings containing commas and semicolons.
+Column types come from CREATE TABLE; only bare 0/1 boolean values are changed.
+Other values and whitespace are preserved. Writes a separate output copy.
 
 Usage:
-    fix_representant_flag.py --in strnadi_api.sql --out strnadi_api.fixed.sql
-    fix_representant_flag.py --in strnadi_api.sql --out strnadi_api.fixed.sql --dry-run
-    fix_representant_flag.py --in strnadi_api.sql --out strnadi_api.fixed.sql --show N
-
-Never overwrites --in; always writes a separate --out file. Run --dry-run (or
---show) first and read the sample before trusting the real output file.
+    fix_representant_flag.py --in original.sql --out fixed.sql --show 0
+    fix_representant_flag.py --in original.sql --dry-run --show 0
 """
 
 from __future__ import annotations
@@ -36,38 +15,12 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-
-TABLE_NAME = "filtered_recording_parts"
-TARGET_COLUMN = "representant_flag"
-
-CREATE_TABLE_RE = re.compile(
-    r'CREATE TABLE\s+(?:[\w"]+\.)?"?%s"?\s*\((.*?)\);' % re.escape(TABLE_NAME),
-    re.IGNORECASE | re.DOTALL,
-)
-INSERT_RE = re.compile(
-    r'INSERT INTO\s+(?:[\w"]+\.)?"?%s"?\s*(\([^()]*\))?\s*VALUES\s*(.*);\s*$' % re.escape(TABLE_NAME),
-    re.IGNORECASE,
-)
-
+from pathlib import Path
 
 def parse_column_list(paren_text: str) -> list[str]:
     """'(id, start_date, ..., representant_flag, recording_id)' -> ['id', 'start_date', ...]"""
     inner = paren_text.strip()[1:-1]
     return [c.strip().strip('"') for c in split_top_level(inner)]
-
-
-def find_create_table_columns(sql_text_head: str) -> list[str] | None:
-    match = CREATE_TABLE_RE.search(sql_text_head)
-    if not match:
-        return None
-    columns = []
-    for line in match.group(1).split(","):
-        line = line.strip()
-        if not line or line.upper().startswith(("PRIMARY KEY", "CONSTRAINT", "UNIQUE", "CHECK", "FOREIGN KEY")):
-            continue
-        name = line.split()[0].strip('"')
-        columns.append(name)
-    return columns or None
 
 
 def split_top_level(text: str) -> list[str]:
@@ -151,10 +104,10 @@ def fix_value_tuple(tuple_text: str, flag_index: int) -> tuple[str, bool]:
 
     raw = values[flag_index].strip()
     if raw == "0":
-        values[flag_index] = " FALSE"
+        values[flag_index] = values[flag_index].replace(raw, "FALSE", 1)
         changed = True
     elif raw == "1":
-        values[flag_index] = " TRUE"
+        values[flag_index] = values[flag_index].replace(raw, "TRUE", 1)
         changed = True
     else:
         changed = False  # already NULL / TRUE / FALSE / quoted - leave as-is
@@ -162,40 +115,98 @@ def fix_value_tuple(tuple_text: str, flag_index: int) -> tuple[str, bool]:
     return "(" + ",".join(values) + ")", changed
 
 
-def fix_line(line: str, create_table_columns: list[str] | None) -> tuple[str, int]:
-    match = INSERT_RE.search(line)
-    if not match:
-        return line, 0
+def boolean_columns(sql_text: str) -> dict[str, tuple[list[str], list[str]]]:
+    """Read boolean column names from each table declaration."""
+    result = {}
+    pattern = re.compile(
+        r'CREATE TABLE\s+(?:[\w"]+\.)?"?(\w+)"?\s*\((.*?)\)\s*(?:WITH\s*\([^;]*\))?;',
+        re.IGNORECASE | re.DOTALL,
+    )
+    for match in pattern.finditer(sql_text):
+        columns = []
+        flags = []
+        for definition in split_top_level(match.group(2)):
+            parts = definition.strip().split()
+            if len(parts) < 2 or parts[0].upper() in {"CONSTRAINT", "PRIMARY", "UNIQUE", "CHECK", "FOREIGN"}:
+                continue
+            name = parts[0].strip('"')
+            columns.append(name)
+            if parts[1].lower() in {"boolean", "bool"}:
+                flags.append(name)
+        result[match.group(1)] = (columns, flags)
+    return result
 
-    explicit_columns_text, values_text = match.groups()
-    if explicit_columns_text:
-        columns = parse_column_list(explicit_columns_text)
-    elif create_table_columns:
-        columns = create_table_columns
-    else:
-        print(
-            f"warning: INSERT into {TABLE_NAME} with no column list and no CREATE TABLE seen yet - skipping line",
-            file=sys.stderr,
-        )
-        return line, 0
 
-    if TARGET_COLUMN not in columns:
-        return line, 0
-    flag_index = columns.index(TARGET_COLUMN)
-
-    total_changed = 0
-    new_tuples = []
+def fix_statement(statement: str, tables: dict) -> tuple[str, int]:
+    match = re.search(
+        r'INSERT INTO\s+(?:[\w"]+\.)?"?(\w+)"?\s*(\([^()]*\))?\s*VALUES\s*(.*);\s*$',
+        statement, re.IGNORECASE | re.DOTALL,
+    )
+    if not match or match.group(1) not in tables:
+        return statement, 0
+    declared, flags = tables[match.group(1)]
+    columns = parse_column_list(match.group(2)) if match.group(2) else declared
+    indexes = [columns.index(flag) for flag in flags if flag in columns]
+    if not indexes:
+        return statement, 0
+    values_text = match.group(3)
+    pieces = []
+    offset = changed_count = 0
     for tup in split_values_tuples(values_text):
-        fixed, changed = fix_value_tuple(tup, flag_index)
-        new_tuples.append(fixed)
-        total_changed += int(changed)
+        fixed = tup
+        for index in indexes:
+            fixed, changed = fix_value_tuple(fixed, index)
+            changed_count += int(changed)
+        start = values_text.index(tup, offset)
+        pieces.extend([values_text[offset:start], fixed])
+        offset = start + len(tup)
+    if not changed_count:
+        return statement, 0
+    pieces.append(values_text[offset:])
+    return statement[:match.start(3)] + "".join(pieces) + statement[match.end(3):], changed_count
 
-    if total_changed == 0:
-        return line, 0
 
-    new_values_text = ", ".join(new_tuples)
-    new_line = line[:match.start(2)] + new_values_text + line[match.end(2):]
-    return new_line, total_changed
+def sql_statements(text: str):
+    """Yield complete SQL statements, preserving whitespace and quoted semicolons."""
+    start = i = 0
+    quote = None
+    line_comment = False
+    block_depth = 0
+    while i < len(text):
+        ch = text[i]
+        pair = text[i:i + 2]
+        if line_comment:
+            if ch == "\n":
+                line_comment = False
+        elif block_depth:
+            if pair == "/*":
+                block_depth += 1
+                i += 1
+            elif pair == "*/":
+                block_depth -= 1
+                i += 1
+        elif quote:
+            if ch == quote:
+                if i + 1 < len(text) and text[i + 1] == quote:
+                    i += 1
+                else:
+                    quote = None
+        elif pair == "--":
+            line_comment = True
+            i += 1
+        elif pair == "/*":
+            block_depth = 1
+            i += 1
+        elif ch in ("'", '"'):
+            quote = ch
+        elif ch == ";":
+            yield text[start:i + 1]
+            start = i + 1
+        i += 1
+    if quote or block_depth:
+        raise ValueError("Unterminated SQL quote or comment")
+    if start < len(text):
+        yield text[start:]
 
 
 def main() -> int:
@@ -209,29 +220,27 @@ def main() -> int:
     if not args.dry_run and not args.output_path:
         print("error: --out is required unless --dry-run", file=sys.stderr)
         return 1
-    if args.output_path and args.output_path == args.input_path:
+    if args.output_path and Path(args.output_path).resolve() == Path(args.input_path).resolve():
         print("error: --out must not be the same file as --in", file=sys.stderr)
         return 1
 
-    with open(args.input_path, encoding="utf-8") as f:
-        head = f.read(2_000_000)  # CREATE TABLE is always near the top; 2MB is generous
-    create_table_columns = find_create_table_columns(head)
-    if create_table_columns and TARGET_COLUMN in create_table_columns:
-        print(f"found CREATE TABLE {TABLE_NAME}, column order: {create_table_columns}")
-    else:
-        print(f"warning: could not find 'CREATE TABLE {TABLE_NAME}' with a '{TARGET_COLUMN}' column in the first 2MB - "
-              f"will only be able to fix INSERTs that carry an explicit column list", file=sys.stderr)
+    with open(args.input_path, encoding="utf-8", newline="") as f:
+        sql_text = f.read()
+    tables = boolean_columns(sql_text)
+    if not tables:
+        print("error: no CREATE TABLE declarations found", file=sys.stderr)
+        return 1
 
     total_lines_changed = 0
     total_values_changed = 0
     shown = 0
-    out_f = None if (args.dry_run or not args.output_path) else open(args.output_path, "w", encoding="utf-8")
+    out_f = None if (args.dry_run or not args.output_path) else open(args.output_path, "w", encoding="utf-8", newline="")
 
     try:
-        with open(args.input_path, encoding="utf-8") as in_f:
-            for line in in_f:
-                if TABLE_NAME in line and "INSERT INTO" in line.upper():
-                    new_line, changed = fix_line(line, create_table_columns)
+        with open(args.input_path, encoding="utf-8", newline="") as in_f:
+            for line in sql_statements(in_f.read()):
+                if "INSERT INTO" in line.upper():
+                    new_line, changed = fix_statement(line, tables)
                     if changed:
                         total_lines_changed += 1
                         total_values_changed += changed
@@ -249,7 +258,7 @@ def main() -> int:
         if out_f:
             out_f.close()
 
-    print(f"\n{total_lines_changed} INSERT statement(s) changed, {total_values_changed} {TARGET_COLUMN} value(s) fixed"
+    print(f"\n{total_lines_changed} INSERT statement(s) changed, {total_values_changed} boolean value(s) fixed"
           + (" (dry-run, nothing written)" if args.dry_run or not args.output_path else f" -> {args.output_path}"))
     return 0
 

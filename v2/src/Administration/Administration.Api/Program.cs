@@ -71,6 +71,7 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     })
     .AddApple(options =>
     {
+        options.GenerateClientSecret = true;
         options.ClientId = appleAuthSettings.ClientId;
         options.TeamId = appleAuthSettings.TeamId;
         options.KeyId = appleAuthSettings.KeyId;
@@ -91,7 +92,7 @@ builder.Services.AddOpenIddict()
             .AllowAuthorizationCodeFlow()
             .RequireProofKeyForCodeExchange()
             .AllowRefreshTokenFlow()
-            .AllowCustomFlow(OpenIddictConstants.GrantTypes.TokenExchange)
+            .AllowTokenExchangeFlow()
             .UseAspNetCore()
             .EnableAuthorizationEndpointPassthrough()
             .EnableTokenEndpointPassthrough()
