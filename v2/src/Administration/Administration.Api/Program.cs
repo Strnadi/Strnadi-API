@@ -140,7 +140,15 @@ app.MapHealthChecks("/utils/health");
 
 if (!app.Environment.IsDevelopment())
 {
-    var scalarPassword = app.Services.GetRequiredService<IScalarSettings>().Password;
+    var scalarSettings = app.Services.GetRequiredService<IScalarSettings>();
+    var scalarUsername = scalarSettings.Username;
+    var scalarPassword = scalarSettings.Password;
+    if (string.IsNullOrEmpty(scalarUsername) || string.IsNullOrEmpty(scalarPassword))
+    {
+        app.Logger.LogWarning(
+            "Scalar:Username/Scalar:Password are not configured - /scalar and /openapi will reject every request until both are set");
+    }
+
     app.Use(async (context, next) =>
     {
         if (!context.Request.Path.StartsWithSegments("/scalar") && !context.Request.Path.StartsWithSegments("/openapi"))
@@ -149,7 +157,8 @@ if (!app.Environment.IsDevelopment())
             return;
         }
 
-        if (string.IsNullOrEmpty(scalarPassword) || !HasValidScalarPassword(context.Request, scalarPassword))
+        if (string.IsNullOrEmpty(scalarUsername) || string.IsNullOrEmpty(scalarPassword)
+            || !HasValidScalarCredentials(context.Request, scalarUsername, scalarPassword))
         {
             context.Response.Headers.WWWAuthenticate = "Basic realm=\"Scalar\"";
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -165,7 +174,7 @@ app.MapScalarApiReference();
 
 app.Run();
 
-static bool HasValidScalarPassword(HttpRequest request, string expectedPassword)
+static bool HasValidScalarCredentials(HttpRequest request, string expectedUsername, string expectedPassword)
 {
     var header = request.Headers.Authorization.ToString();
     if (!header.StartsWith("Basic ", StringComparison.Ordinal))
@@ -182,8 +191,12 @@ static bool HasValidScalarPassword(HttpRequest request, string expectedPassword)
     }
 
     var separatorIndex = decoded.IndexOf(':');
-    var password = separatorIndex >= 0 ? decoded[(separatorIndex + 1)..] : decoded;
-    return password == expectedPassword;
+    if (separatorIndex < 0)
+        return false;
+
+    var username = decoded[..separatorIndex];
+    var password = decoded[(separatorIndex + 1)..];
+    return username == expectedUsername && password == expectedPassword;
 }
 
 static X509Certificate2 LoadCertificate(IConfiguration configuration, string configSection) =>
@@ -191,10 +204,6 @@ static X509Certificate2 LoadCertificate(IConfiguration configuration, string con
         Convert.FromBase64String(configuration[$"{configSection}:Pfx"]!),
         configuration[$"{configSection}:Password"]);
 
-// Redirect URIs for web are derived from Project.Domain, not hardcoded - each Project owns a
-// domain (strnadi.cz, sarancata.cz, ...), and its OAuth callback lives at {Domain}/auth/callback.
-// Call this again (not just at startup) whenever a Project's Domain is created/changed, so a new
-// project's domain becomes valid without waiting for a restart.
 static async Task SyncOpenIddictClientAsync(IServiceProvider services)
 {
     var applicationManager = services.GetRequiredService<IOpenIddictApplicationManager>();
