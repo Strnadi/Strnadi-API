@@ -130,6 +130,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapRazorPages();
 app.MapDefaultEndpoints();
+app.MapHealthChecks("/utils/health");
 
 app.Run();
 
