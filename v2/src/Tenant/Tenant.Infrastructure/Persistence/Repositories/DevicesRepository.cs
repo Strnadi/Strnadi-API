@@ -9,7 +9,7 @@ public class DevicesRepository(TenantDbContext db) : IDevicesRepository
     public Task<Device?> GetByFcmTokenAsync(string fcmToken, CancellationToken cancellationToken = default) =>
         db.Devices.FirstOrDefaultAsync(d => d.FcmToken == fcmToken, cancellationToken);
 
-    public Task<Device[]> GetAllByUserIdAsync(int userId, CancellationToken cancellationToken = default) =>
+    public Task<Device[]> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
         db.Devices.Where(d => d.UserId == userId).ToArrayAsync(cancellationToken);
 
     public Task<bool> ExistsAsync(string fcmToken, CancellationToken cancellationToken = default) =>

@@ -8,7 +8,7 @@ namespace Tenant.Application.Devices;
 
 public class DevicesService(IDevicesRepository devices, IUnitOfWork unitOfWork, ILogger<DevicesService> logger)
 {
-    public async Task AddAsync(AddDeviceRequest request, int callerId, CancellationToken cancellationToken = default)
+    public async Task AddAsync(AddDeviceRequest request, Guid callerId, CancellationToken cancellationToken = default)
     {
         if (callerId != request.UserId)
             throw new ForbiddenException("You can only register a device for yourself");
@@ -36,7 +36,7 @@ public class DevicesService(IDevicesRepository devices, IUnitOfWork unitOfWork, 
         logger.LogInformation("Device registered for user {UserId} ({Platform})", request.UserId, request.DevicePlatform);
     }
 
-    public async Task UpdateAsync(UpdateDeviceRequest request, int callerId, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(UpdateDeviceRequest request, Guid callerId, CancellationToken cancellationToken = default)
     {
         var device = await devices.GetByFcmTokenAsync(request.OldFcmToken, cancellationToken)
             ?? throw new NotFoundException(nameof(Device), request.OldFcmToken);
@@ -48,7 +48,7 @@ public class DevicesService(IDevicesRepository devices, IUnitOfWork unitOfWork, 
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(string fcmToken, int callerId, bool isAdmin, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(string fcmToken, Guid callerId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var device = await devices.GetByFcmTokenAsync(fcmToken, cancellationToken)
             ?? throw new NotFoundException(nameof(Device), fcmToken);

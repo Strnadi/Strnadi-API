@@ -18,7 +18,7 @@ public partial class Recording
 
     public string? Device { get; set; }
 
-    public int? UserId { get; set; }
+    public Guid? UserId { get; set; }
 
     public bool? Deleted { get; set; }
 
@@ -30,9 +30,5 @@ public partial class Recording
 
     public virtual ICollection<FilteredRecordingPart> FilteredRecordingParts { get; set; } = new List<FilteredRecordingPart>();
 
-    public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
-
     public virtual ICollection<RecordingPart> RecordingParts { get; set; } = new List<RecordingPart>();
-
-    public virtual User? User { get; set; }
 }

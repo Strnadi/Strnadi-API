@@ -2,7 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Tenant.Infrastructure.Persistence;
@@ -12,11 +11,9 @@ using Tenant.Infrastructure.Persistence;
 namespace Tenant.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    [Migration("20260904091517_AddRecordingUploadConfirmed")]
-    partial class AddRecordingUploadConfirmed
+    partial class TenantDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -334,14 +331,12 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("fcm_token");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
                         .HasName("devices_pkey");
-
-                    b.HasIndex("UserId");
 
                     b.HasIndex(new[] { "FcmToken" }, "devices_fcm_token_key")
                         .IsUnique();
@@ -503,43 +498,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                     b.ToTable("filtered_recording_parts", (string)null);
                 });
 
-            modelBuilder.Entity("Tenant.Domain.Entities.Photo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("FilePath")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("file_path");
-
-                    b.Property<string>("Format")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("format");
-
-                    b.Property<int?>("RecordingId")
-                        .HasColumnType("integer")
-                        .HasColumnName("recording_id");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("photos_pkey");
-
-                    b.HasIndex("RecordingId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("photos", (string)null);
-                });
-
             modelBuilder.Entity("Tenant.Domain.Entities.Recording", b =>
                 {
                     b.Property<int>("Id")
@@ -601,14 +559,12 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("upload_confirmed");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("integer")
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
                         .HasName("recordings_pkey");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("recordings", (string)null);
                 });
@@ -667,105 +623,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                     b.ToTable("recording_parts", (string)null);
                 });
 
-            modelBuilder.Entity("Tenant.Domain.Entities.User", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Appleid")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("appleid");
-
-                    b.Property<string>("City")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("city");
-
-                    b.Property<bool?>("Consent")
-                        .HasColumnType("boolean")
-                        .HasColumnName("consent");
-
-                    b.Property<DateTime?>("CreationDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("creation_date")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("deleted");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("email");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("first_name");
-
-                    b.Property<string>("GoogleId")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("google_id");
-
-                    b.Property<bool?>("IsEmailVerified")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_email_verified");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("last_name");
-
-                    b.Property<bool>("Legacy")
-                        .HasColumnType("boolean")
-                        .HasColumnName("legacy");
-
-                    b.Property<string>("Nickname")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("nickname");
-
-                    b.Property<string>("Password")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("password");
-
-                    b.Property<int?>("PostCode")
-                        .HasColumnType("integer")
-                        .HasColumnName("post_code");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("role")
-                        .HasDefaultValueSql("'user'::character varying");
-
-                    b.HasKey("Id")
-                        .HasName("users_pkey");
-
-                    b.HasIndex(new[] { "Email" }, "users_email_key")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "Nickname" }, "users_nickname_key")
-                        .IsUnique();
-
-                    b.ToTable("users", (string)null);
-                });
-
             modelBuilder.Entity("Tenant.Domain.Entities.UserAchievement", b =>
                 {
                     b.Property<int>("Id")
@@ -779,8 +636,8 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("achievement_id");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -890,18 +747,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                     b.Navigation("UserGuessDialect");
                 });
 
-            modelBuilder.Entity("Tenant.Domain.Entities.Device", b =>
-                {
-                    b.HasOne("Tenant.Domain.Entities.User", "User")
-                        .WithMany("Devices")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_devices_user");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Tenant.Domain.Entities.FilteredRecordingPart", b =>
                 {
                     b.HasOne("Tenant.Domain.Entities.Recording", "Recording")
@@ -912,35 +757,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                         .HasConstraintName("filtered_recording_parts_recording_id_fkey");
 
                     b.Navigation("Recording");
-                });
-
-            modelBuilder.Entity("Tenant.Domain.Entities.Photo", b =>
-                {
-                    b.HasOne("Tenant.Domain.Entities.Recording", "Recording")
-                        .WithMany("Photos")
-                        .HasForeignKey("RecordingId")
-                        .HasConstraintName("photos_recording_id_fkey");
-
-                    b.HasOne("Tenant.Domain.Entities.User", "User")
-                        .WithMany("Photos")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_photos_user");
-
-                    b.Navigation("Recording");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Tenant.Domain.Entities.Recording", b =>
-                {
-                    b.HasOne("Tenant.Domain.Entities.User", "User")
-                        .WithMany("Recordings")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_recordings_user");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Tenant.Domain.Entities.RecordingPart", b =>
@@ -963,16 +779,7 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("user_achievement_achievement_id_fkey");
 
-                    b.HasOne("Tenant.Domain.Entities.User", "User")
-                        .WithMany("UserAchievements")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("user_achievement_user_id_fkey");
-
                     b.Navigation("Achievement");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Tenant.Domain.Entities.Achievement", b =>
@@ -1014,20 +821,7 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                 {
                     b.Navigation("FilteredRecordingParts");
 
-                    b.Navigation("Photos");
-
                     b.Navigation("RecordingParts");
-                });
-
-            modelBuilder.Entity("Tenant.Domain.Entities.User", b =>
-                {
-                    b.Navigation("Devices");
-
-                    b.Navigation("Photos");
-
-                    b.Navigation("Recordings");
-
-                    b.Navigation("UserAchievements");
                 });
 #pragma warning restore 612, 618
         }

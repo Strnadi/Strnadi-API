@@ -9,6 +9,9 @@ public class Project
     
     public string Name { get; set; }
     
+    // https://strnadi.cz
+    public string Domain { get; set; }
+    
     public ProjectState State { get; set; } 
 }
 

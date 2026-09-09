@@ -13,7 +13,7 @@ public record MapClustersQuery(
     MapBounds? Bounds,
     DialectMode DialectMode,
     bool Verified,
-    int? UserId,
+    Guid? UserId,
     DateOnly? CreatedFrom,
     DateOnly? CreatedTo,
     int MaxItemsPerCluster);

@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Administration.Application.Auth;
+using Administration.Application.Users;
 using Administration.Domain.Entities;
+using Administration.Domain.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +12,11 @@ namespace Administration.Api.Controllers;
 
 [ApiController]
 [Route("account")]
-public class AccountController(UserManager<User> users, SignInManager<User> signIn, IEmailSender<User> emailSender) : Controller
+public class AccountController(
+    UserManager<User> users,
+    SignInManager<User> signIn,
+    IEmailSender<User> emailSender,
+    IFileStorage fileStorage) : Controller
 {
     [HttpGet("confirm-email")]
     public async Task<IActionResult> ConfirmEmailAsync([FromQuery] Guid userId, [FromQuery] string token)
@@ -159,6 +165,25 @@ public class AccountController(UserManager<User> users, SignInManager<User> sign
 
         var logins = await users.GetLoginsAsync(user);
         return Ok(logins.Select(l => l.LoginProvider));
+    }
+
+    [Authorize]
+    [HttpPost("profile-photo")]
+    [RequestSizeLimit(130023424)]
+    public async Task<IActionResult> UploadProfilePhotoAsync([FromBody] UserProfilePhotoModel request)
+    {
+        var user = await users.GetUserAsync(User);
+        if (user is null)
+            return Unauthorized();
+
+        var path = await fileStorage.SaveAsync($"users/u_{user.Id}.{request.Format}",
+            Convert.FromBase64String(request.PhotoBase64));
+
+        user.ProfilePhotoPath = path;
+        user.ProfilePhotoFormat = request.Format;
+
+        var result = await users.UpdateAsync(user);
+        return result.Succeeded ? Ok() : BadRequest(result.Errors);
     }
 
     [Authorize]

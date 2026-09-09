@@ -6,7 +6,7 @@ public interface IDevicesRepository
 {
     Task<Device?> GetByFcmTokenAsync(string fcmToken, CancellationToken cancellationToken = default);
 
-    Task<Device[]> GetAllByUserIdAsync(int userId, CancellationToken cancellationToken = default);
+    Task<Device[]> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<bool> ExistsAsync(string fcmToken, CancellationToken cancellationToken = default);
 

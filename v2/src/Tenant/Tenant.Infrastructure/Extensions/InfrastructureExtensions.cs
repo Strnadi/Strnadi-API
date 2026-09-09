@@ -6,9 +6,7 @@ using Tenant.Domain.Services;
 using Tenant.Infrastructure.Ai;
 using Tenant.Infrastructure.Audio;
 using Tenant.Infrastructure.AudioProcessing;
-using Tenant.Infrastructure.Auth;
 using Tenant.Infrastructure.Configuration;
-using Tenant.Infrastructure.Email;
 using Tenant.Infrastructure.MapyCz;
 using Tenant.Infrastructure.Notifications;
 using Tenant.Infrastructure.Persistence;
@@ -24,16 +22,12 @@ public static class InfrastructureExtensions
     {
         public IServiceCollection AddInfrastructure()
         {
-            serviceCollection.AddSingleton<IJwtSettings, JwtSettings>();
+            serviceCollection.AddSingleton<IProjectSettings, ProjectSettings>();
             serviceCollection.AddSingleton<IHostSettings, HostSettings>();
             serviceCollection.AddSingleton<IDatabaseSettings, DatabaseSettings>();
             serviceCollection.AddSingleton<ICorsSettings, CorsSettings>();
             serviceCollection.AddSingleton<IFirebaseSettings, FirebaseSettings>();
             serviceCollection.AddSingleton<IMapyCzSettings, MapyCzSettings>();
-            serviceCollection.AddSingleton<ISmtpSettings, SmtpSettings>();
-            serviceCollection.AddSingleton<IGoogleAuthSettings, GoogleAuthSettings>();
-            serviceCollection.AddSingleton<IAppleAuthSettings, AppleAuthSettings>();
-            serviceCollection.AddSingleton<IAuthSettings, AuthSettings>();
             serviceCollection.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
             serviceCollection.AddSingleton<IEncryptionSettings, EncryptionSettings>();
 
@@ -46,8 +40,6 @@ public static class InfrastructureExtensions
 
             serviceCollection.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            serviceCollection.AddScoped<IUsersRepository, UsersRepository>();
-            serviceCollection.AddScoped<IPhotosRepository, PhotosRepository>();
             serviceCollection.AddScoped<IDialectsRepository, DialectsRepository>();
             serviceCollection.AddScoped<IRecordingsRepository, RecordingsRepository>();
             serviceCollection.AddScoped<IRecordingPartsRepository, RecordingPartsRepository>();
@@ -58,11 +50,6 @@ public static class InfrastructureExtensions
             serviceCollection.AddScoped<IArticlesRepository, ArticlesRepository>();
             serviceCollection.AddScoped<IArticleCategoriesRepository, ArticleCategoriesRepository>();
             serviceCollection.AddScoped<IMapPointsRepository, MapPointsRepository>();
-
-            serviceCollection.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
-            serviceCollection.AddScoped<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
-            serviceCollection.AddSingleton<IAppleIdTokenValidator, AppleIdTokenValidator>();
-            serviceCollection.AddScoped<IEmailSender, SmtpEmailSender>();
 
             serviceCollection.AddHttpClient<IMapyCzProxyService, MapyCzProxyService>();
             serviceCollection.AddHttpClient<IPushNotificationService, FirebaseNotificationService>();

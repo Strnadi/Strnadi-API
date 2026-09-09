@@ -6,7 +6,7 @@ namespace Tenant.Infrastructure.Persistence.Repositories;
 
 public class RecordingsRepository(TenantDbContext db) : IRecordingsRepository
 {
-    public Task<Recording[]> GetAllAsync(int? userId, CancellationToken cancellationToken = default)
+    public Task<Recording[]> GetAllAsync(Guid? userId, CancellationToken cancellationToken = default)
     {
         var query = db.Recordings.Where(r => r.Deleted != true);
 
@@ -16,7 +16,7 @@ public class RecordingsRepository(TenantDbContext db) : IRecordingsRepository
         return query.ToArrayAsync(cancellationToken);
     }
 
-    public Task<Recording[]> GetAllAsync(int? userId, bool includeParts, CancellationToken cancellationToken = default)
+    public Task<Recording[]> GetAllAsync(Guid? userId, bool includeParts, CancellationToken cancellationToken = default)
     {
         var query = db.Recordings.Where(r => r.Deleted != true);
 
@@ -32,7 +32,7 @@ public class RecordingsRepository(TenantDbContext db) : IRecordingsRepository
     public Task<Recording[]> GetDeletedAsync(CancellationToken cancellationToken = default) =>
         db.Recordings.Where(r => r.Deleted == true).ToArrayAsync(cancellationToken);
 
-    public Task<Recording[]> GetIncompleteAsync(int userId, CancellationToken cancellationToken = default) =>
+    public Task<Recording[]> GetIncompleteAsync(Guid userId, CancellationToken cancellationToken = default) =>
         db.Recordings
             .Where(r => r.UserId == userId && r.Deleted != true)
             .Where(r => r.ExpectedPartsCount != null && r.RecordingParts.Count() < r.ExpectedPartsCount)

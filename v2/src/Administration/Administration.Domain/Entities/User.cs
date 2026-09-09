@@ -17,6 +17,10 @@ public class User : IdentityUser<Guid>
     public string? City { get; set; } 
     
     public bool Legacy { get; set; }
-    
+
     public bool Deleted { get; set; }
+
+    public string? ProfilePhotoPath { get; set; }
+
+    public string? ProfilePhotoFormat { get; set; }
 }

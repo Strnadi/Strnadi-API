@@ -1,7 +1,7 @@
 namespace Tenant.Application.Notifications;
 
 public record SendNotificationRequest(
-    int UserId,
+    Guid UserId,
     string? TitleEn,
     string? BodyEn,
     string? TitleDe,

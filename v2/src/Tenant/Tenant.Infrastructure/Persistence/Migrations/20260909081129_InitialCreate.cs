@@ -59,6 +59,22 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "devices",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    fcm_token = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    device_platform = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    device_model = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("devices_pkey", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "dialects",
                 columns: table => new
                 {
@@ -74,30 +90,27 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "users",
+                name: "recordings",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    nickname = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    first_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    last_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    password = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    creation_date = table.Column<DateTime>(type: "timestamp without time zone", nullable: true, defaultValueSql: "now()"),
-                    is_email_verified = table.Column<bool>(type: "boolean", nullable: true, defaultValue: false),
-                    consent = table.Column<bool>(type: "boolean", nullable: true),
-                    role = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false, defaultValueSql: "'user'::character varying"),
-                    post_code = table.Column<int>(type: "integer", nullable: true),
-                    city = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()"),
+                    estimated_birds_count = table.Column<short>(type: "smallint", nullable: true),
+                    by_app = table.Column<bool>(type: "boolean", nullable: false),
+                    name = table.Column<string>(type: "character varying(49)", maxLength: 49, nullable: true),
+                    note = table.Column<string>(type: "text", nullable: true),
+                    note_post = table.Column<string>(type: "text", nullable: true),
+                    device = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    deleted = table.Column<bool>(type: "boolean", nullable: true, defaultValue: false),
                     legacy = table.Column<bool>(type: "boolean", nullable: false),
-                    deleted = table.Column<bool>(type: "boolean", nullable: false),
-                    appleid = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    google_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
+                    expected_parts_count = table.Column<int>(type: "integer", nullable: true),
+                    upload_confirmed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("users_pkey", x => x.id);
+                    table.PrimaryKey("recordings_pkey", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -116,6 +129,26 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                     table.PrimaryKey("achievement_content_pkey", x => x.id);
                     table.ForeignKey(
                         name: "achievement_content_achievement_id_fkey",
+                        column: x => x.achievement_id,
+                        principalTable: "achievements",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "user_achievement",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    achievement_id = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("user_achievement_pkey", x => x.id);
+                    table.ForeignKey(
+                        name: "user_achievement_achievement_id_fkey",
                         column: x => x.achievement_id,
                         principalTable: "achievements",
                         principalColumn: "id",
@@ -212,83 +245,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "devices",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    fcm_token = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    device_platform = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    device_model = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    user_id = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("devices_pkey", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_devices_user",
-                        column: x => x.user_id,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "recordings",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now()"),
-                    estimated_birds_count = table.Column<short>(type: "smallint", nullable: true),
-                    by_app = table.Column<bool>(type: "boolean", nullable: false),
-                    name = table.Column<string>(type: "character varying(49)", maxLength: 49, nullable: true),
-                    note = table.Column<string>(type: "text", nullable: true),
-                    note_post = table.Column<string>(type: "text", nullable: true),
-                    device = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    user_id = table.Column<int>(type: "integer", nullable: true),
-                    deleted = table.Column<bool>(type: "boolean", nullable: true, defaultValue: false),
-                    legacy = table.Column<bool>(type: "boolean", nullable: false),
-                    expected_parts_count = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("recordings_pkey", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_recordings_user",
-                        column: x => x.user_id,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.SetNull);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "user_achievement",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    user_id = table.Column<int>(type: "integer", nullable: false),
-                    achievement_id = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("user_achievement_pkey", x => x.id);
-                    table.ForeignKey(
-                        name: "user_achievement_achievement_id_fkey",
-                        column: x => x.achievement_id,
-                        principalTable: "achievements",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "user_achievement_user_id_fkey",
-                        column: x => x.user_id,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "filtered_recording_parts",
                 columns: table => new
                 {
@@ -310,33 +266,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                         principalTable: "recordings",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "photos",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    file_path = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    recording_id = table.Column<int>(type: "integer", nullable: true),
-                    format = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
-                    user_id = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("photos_pkey", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_photos_user",
-                        column: x => x.user_id,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "photos_recording_id_fkey",
-                        column: x => x.recording_id,
-                        principalTable: "recordings",
-                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
@@ -448,34 +377,14 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_devices_user_id",
-                table: "devices",
-                column: "user_id");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_filtered_recording_parts_recording_id",
                 table: "filtered_recording_parts",
                 column: "recording_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_photos_recording_id",
-                table: "photos",
-                column: "recording_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_photos_user_id",
-                table: "photos",
-                column: "user_id");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_recording_parts_recording_id",
                 table: "recording_parts",
                 column: "recording_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_recordings_user_id",
-                table: "recordings",
-                column: "user_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_user_achievement_achievement_id",
@@ -486,18 +395,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                 name: "user_achievement_unique",
                 table: "user_achievement",
                 columns: new[] { "user_id", "achievement_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "users_email_key",
-                table: "users",
-                column: "email",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "users_nickname_key",
-                table: "users",
-                column: "nickname",
                 unique: true);
         }
 
@@ -526,9 +423,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
                 name: "devices");
 
             migrationBuilder.DropTable(
-                name: "photos");
-
-            migrationBuilder.DropTable(
                 name: "recording_parts");
 
             migrationBuilder.DropTable(
@@ -551,9 +445,6 @@ namespace Tenant.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "recordings");
-
-            migrationBuilder.DropTable(
-                name: "users");
         }
     }
 }

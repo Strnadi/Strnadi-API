@@ -71,6 +71,9 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
         {
             entity.Property(p => p.Name).HasMaxLength(256);
             entity.Property(p => p.State).HasConversion<string>().HasMaxLength(32);
+
+            entity.Property(p => p.Domain).HasMaxLength(256);
+            entity.HasIndex(p => p.Domain).IsUnique();
         });
 
         modelBuilder.Entity<ProjectMembership>(entity =>

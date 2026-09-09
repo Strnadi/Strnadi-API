@@ -13,7 +13,7 @@ public class RecordingsController(RecordingsService recordingsService) : Control
     /// <summary>Recordings, optionally with their parts and/or audio.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(RecordingResponse[]), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllAsync([FromQuery] int? userId, [FromQuery] bool parts, [FromQuery] bool sound, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllAsync([FromQuery] Guid? userId, [FromQuery] bool parts, [FromQuery] bool sound, CancellationToken cancellationToken)
     {
         return Ok(await recordingsService.GetAllAsync(userId, parts, sound, cancellationToken));
     }

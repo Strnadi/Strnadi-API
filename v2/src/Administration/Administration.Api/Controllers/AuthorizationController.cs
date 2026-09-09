@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Security.Claims;
 using Administration.Domain.Entities;
 using Administration.Infrastructure.Identity;
@@ -120,10 +121,23 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
         if (!await db.ProjectMemberships.AnyAsync(m => m.UserId == userId && m.ProjectId == projectId))
             return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
+        var roles = await db.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .Join(db.Roles.Where(r => r.ProjectId == projectId), ur => ur.RoleId, r => r.Id, (_, r) => r)
+            .ToListAsync();
+
+        var roleIds = roles.Select(r => r.Id).ToList();
+        var permissions = await db.RoleClaims
+            .Where(rc => roleIds.Contains(rc.RoleId) && rc.ClaimType == "permission")
+            .Select(rc => rc.ClaimValue!)
+            .ToListAsync();
+
         var identity =
             new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
         identity.SetClaim(Claims.Subject, userId.ToString())
             .SetClaim("project_id", projectId.ToString());
+        identity.SetClaims(Claims.Role, roles.Select(r => r.Name!).ToImmutableArray());
+        identity.SetClaims("permission", permissions.ToImmutableArray());
         identity.SetAudiences($"project:{projectId}");
         identity.SetDestinations(GetDestinations);
         

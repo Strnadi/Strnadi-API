@@ -17,7 +17,7 @@ public class RecordingsService(
     IUnitOfWork unitOfWork,
     ILogger<RecordingsService> logger)
 {
-    public async Task<RecordingResponse[]> GetAllAsync(int? userId, bool includeParts, bool includeSound, CancellationToken cancellationToken = default)
+    public async Task<RecordingResponse[]> GetAllAsync(Guid? userId, bool includeParts, bool includeSound, CancellationToken cancellationToken = default)
     {
         var results = await recordings.GetAllAsync(userId, includeParts, cancellationToken);
 
@@ -70,7 +70,7 @@ public class RecordingsService(
             recording.UserId, recording.ExpectedPartsCount, recording.UploadConfirmed, parts);
     }
 
-    public async Task DeleteAsync(int id, bool final, int callerId, bool isAdmin, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(int id, bool final, Guid callerId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var recording = await recordings.GetByIdAsync(id, cancellationToken) ?? throw new NotFoundException(nameof(Recording), id);
 
@@ -89,7 +89,7 @@ public class RecordingsService(
         logger.LogInformation("Recording {RecordingId} {Action} by {CallerId}", id, final ? "permanently deleted" : "soft-deleted", callerId);
     }
 
-    public async Task<int> CreateAsync(RecordingUploadRequest request, int callerId, CancellationToken cancellationToken = default)
+    public async Task<int> CreateAsync(RecordingUploadRequest request, Guid callerId, CancellationToken cancellationToken = default)
     {
         var recording = new Recording
         {
@@ -112,10 +112,10 @@ public class RecordingsService(
         return recording.Id;
     }
 
-    public Task<Recording[]> GetIncompleteAsync(int callerId, CancellationToken cancellationToken = default) =>
+    public Task<Recording[]> GetIncompleteAsync(Guid callerId, CancellationToken cancellationToken = default) =>
         recordings.GetIncompleteAsync(callerId, cancellationToken);
 
-    public async Task UpdateAsync(int id, UpdateRecordingRequest request, int callerId, bool isAdmin, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(int id, UpdateRecordingRequest request, Guid callerId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var recording = await recordings.GetByIdAsync(id, cancellationToken) ?? throw new NotFoundException(nameof(Recording), id);
 
@@ -141,7 +141,7 @@ public class RecordingsService(
     // The mobile app computes the same hash client-side (before this server normalizes any audio)
     // and sends it once it believes it has uploaded every part; a match is the client's proof that
     // every part arrived intact, replacing the old delayed check-and-notify job.
-    public async Task<bool> CompleteUploadAsync(int id, string hash, int callerId, CancellationToken cancellationToken = default)
+    public async Task<bool> CompleteUploadAsync(int id, string hash, Guid callerId, CancellationToken cancellationToken = default)
     {
         var recording = await recordings.GetByIdAsync(id, includeParts: true, cancellationToken)
             ?? throw new NotFoundException(nameof(Recording), id);

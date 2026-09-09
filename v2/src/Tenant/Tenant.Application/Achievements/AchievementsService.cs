@@ -9,7 +9,7 @@ namespace Tenant.Application.Achievements;
 
 public class AchievementsService(IAchievementsRepository achievements, IFileStorage fileStorage, IUnitOfWork unitOfWork, LinkBuilder linkBuilder)
 {
-    public async Task<AchievementResponse[]> GetAllAsync(int? userId, CancellationToken cancellationToken = default)
+    public async Task<AchievementResponse[]> GetAllAsync(Guid? userId, CancellationToken cancellationToken = default)
     {
         if (userId is null)
         {
@@ -68,7 +68,7 @@ public class AchievementsService(IAchievementsRepository achievements, IFileStor
         return achievement.Id;
     }
 
-    private async Task CheckAndAwardAchievementsAsync(int userId, CancellationToken cancellationToken)
+    private async Task CheckAndAwardAchievementsAsync(Guid userId, CancellationToken cancellationToken)
     {
         var allAchievements = await achievements.GetAllAsync(cancellationToken);
         var userAchievements = await achievements.GetByUserIdAsync(userId, cancellationToken);

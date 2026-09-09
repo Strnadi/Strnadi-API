@@ -1,18 +1,14 @@
-using System.Text;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ServiceDefaults;
 using Tenant.Api.ExceptionHandling;
 using Tenant.Api.Logging;
 using Tenant.Application.Extensions;
 using Tenant.Domain.Configuration;
-using Tenant.Domain.Services;
-using Tenant.Infrastructure.Auth;
+using Tenant.Infrastructure.Configuration;
 using Tenant.Infrastructure.Extensions;
 using Tenant.Infrastructure.Persistence;
 
@@ -70,26 +66,16 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-builder.Services.AddScoped<ITokenService, JwtTokenService>();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer();
+var projectSettings = new ProjectSettings(builder.Configuration);
 
-builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-    .Configure<IJwtSettings>((options, jwt) =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        // Keep claim types as issued ("sub", "role", ...) instead of the default remap to
-        // long ClaimTypes.* URIs — GetCallerId()/IsAdmin() and the AdminOnly policy all look
-        // up claims by their original short JWT names.
+        options.Authority = projectSettings.Authority;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         options.MapInboundClaims = false;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey)),
-            ValidIssuer = jwt.Issuer,
-            ValidAudience = jwt.Audience,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
+        options.TokenValidationParameters.ValidateAudience = true;
+        options.TokenValidationParameters.ValidAudience = $"project:{projectSettings.ProjectId}";
     });
 
 builder.Services.AddAuthorizationBuilder()
@@ -108,11 +94,7 @@ builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
 
-// Migrations are applied manually (`dotnet ef database update`), not on startup — Aspire can
-// point this at a shared/copied database, and auto-migrating on every boot would race against
-// other instances or mutate a database other people are using.
 app.MapDefaultEndpoints();
-
 app.UseHttpsRedirection();
 
 app.UseCors(app.Services.GetRequiredService<ICorsSettings>().Default);

@@ -26,7 +26,7 @@ public class MapClustersController(MapClustersService mapClusters) : ControllerB
         [FromQuery] double? west,
         [FromQuery] DialectMode dialectMode,
         [FromQuery] bool verified,
-        [FromQuery] int? userId,
+        [FromQuery] Guid? userId,
         [FromQuery] DateOnly? createdFrom,
         [FromQuery] DateOnly? createdTo,
         [FromQuery] int maxItemsPerCluster,

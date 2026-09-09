@@ -10,7 +10,5 @@ public partial class Device
 
     public string DeviceModel { get; set; } = null!;
 
-    public int UserId { get; set; }
-
-    public virtual User User { get; set; } = null!;
+    public Guid UserId { get; set; }
 }

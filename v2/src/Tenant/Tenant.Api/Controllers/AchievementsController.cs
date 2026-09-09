@@ -13,7 +13,7 @@ public class AchievementsController(AchievementsService achievementsService) : C
     /// <summary>All achievements, or just the ones this user earned (awards any newly qualified ones first).</summary>
     [HttpGet]
     [ProducesResponseType(typeof(AchievementResponse[]), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllAsync([FromQuery] int? userId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllAsync([FromQuery] Guid? userId, CancellationToken cancellationToken)
     {
         return Ok(await achievementsService.GetAllAsync(userId, cancellationToken));
     }

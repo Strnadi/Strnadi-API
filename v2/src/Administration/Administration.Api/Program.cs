@@ -7,6 +7,7 @@ using Administration.Infrastructure.Email;
 using Administration.Infrastructure.Identity;
 using Administration.Infrastructure.Persistence;
 using Administration.Infrastructure.Security;
+using Administration.Infrastructure.Storage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -33,11 +34,17 @@ builder.Services.AddSingleton<IAuthSettings, AuthSettings>();
 builder.Services.AddSingleton<ISmtpSettings, SmtpSettings>();
 builder.Services.AddScoped<IEmailSender<User>, SmtpEmailSender>();
 
+builder.Services.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
+builder.Services.AddSingleton<IFileStorage, LocalStorage>();
+
 builder.Services.AddIdentityCore<User>(o => o.User.RequireUniqueEmail = true)
     .AddRoles<Role>()
     .AddSignInManager()
     .AddDefaultTokenProviders()
     .AddEntityFrameworkStores<AdminDbContext>();
+
+builder.Services.RemoveAll<IPasswordHasher<User>>();
+builder.Services.AddScoped<IPasswordHasher<User>, BCryptPasswordHasher>();
 
 builder.Services.RemoveAll<IUserValidator<User>>();
 builder.Services.AddScoped<IUserValidator<User>, CustomUserValidator>();
@@ -103,7 +110,7 @@ builder.Services.AddRazorPages();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
-    await SeedOpenIddictClientAsync(scope.ServiceProvider);
+    await SyncOpenIddictClientAsync(scope.ServiceProvider);
 
 if (!app.Environment.IsDevelopment())
 {
@@ -125,21 +132,25 @@ static X509Certificate2 LoadCertificate(IConfiguration configuration, string con
         Convert.FromBase64String(configuration[$"{configSection}:Pfx"]!),
         configuration[$"{configSection}:Password"]);
 
-static async Task SeedOpenIddictClientAsync(IServiceProvider services)
+// Redirect URIs for web are derived from Project.Domain, not hardcoded - each Project owns a
+// domain (strnadi.cz, sarancata.cz, ...), and its OAuth callback lives at {Domain}/auth/callback.
+// Call this again (not just at startup) whenever a Project's Domain is created/changed, so a new
+// project's domain becomes valid without waiting for a restart.
+static async Task SyncOpenIddictClientAsync(IServiceProvider services)
 {
     var applicationManager = services.GetRequiredService<IOpenIddictApplicationManager>();
+    var db = services.GetRequiredService<AdminDbContext>();
 
-    if (await applicationManager.FindByClientIdAsync(clientId) is not null)
-        return;
+    var domains = await db.Projects
+        .Where(p => p.Domain != null && p.Domain != "")
+        .Select(p => p.Domain)
+        .ToListAsync();
 
-    await applicationManager.CreateAsync(new OpenIddictApplicationDescriptor
+    var descriptor = new OpenIddictApplicationDescriptor
     {
         ClientId = clientId,
         ClientType = OpenIddictConstants.ClientTypes.Public,
-        RedirectUris =
-        {
-            // TODO: fill in with real values - see chat for what belongs here and why.
-        },
+        RedirectUris = { new Uri("com.delta.strnadi://auth/callback") },
         Permissions =
         {
             OpenIddictConstants.Permissions.Endpoints.Authorization,
@@ -149,5 +160,17 @@ static async Task SeedOpenIddictClientAsync(IServiceProvider services)
             OpenIddictConstants.Permissions.Prefixes.GrantType + OpenIddictConstants.GrantTypes.TokenExchange,
             OpenIddictConstants.Permissions.ResponseTypes.Code
         }
-    });
+    };
+
+    foreach (var domain in domains)
+    {
+        descriptor.RedirectUris.Add(new Uri($"{domain.TrimEnd('/')}/ucet/prihlaseni"));
+        descriptor.RedirectUris.Add(new Uri($"{domain.TrimEnd('/')}/ucet/registrace"));
+    }
+
+    var existing = await applicationManager.FindByClientIdAsync(clientId);
+    if (existing is null)
+        await applicationManager.CreateAsync(descriptor);
+    else
+        await applicationManager.UpdateAsync(existing, descriptor);
 }

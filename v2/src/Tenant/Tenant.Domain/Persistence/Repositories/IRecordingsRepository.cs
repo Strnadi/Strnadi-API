@@ -4,13 +4,13 @@ namespace Tenant.Domain.Persistence.Repositories;
 
 public interface IRecordingsRepository
 {
-    Task<Recording[]> GetAllAsync(int? userId, CancellationToken cancellationToken = default);
+    Task<Recording[]> GetAllAsync(Guid? userId, CancellationToken cancellationToken = default);
 
-    Task<Recording[]> GetAllAsync(int? userId, bool includeParts, CancellationToken cancellationToken = default);
+    Task<Recording[]> GetAllAsync(Guid? userId, bool includeParts, CancellationToken cancellationToken = default);
 
     Task<Recording[]> GetDeletedAsync(CancellationToken cancellationToken = default);
 
-    Task<Recording[]> GetIncompleteAsync(int userId, CancellationToken cancellationToken = default);
+    Task<Recording[]> GetIncompleteAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<Recording?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 

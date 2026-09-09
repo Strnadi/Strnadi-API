@@ -9,7 +9,7 @@ public record RecordingResponse(
     string? Note,
     string? NotePost,
     string? Device,
-    int? UserId,
+    Guid? UserId,
     int? ExpectedPartsCount,
     bool UploadConfirmed,
     RecordingPartResponse[]? Parts);

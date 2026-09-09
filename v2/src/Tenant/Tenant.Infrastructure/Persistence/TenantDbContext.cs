@@ -56,13 +56,10 @@ public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, 
 
     public virtual DbSet<FilteredRecordingPart> FilteredRecordingParts { get; set; }
 
-    public virtual DbSet<Photo> Photos { get; set; }
 
     public virtual DbSet<Recording> Recordings { get; set; }
 
     public virtual DbSet<RecordingPart> RecordingParts { get; set; }
-
-    public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserAchievement> UserAchievements { get; set; }
 
@@ -260,10 +257,6 @@ public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, 
                 .HasMaxLength(255)
                 .HasColumnName("fcm_token");
             entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Devices)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("fk_devices_user");
         });
 
         modelBuilder.Entity<Dialect>(entity =>
@@ -355,32 +348,6 @@ public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, 
                 .HasConstraintName("filtered_recording_parts_recording_id_fkey");
         });
 
-        modelBuilder.Entity<Photo>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("photos_pkey");
-
-            entity.ToTable("photos");
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.FilePath)
-                .HasMaxLength(255)
-                .HasColumnName("file_path");
-            entity.Property(e => e.Format)
-                .HasMaxLength(10)
-                .HasColumnName("format");
-            entity.Property(e => e.RecordingId).HasColumnName("recording_id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.Recording).WithMany(p => p.Photos)
-                .HasForeignKey(d => d.RecordingId)
-                .HasConstraintName("photos_recording_id_fkey");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Photos)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("fk_photos_user");
-        });
-
         modelBuilder.Entity<Recording>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("recordings_pkey");
@@ -411,11 +378,6 @@ public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, 
             entity.Property(e => e.UploadConfirmed)
                 .HasDefaultValue(false)
                 .HasColumnName("upload_confirmed");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Recordings)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_recordings_user");
         });
 
         modelBuilder.Entity<RecordingPart>(entity =>
@@ -447,69 +409,6 @@ public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, 
                 .HasConstraintName("recording_parts_recording_id_fkey");
         });
 
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("users_pkey");
-
-            entity.ToTable("users");
-
-            entity.HasIndex(e => e.Email, "users_email_key").IsUnique();
-
-            entity.HasIndex(e => e.Nickname, "users_nickname_key").IsUnique();
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Appleid)
-                .HasMaxLength(255)
-                .HasColumnName("appleid");
-            // string and string? are the same runtime type (nullability is compile-time-only for
-            // reference types), and Encrypt/Decrypt already short-circuit on null - the mismatch
-            // below is a harmless EF Core nullable-annotation wart, not a real type error.
-#pragma warning disable CS8620
-            entity.Property(e => e.City)
-                .HasColumnName("city")
-                .HasConversion(_encryptedString);
-#pragma warning restore CS8620
-            entity.Property(e => e.Consent).HasColumnName("consent");
-            entity.Property(e => e.ConsentGivenAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("consent_given_at");
-            entity.Property(e => e.ConsentVersion)
-                .HasMaxLength(32)
-                .HasColumnName("consent_version");
-            entity.Property(e => e.CreationDate)
-                .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("creation_date");
-            entity.Property(e => e.Deleted).HasColumnName("deleted");
-            entity.Property(e => e.Email)
-                .HasMaxLength(255)
-                .HasColumnName("email");
-            entity.Property(e => e.FirstName)
-                .HasColumnName("first_name")
-                .HasConversion(_encryptedString);
-            entity.Property(e => e.GoogleId)
-                .HasMaxLength(255)
-                .HasColumnName("google_id");
-            entity.Property(e => e.IsEmailVerified)
-                .HasDefaultValue(false)
-                .HasColumnName("is_email_verified");
-            entity.Property(e => e.LastName)
-                .HasColumnName("last_name")
-                .HasConversion(_encryptedString);
-            entity.Property(e => e.Legacy).HasColumnName("legacy");
-            entity.Property(e => e.Nickname)
-                .HasMaxLength(50)
-                .HasColumnName("nickname");
-            entity.Property(e => e.Password)
-                .HasMaxLength(255)
-                .HasColumnName("password");
-            entity.Property(e => e.PostCode).HasColumnName("post_code");
-            entity.Property(e => e.Role)
-                .HasMaxLength(32)
-                .HasDefaultValueSql("'user'::character varying")
-                .HasColumnName("role");
-        });
-
         modelBuilder.Entity<UserAchievement>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("user_achievement_pkey");
@@ -525,10 +424,6 @@ public partial class TenantDbContext(DbContextOptions<TenantDbContext> options, 
             entity.HasOne(d => d.Achievement).WithMany(p => p.UserAchievements)
                 .HasForeignKey(d => d.AchievementId)
                 .HasConstraintName("user_achievement_achievement_id_fkey");
-
-            entity.HasOne(d => d.User).WithMany(p => p.UserAchievements)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("user_achievement_user_id_fkey");
         });
 
         OnModelCreatingPartial(modelBuilder);
