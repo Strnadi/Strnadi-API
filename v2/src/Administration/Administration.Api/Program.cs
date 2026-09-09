@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
 using Administration.Domain.Services;
@@ -42,6 +43,8 @@ builder.Services.AddScoped<IEmailSender<User>, SmtpEmailSender>();
 
 builder.Services.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
 builder.Services.AddSingleton<IFileStorage, LocalStorage>();
+
+builder.Services.AddSingleton<IScalarSettings, ScalarSettings>();
 
 builder.Services.AddIdentityCore<User>(o => o.User.RequireUniqueEmail = true)
     .AddRoles<Role>()
@@ -135,13 +138,53 @@ app.MapRazorPages();
 app.MapDefaultEndpoints();
 app.MapHealthChecks("/utils/health");
 
-if (app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    var scalarPassword = app.Services.GetRequiredService<IScalarSettings>().Password;
+    app.Use(async (context, next) =>
+    {
+        if (!context.Request.Path.StartsWithSegments("/scalar") && !context.Request.Path.StartsWithSegments("/openapi"))
+        {
+            await next();
+            return;
+        }
+
+        if (string.IsNullOrEmpty(scalarPassword) || !HasValidScalarPassword(context.Request, scalarPassword))
+        {
+            context.Response.Headers.WWWAuthenticate = "Basic realm=\"Scalar\"";
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        await next();
+    });
 }
 
+app.MapOpenApi();
+app.MapScalarApiReference();
+
 app.Run();
+
+static bool HasValidScalarPassword(HttpRequest request, string expectedPassword)
+{
+    var header = request.Headers.Authorization.ToString();
+    if (!header.StartsWith("Basic ", StringComparison.Ordinal))
+        return false;
+
+    string decoded;
+    try
+    {
+        decoded = Encoding.UTF8.GetString(Convert.FromBase64String(header["Basic ".Length..]));
+    }
+    catch (FormatException)
+    {
+        return false;
+    }
+
+    var separatorIndex = decoded.IndexOf(':');
+    var password = separatorIndex >= 0 ? decoded[(separatorIndex + 1)..] : decoded;
+    return password == expectedPassword;
+}
 
 static X509Certificate2 LoadCertificate(IConfiguration configuration, string configSection) =>
     X509CertificateLoader.LoadPkcs12(
