@@ -4,24 +4,34 @@
     ViewData["Title"] = "Login";
 }
 
-<h1>Login</h1>
+<div class="ss-auth-shell">
+    <div class="ss-auth-wordmark">Strnadi</div>
 
-<form method="post">
-    <input type="hidden" asp-for="ReturnUrl" />
-    <div asp-validation-summary="All"></div>
-    <div>
-        <label asp-for="Input.Email"></label>
-        <input asp-for="Input.Email" />
-        <span asp-validation-for="Input.Email"></span>
+    <div class="ss-card ss-auth-card">
+        <h1>Login</h1>
+
+        <partial name="_ExternalProviders" model="Model.ReturnUrl" />
+
+        <form method="post">
+            <input type="hidden" asp-for="ReturnUrl" />
+            <div asp-validation-summary="All" class="ss-alert ss-alert--danger"></div>
+
+            <div class="ss-field">
+                <label asp-for="Input.Email" class="ss-field__label"></label>
+                <input asp-for="Input.Email" class="ss-field__input" />
+                <span asp-validation-for="Input.Email" class="ss-field__error"></span>
+            </div>
+            <div class="ss-field">
+                <label asp-for="Input.Password" class="ss-field__label"></label>
+                <input asp-for="Input.Password" type="password" class="ss-field__input" />
+                <span asp-validation-for="Input.Password" class="ss-field__error"></span>
+            </div>
+
+            <button type="submit" class="ss-btn ss-btn--primary">Login</button>
+        </form>
+
+        <div class="ss-auth-footer">
+            No account? <a href="/account/register?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl ?? "")">Register</a>
+        </div>
     </div>
-    <div>
-        <label asp-for="Input.Password"></label>
-        <input asp-for="Input.Password" type="password" />
-        <span asp-validation-for="Input.Password"></span>
-    </div>
-    <button type="submit">Login</button>
-</form>
-
-@* Google/Apple buttons go here once the external-login challenge/callback endpoints exist. *@
-
-<a href="/account/register?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl ?? "")">No account? Register</a>
+</div>
