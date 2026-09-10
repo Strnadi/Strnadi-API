@@ -108,14 +108,14 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
 
     /// <summary>Signs the caller out and ends the OpenIddict session.</summary>
     [Route("logout")]
-    public async Task<IActionResult> LogoutAsync()
+    public async Task<IActionResult> LogoutAsync([FromQuery(Name = "redirect_uri")] string? redirectUri)
     {
         await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
 
         return SignOut(
             new AuthenticationProperties
             {
-                RedirectUri = "/"
+                RedirectUri = redirectUri ?? "/"
             }, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
