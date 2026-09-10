@@ -169,11 +169,23 @@ Input default border `--color-border`; focus ring `--color-accent` (2px outline)
 one place accent color is used as a border, not just for small highlights. Invalid state: border
 `--color-danger`.
 
+`.ss-field-row` pairs two `.ss-field` side by side (flex, `--space-4` gap, collapses to a single
+column under 480px) — use it to shorten a tall form instead of stacking every field full-width
+(e.g. first/last name, password/confirm on Register). Don't pair fields that need the full width
+for their content or error text (email, anything with a long validation message).
+
 ### Alerts / validation summary — `.ss-alert`
 
 Replaces the bare `validation-summary-errors` div. Variants `--success` / `--warning` /
 `--danger` / `--info`, each background `--color-*-subtle`, text/icon `--color-*`, left border
 4px solid `--color-*`, radius `--radius-md`, padding `--space-3` `--space-4`.
+
+Always use `asp-validation-summary="ModelOnly"`, never `"All"`. `"All"` repeats every
+field-level error (already shown under its own `.ss-field__error`) a second time in this summary
+— on a form with several fields that duplication is what makes the card grow and push the submit
+button below the fold when validation fails. `ModelOnly` only surfaces errors added with no field
+key (`ModelState.AddModelError(string.Empty, ...)`, e.g. "Invalid login attempt.", Identity
+`CreateAsync` errors) — field-specific errors stay exactly where they already are, inline.
 
 ### Cards — `.ss-card`
 
@@ -208,13 +220,27 @@ Admin panel shell only (not used on auth pages).
   current-user menu (avatar, name, "My account" / "Log out" — this is also the entry point for a
   non-admin user managing their own profile).
 
+### Language switch — `.ss-lang-switch`
+
+Fixed top-right corner, works on any layout (auth shell today, admin panel shell later).
+`.ss-lang-switch__item` is a plain text link (`--font-size-xs`, `--font-weight-semibold`,
+`--color-text-muted`); `.ss-lang-switch__item--active` marks the current UI culture
+(`--color-primary` text on `--color-primary-subtle` background). Links point at
+`GET /culture/set?culture={cs|en}&returnUrl=...`, which sets the culture cookie and redirects
+back — see the Localization section of the `strnadi-ui` skill (`.claude/skills/strnadi-ui/SKILL.md`)
+for how UI text is localized.
+
 ## Page layouts
 
 ### Auth layout (Login/Register/ResetPassword)
 
-Single `.ss-card` (max-width ~420px), centered both axes on `--color-bg`. No sidebar, no topbar.
-Logo/wordmark above the card. This layout already roughly exists in `Login.cshtml` — bringing it
-onto tokens/components is the first thing to do once `design-system.css` lands.
+Single `.ss-card.ss-auth-card` (max-width 420px), centered both axes on `--color-bg`, inside
+`.ss-auth-shell`. No sidebar, no topbar. Wordmark above the card (`.ss-auth-wordmark`).
+
+Forms with more than ~3 fields (Register) use `.ss-auth-card--wide` (max-width 560px) plus
+`.ss-field-row` to pair fields — a plain stack of 5+ full-width fields at 420px reads as an
+overlong column that needs scrolling to reach the submit button; widening + pairing keeps the
+whole card visible without shrinking type or spacing tokens to compensate.
 
 ### Admin panel layout
 
@@ -222,14 +248,19 @@ onto tokens/components is the first thing to do once `design-system.css` lands.
 scrolls independently with `--space-6` padding, `--color-bg` background. A user who is not an
 admin sees the same shell with a reduced sidebar (just "My account", no "Users"/"Projects").
 
-## Implementation plan (not done yet)
+## Implementation status
 
-1. Create `Administration.Api/wwwroot/design-system.css` with the token blocks above plus the
-   component classes.
-2. Load it from both `Pages/_Layout.cshtml` (auth pages) and the future Blazor admin
-   `MainLayout.razor` — one `<link>`, not a per-surface copy.
-3. Rewrite `Login.cshtml` / `Register.cshtml` markup onto `.ss-card` / `.ss-field` / `.ss-btn` /
-   `.ss-alert` as the first real usage, so component definitions get validated against a real
-   page before the admin panel is built on top of them.
-4. Once stable, point a `CLAUDE.md` entry at this file so it's loaded automatically for any UI
-   task.
+Done: `Administration.Api/wwwroot/design-system.css` exists with all tokens and components above.
+`Pages/_Layout.cshtml` loads it for every Razor Page, and renders `.ss-lang-switch`. `Login.cshtml`,
+`Register.cshtml`, and `ResetPassword.cshtml` are built on it, including branded Google/Apple
+buttons (`Pages/Account/_ExternalProviders.cshtml`) wired to the existing external-login endpoints,
+and are fully localized (cs default, en) — see the `strnadi-ui` skill for the localization pattern.
+
+Not done yet:
+
+1. The future Blazor admin `MainLayout.razor` needs to load the same `design-system.css` — one
+   `<link>`, not a per-surface copy.
+2. `.ss-sidebar` / `.ss-topbar` and the admin panel shell itself don't exist yet — only designed
+   on paper (§ Admin panel layout).
+3. No `CLAUDE.md` entry points at this file yet; for now UI work in this repo is covered by the
+   `strnadi-ui` Claude Code skill (`.claude/skills/strnadi-ui/SKILL.md`) instead.

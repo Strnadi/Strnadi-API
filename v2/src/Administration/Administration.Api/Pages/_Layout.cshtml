@@ -1,8 +1,11 @@
+@using System.Globalization
 @{
     var title = ViewData["Title"] as string ?? "Strnadi";
+    var currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
 }
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="@currentCulture">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,6 +16,12 @@
     <link rel="stylesheet" href="~/design-system.css" />
 </head>
 <body>
+    <div class="ss-lang-switch">
+        <a class="ss-lang-switch__item@(currentCulture == "cs" ? " ss-lang-switch__item--active" : "")"
+           href="/culture/set?culture=cs&returnUrl=@Uri.EscapeDataString(returnUrl)">CS</a>
+        <a class="ss-lang-switch__item@(currentCulture == "en" ? " ss-lang-switch__item--active" : "")"
+           href="/culture/set?culture=en&returnUrl=@Uri.EscapeDataString(returnUrl)">EN</a>
+    </div>
     @RenderBody()
 </body>
 </html>

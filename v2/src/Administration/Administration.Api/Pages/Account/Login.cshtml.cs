@@ -1,12 +1,14 @@
 using System.ComponentModel.DataAnnotations;
+using Administration.Api.Resources;
 using Administration.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Administration.Api.Pages.Account;
 
-public class LoginModel(SignInManager<User> signIn, UserManager<User> users) : PageModel
+public class LoginModel(SignInManager<User> signIn, UserManager<User> users, IStringLocalizer<SharedResource> localizer) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
@@ -16,10 +18,10 @@ public class LoginModel(SignInManager<User> signIn, UserManager<User> users) : P
 
     public class InputModel
     {
-        [Required, EmailAddress]
+        [Required(ErrorMessage = "FieldRequired"), EmailAddress(ErrorMessage = "EmailInvalid")]
         public string Email { get; set; } = string.Empty;
 
-        [Required, DataType(DataType.Password)]
+        [Required(ErrorMessage = "FieldRequired"), DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
     }
 
@@ -39,7 +41,7 @@ public class LoginModel(SignInManager<User> signIn, UserManager<User> users) : P
 
         if (!result.Succeeded)
         {
-            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            ModelState.AddModelError(string.Empty, localizer["InvalidLoginAttempt"]);
             return Page();
         }
 

@@ -1,12 +1,14 @@
 using System.ComponentModel.DataAnnotations;
+using Administration.Api.Resources;
 using Administration.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Administration.Api.Pages.Account;
 
-public class ResetPasswordModel(UserManager<User> users) : PageModel
+public class ResetPasswordModel(UserManager<User> users, IStringLocalizer<SharedResource> localizer) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string? Email { get; set; }
@@ -19,10 +21,10 @@ public class ResetPasswordModel(UserManager<User> users) : PageModel
 
     public class InputModel
     {
-        [Required, DataType(DataType.Password)]
+        [Required(ErrorMessage = "FieldRequired"), DataType(DataType.Password)]
         public string NewPassword { get; set; } = string.Empty;
 
-        [Required, DataType(DataType.Password), Compare(nameof(NewPassword))]
+        [Required(ErrorMessage = "FieldRequired"), DataType(DataType.Password), Compare(nameof(NewPassword), ErrorMessage = "PasswordsDoNotMatch")]
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
@@ -37,7 +39,7 @@ public class ResetPasswordModel(UserManager<User> users) : PageModel
 
         if (Email is null || Token is null)
         {
-            ModelState.AddModelError(string.Empty, "Invalid or expired reset link.");
+            ModelState.AddModelError(string.Empty, localizer["InvalidOrExpiredResetLink"]);
             return Page();
         }
 

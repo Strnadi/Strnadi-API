@@ -231,6 +231,24 @@ a {
   color: var(--color-danger);
 }
 
+/* Pairs two or more .ss-field side by side to shorten tall forms (e.g. first/last name,
+   password/confirm) instead of stacking every field full-width. Collapses back to a single
+   column on narrow viewports. */
+.ss-field-row {
+  display: flex;
+  gap: var(--space-4);
+}
+.ss-field-row > .ss-field {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .ss-field-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
 /* ---------- Alerts ---------- */
 
 .ss-alert {
@@ -306,6 +324,32 @@ a {
   background: var(--color-primary-subtle);
 }
 
+/* ---------- Language switch ---------- */
+
+.ss-lang-switch {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: flex;
+  gap: var(--space-2);
+  z-index: 10;
+}
+.ss-lang-switch__item {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.ss-lang-switch__item:hover {
+  background: var(--color-surface-alt);
+}
+.ss-lang-switch__item--active {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
 /* ---------- Auth layout ---------- */
 
 .ss-auth-shell {
@@ -327,6 +371,12 @@ a {
 .ss-auth-card {
   width: 100%;
   max-width: 420px;
+}
+
+/* For forms with more fields than a plain login (e.g. Register) - gives .ss-field-row pairs
+   enough room without cramming each input. */
+.ss-auth-card--wide {
+  max-width: 560px;
 }
 
 .ss-auth-card h1 {

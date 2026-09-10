@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Field labels -->
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>First name</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Last name</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>New password</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirm password</value>
+  </data>
+
+  <!-- Page titles / headings -->
+  <data name="Login" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="ResetPassword" xml:space="preserve">
+    <value>Reset password</value>
+  </data>
+
+  <!-- Auth page extras -->
+  <data name="ContinueWithGoogle" xml:space="preserve">
+    <value>Continue with Google</value>
+  </data>
+  <data name="ContinueWithApple" xml:space="preserve">
+    <value>Continue with Apple</value>
+  </data>
+  <data name="Or" xml:space="preserve">
+    <value>or</value>
+  </data>
+  <data name="NoAccount" xml:space="preserve">
+    <value>No account?</value>
+  </data>
+  <data name="AlreadyHaveAccount" xml:space="preserve">
+    <value>Already have an account?</value>
+  </data>
+
+  <!-- Validation messages -->
+  <data name="FieldRequired" xml:space="preserve">
+    <value>This field is required.</value>
+  </data>
+  <data name="EmailInvalid" xml:space="preserve">
+    <value>Enter a valid email address.</value>
+  </data>
+  <data name="PasswordsDoNotMatch" xml:space="preserve">
+    <value>Passwords do not match.</value>
+  </data>
+
+  <!-- PageModel-added errors -->
+  <data name="InvalidLoginAttempt" xml:space="preserve">
+    <value>Invalid login attempt.</value>
+  </data>
+  <data name="InvalidOrExpiredResetLink" xml:space="preserve">
+    <value>Invalid or expired reset link.</value>
+  </data>
+</root>

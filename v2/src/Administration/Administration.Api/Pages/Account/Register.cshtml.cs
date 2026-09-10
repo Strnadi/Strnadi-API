@@ -16,19 +16,19 @@ public class RegisterModel(UserManager<User> users, SignInManager<User> signIn, 
 
     public class InputModel
     {
-        [Required, EmailAddress]
+        [Required(ErrorMessage = "FieldRequired"), EmailAddress(ErrorMessage = "EmailInvalid")]
         public string Email { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "FieldRequired")]
         public string FirstName { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "FieldRequired")]
         public string LastName { get; set; } = string.Empty;
 
-        [Required, DataType(DataType.Password)]
+        [Required(ErrorMessage = "FieldRequired"), DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
 
-        [Required, DataType(DataType.Password), Compare(nameof(Password))]
+        [Required(ErrorMessage = "FieldRequired"), DataType(DataType.Password), Compare(nameof(Password), ErrorMessage = "PasswordsDoNotMatch")]
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 

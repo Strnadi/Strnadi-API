@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Field labels -->
+  <data name="Email" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Heslo</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>Jméno</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Příjmení</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Nové heslo</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Potvrzení hesla</value>
+  </data>
+
+  <!-- Page titles / headings -->
+  <data name="Login" xml:space="preserve">
+    <value>Přihlášení</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>Registrace</value>
+  </data>
+  <data name="ResetPassword" xml:space="preserve">
+    <value>Obnovení hesla</value>
+  </data>
+
+  <!-- Auth page extras -->
+  <data name="ContinueWithGoogle" xml:space="preserve">
+    <value>Pokračovat přes Google</value>
+  </data>
+  <data name="ContinueWithApple" xml:space="preserve">
+    <value>Pokračovat přes Apple</value>
+  </data>
+  <data name="Or" xml:space="preserve">
+    <value>nebo</value>
+  </data>
+  <data name="NoAccount" xml:space="preserve">
+    <value>Nemáte účet?</value>
+  </data>
+  <data name="AlreadyHaveAccount" xml:space="preserve">
+    <value>Již máte účet?</value>
+  </data>
+
+  <!-- Validation messages -->
+  <data name="FieldRequired" xml:space="preserve">
+    <value>Toto pole je povinné.</value>
+  </data>
+  <data name="EmailInvalid" xml:space="preserve">
+    <value>Zadejte platnou e-mailovou adresu.</value>
+  </data>
+  <data name="PasswordsDoNotMatch" xml:space="preserve">
+    <value>Hesla se neshodují.</value>
+  </data>
+
+  <!-- PageModel-added errors -->
+  <data name="InvalidLoginAttempt" xml:space="preserve">
+    <value>Neplatné přihlašovací údaje.</value>
+  </data>
+  <data name="InvalidOrExpiredResetLink" xml:space="preserve">
+    <value>Neplatný nebo vypršelý odkaz pro obnovení hesla.</value>
+  </data>
+</root>

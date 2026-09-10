@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Administration.Api.Logging;
+using Administration.Api.Resources;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
 using Administration.Domain.Services;
@@ -12,6 +13,7 @@ using Administration.Infrastructure.Persistence;
 using Administration.Infrastructure.Security;
 using Administration.Infrastructure.Storage;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Console;
@@ -21,6 +23,10 @@ using Scalar.AspNetCore;
 using ServiceDefaults;
 
 const string clientId = "strnadi-app";
+
+// Czech is the primary/default audience (strnadi.cz); English is the only other supported UI
+// language for now. Keep in sync with Resources/SharedResource*.resx culture suffixes.
+string[] supportedCultures = ["cs", "en"];
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -132,7 +138,11 @@ builder.Services.AddOpenIddict()
     });
 
 builder.Services.AddControllers();
-builder.Services.AddRazorPages();
+builder.Services.AddLocalization(o => o.ResourcesPath = "Resources");
+builder.Services.AddRazorPages()
+    .AddViewLocalization()
+    .AddDataAnnotationsLocalization(o =>
+        o.DataAnnotationLocalizerProvider = (_, factory) => factory.Create(typeof(SharedResource)));
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ConsoleFormatter, CompactConsoleFormatter>();
@@ -151,6 +161,11 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+app.UseRequestLocalization(new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures));
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -158,6 +173,19 @@ app.MapControllers();
 app.MapRazorPages();
 app.MapDefaultEndpoints();
 app.MapHealthChecks("/utils/health");
+
+app.MapGet("/culture/set", (string culture, string? returnUrl, HttpContext context) =>
+{
+    if (!supportedCultures.Contains(culture))
+        return Results.BadRequest();
+
+    context.Response.Cookies.Append(
+        CookieRequestCultureProvider.DefaultCookieName,
+        CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture)),
+        new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true });
+
+    return Results.LocalRedirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
+});
 
 if (!app.Environment.IsDevelopment())
 {
