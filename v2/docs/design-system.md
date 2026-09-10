@@ -5,7 +5,8 @@ surfaces that share one visual identity:
 
 - **Auth pages** (Razor Pages: `Pages/Account/Login.cshtml`, `Register.cshtml`,
   `ResetPassword.cshtml`, future ones) — minimal chrome, centered card.
-- **Admin panel** (future Blazor Server app) — sidebar + topbar shell, data-dense: user tables,
+- **Admin panel** (Razor Pages under `Pages/Dashboard/`, same as auth pages; a Blazor Server
+  rewrite is possible later but not required) — sidebar + topbar shell, data-dense: user tables,
   project tables, role management.
 - Anything a regular (non-admin) user sees when managing their own account also lives on the
   Admin panel shell, just scoped to what that user is allowed to touch — same components, same
@@ -131,6 +132,9 @@ it's legible at small sizes, which the admin panel's data tables need.
   --shadow-sm: 0 1px 2px rgba(33, 31, 26, 0.06);
   --shadow-md: 0 4px 12px rgba(33, 31, 26, 0.10);
   --shadow-lg: 0 12px 32px rgba(33, 31, 26, 0.14); /* modals, dropdowns */
+
+  --sidebar-width: 240px;
+  --topbar-height: var(--space-10); /* 64px */
 }
 ```
 
@@ -192,6 +196,11 @@ key (`ModelState.AddModelError(string.Empty, ...)`, e.g. "Invalid login attempt.
 `--color-surface` background, `--radius-lg`, `--shadow-sm` at rest, border `--color-border`.
 Used for the auth card and for panel sections in the admin UI (e.g. a project's settings block).
 
+### Stack — `.ss-stack`
+
+`display: flex; flex-direction: column; gap: var(--space-5)`. Use this to space out multiple
+`.ss-card`s (or any other blocks) vertically instead of ad-hoc margin on one of them.
+
 ### Badges — `.ss-badge`
 
 Small pill, `--radius-full`, `--font-size-xs`, `--font-weight-semibold`. Semantic variants same
@@ -211,14 +220,22 @@ For the user/project management screens.
 
 ### Navigation — `.ss-sidebar` / `.ss-topbar`
 
-Admin panel shell only (not used on auth pages).
+Admin panel shell only (not used on auth pages). Dimensions come from two dedicated tokens,
+`--sidebar-width` (240px) and `--topbar-height` (`var(--space-10)`, 64px) — not the small spacing
+scale, since these are fixed layout dimensions, not gaps/padding.
 
-- `.ss-sidebar`: fixed width (240px), `--color-primary` background, `--color-text-on-primary`
-  text, items get `--color-accent` left border (3px) + `background: rgba(255,255,255,0.08)` when
-  active.
-- `.ss-topbar`: `--color-surface` background, bottom border `--color-border`, holds page title +
-  current-user menu (avatar, name, "My account" / "Log out" — this is also the entry point for a
-  non-admin user managing their own profile).
+- `.ss-sidebar`: fixed left, full height, `--color-primary` background. `.ss-sidebar__brand` is
+  the wordmark at the top; `.ss-sidebar__nav` stacks `.ss-sidebar__link` items, which get
+  `--color-accent` left border (3px) + `rgba(255,255,255,0.08)` background when
+  `.ss-sidebar__link--active`. Under 768px it becomes a static, horizontally-scrolling strip
+  instead of a fixed column (link active-state switches to a bottom border in that mode).
+- `.ss-topbar`: fixed top, starting after the sidebar, `--color-surface` background, bottom
+  border. `.ss-topbar__title` on the left (page title), `.ss-topbar__user` on the right — current
+  user's name, a "My account" link, and the logout button. This is also the entry point for a
+  non-admin user managing their own profile — same shell, just fewer sidebar links.
+- `.ss-admin-content` offsets by `--sidebar-width`/`--topbar-height` (0 under 768px, sidebar and
+  topbar go static there) and holds `.ss-admin-content__inner` (`max-width: 1100px`, `--space-6`
+  padding) for the actual page content.
 
 ### Language switch — `.ss-lang-switch`
 
@@ -244,9 +261,12 @@ whole card visible without shrinking type or spacing tokens to compensate.
 
 ### Admin panel layout
 
-`.ss-sidebar` fixed left, `.ss-topbar` fixed top spanning the remaining width, content area
-scrolls independently with `--space-6` padding, `--color-bg` background. A user who is not an
-admin sees the same shell with a reduced sidebar (just "My account", no "Users"/"Projects").
+`.ss-sidebar` fixed left, `.ss-topbar` fixed top spanning the remaining width, `.ss-admin-content`
+offset to clear both and scrolling independently. A user who is not an admin sees the same shell
+with a reduced sidebar (just "My account", no "Users"). Project-scoped sections
+(`/dashboard/projects/{id}`) aren't picked via a cookie claim — a project is just a page you
+navigate to from `/dashboard/projects`, and that page checks the caller's role against that
+specific project fresh on every request.
 
 ## Implementation status
 
@@ -255,12 +275,17 @@ Done: `Administration.Api/wwwroot/design-system.css` exists with all tokens and 
 `Register.cshtml`, and `ResetPassword.cshtml` are built on it, including branded Google/Apple
 buttons (`Pages/Account/_ExternalProviders.cshtml`) wired to the existing external-login endpoints,
 and are fully localized (cs default, en) — see the `strnadi-ui` skill for the localization pattern.
+The admin panel shell (`Pages/Dashboard/_DashboardLayout.cshtml`) is built on the same CSS and
+nests inside `_Layout.cshtml`; `/dashboard` (own profile), `/dashboard/users`, and
+`/dashboard/projects[/{id}]` exist as role-gated Razor Pages, with Users/project management still
+placeholder content pending their own build-out.
 
 Not done yet:
 
-1. The future Blazor admin `MainLayout.razor` needs to load the same `design-system.css` — one
-   `<link>`, not a per-surface copy.
-2. `.ss-sidebar` / `.ss-topbar` and the admin panel shell itself don't exist yet — only designed
-   on paper (§ Admin panel layout).
-3. No `CLAUDE.md` entry points at this file yet; for now UI work in this repo is covered by the
+1. Users and Projects management screens are still placeholders (`.ss-card` with a "coming soon"
+   message) — the shell/nav/access-control around them is real, the CRUD UI inside isn't.
+2. No `CLAUDE.md` entry points at this file yet; for now UI work in this repo is covered by the
    `strnadi-ui` Claude Code skill (`.claude/skills/strnadi-ui/SKILL.md`) instead.
+3. A Blazor Server rewrite of the admin panel remains optional future work, not a requirement —
+   if it happens, it needs to load the same `design-system.css`, one `<link>`, not a per-surface
+   copy.

@@ -1,0 +1,32 @@
+@page "/dashboard/projects"
+@model Administration.Api.Pages.Dashboard.Projects.IndexModel
+@{
+    ViewData["Title"] = L["Projects"].Value;
+}
+
+<h1>@L["Projects"]</h1>
+
+<div class="ss-card">
+    @if (Model.Projects.Count == 0)
+    {
+        <p>@L["NoProjects"]</p>
+    }
+    else
+    {
+        <table class="ss-table">
+            <thead>
+                <tr>
+                    <th>@L["Projects"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var project in Model.Projects)
+                {
+                    <tr>
+                        <td><a href="/dashboard/projects/@project.Id">@project.Name</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

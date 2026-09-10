@@ -79,4 +79,39 @@
   <data name="InvalidOrExpiredResetLink" xml:space="preserve">
     <value>Invalid or expired reset link.</value>
   </data>
+
+  <!-- Dashboard -->
+  <data name="MyAccount" xml:space="preserve">
+    <value>My account</value>
+  </data>
+  <data name="Users" xml:space="preserve">
+    <value>Users</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Projects</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Log out</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="City" xml:space="preserve">
+    <value>City</value>
+  </data>
+  <data name="PostCode" xml:space="preserve">
+    <value>Postal code</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ComingSoon" xml:space="preserve">
+    <value>This part is still under construction.</value>
+  </data>
+  <data name="YourRoles" xml:space="preserve">
+    <value>Your roles</value>
+  </data>
+  <data name="NoProjects" xml:space="preserve">
+    <value>You don't have a role in any project yet.</value>
+  </data>
 </root>

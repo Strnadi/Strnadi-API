@@ -121,7 +121,7 @@ public class AccountController(
             info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
 
         if (result.Succeeded)
-            return LocalRedirect(returnUrl ?? "/");
+            return LocalRedirect(returnUrl ?? "/dashboard");
 
         if (result.IsLockedOut || result.IsNotAllowed)
             return Forbid();
@@ -156,7 +156,7 @@ public class AccountController(
             return BadRequest(addLoginResult.Errors);
 
         await signIn.SignInAsync(user, isPersistent: true);
-        return LocalRedirect(returnUrl ?? "/");
+        return LocalRedirect(returnUrl ?? "/dashboard");
     }
 
     /// <summary>Lists the external login providers linked to the caller's account.</summary>

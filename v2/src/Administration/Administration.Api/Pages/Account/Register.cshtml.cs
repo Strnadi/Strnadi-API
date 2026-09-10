@@ -66,6 +66,6 @@ public class RegisterModel(UserManager<User> users, SignInManager<User> signIn, 
         await emailSender.SendConfirmationLinkAsync(user, user.Email!, confirmLink);
 
         await signIn.SignInAsync(user, isPersistent: true);
-        return LocalRedirect(ReturnUrl ?? "/");
+        return LocalRedirect(ReturnUrl ?? "/dashboard");
     }
 }

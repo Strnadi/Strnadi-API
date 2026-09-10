@@ -45,6 +45,6 @@ public class LoginModel(SignInManager<User> signIn, UserManager<User> users, ISt
             return Page();
         }
 
-        return LocalRedirect(ReturnUrl ?? "/");
+        return LocalRedirect(ReturnUrl ?? "/dashboard");
     }
 }

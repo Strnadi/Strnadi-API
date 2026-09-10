@@ -79,4 +79,39 @@
   <data name="InvalidOrExpiredResetLink" xml:space="preserve">
     <value>Neplatný nebo vypršelý odkaz pro obnovení hesla.</value>
   </data>
+
+  <!-- Dashboard -->
+  <data name="MyAccount" xml:space="preserve">
+    <value>Můj účet</value>
+  </data>
+  <data name="Users" xml:space="preserve">
+    <value>Uživatelé</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Projekty</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Odhlásit se</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>Uživatelské jméno</value>
+  </data>
+  <data name="City" xml:space="preserve">
+    <value>Město</value>
+  </data>
+  <data name="PostCode" xml:space="preserve">
+    <value>PSČ</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Uložit</value>
+  </data>
+  <data name="ComingSoon" xml:space="preserve">
+    <value>Tato část připravujeme.</value>
+  </data>
+  <data name="YourRoles" xml:space="preserve">
+    <value>Vaše role</value>
+  </data>
+  <data name="NoProjects" xml:space="preserve">
+    <value>Zatím nemáte roli v žádném projektu.</value>
+  </data>
 </root>

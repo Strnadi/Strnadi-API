@@ -1,0 +1,21 @@
+@page "/dashboard/projects/{id:guid}"
+@model Administration.Api.Pages.Dashboard.Projects.DetailsModel
+@{
+    ViewData["Title"] = Model.Project.Name;
+}
+
+<h1>@Model.Project.Name</h1>
+
+<div class="ss-stack">
+    <div class="ss-card">
+        <h2>@L["YourRoles"]</h2>
+        @foreach (var role in Model.RoleNames)
+        {
+            <span class="ss-badge">@role</span>
+        }
+    </div>
+
+    <div class="ss-card">
+        <p>@L["ComingSoon"]</p>
+    </div>
+</div>

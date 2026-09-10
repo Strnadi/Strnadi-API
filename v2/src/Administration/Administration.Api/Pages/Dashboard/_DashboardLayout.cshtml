@@ -1,0 +1,37 @@
+@model Administration.Api.Pages.Dashboard.DashboardPageModel
+@{
+    Layout = "_Layout";
+    var path = Context.Request.Path;
+}
+<div class="ss-sidebar">
+    <div class="ss-sidebar__brand">Strnadi</div>
+    <nav class="ss-sidebar__nav">
+        <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard") && !path.StartsWithSegments("/dashboard/users") && !path.StartsWithSegments("/dashboard/projects") ? " ss-sidebar__link--active" : "")"
+           href="/dashboard">@L["MyAccount"]</a>
+        @if (Model.IsAdmin)
+        {
+            <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard/users") ? " ss-sidebar__link--active" : "")"
+               href="/dashboard/users">@L["Users"]</a>
+        }
+        @if (Model.Projects.Count > 0)
+        {
+            <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard/projects") ? " ss-sidebar__link--active" : "")"
+               href="/dashboard/projects">@L["Projects"]</a>
+        }
+    </nav>
+</div>
+<header class="ss-topbar">
+    <div class="ss-topbar__title">@ViewData["Title"]</div>
+    <div class="ss-topbar__user">
+        <span>@Model.CurrentUser.FirstName @Model.CurrentUser.LastName</span>
+        <a href="/dashboard">@L["MyAccount"]</a>
+        <form method="post" action="/account/sign-out">
+            <button type="submit" class="ss-btn ss-btn--ghost ss-btn--sm">@L["Logout"]</button>
+        </form>
+    </div>
+</header>
+<main class="ss-admin-content">
+    <div class="ss-admin-content__inner">
+        @RenderBody()
+    </div>
+</main>
