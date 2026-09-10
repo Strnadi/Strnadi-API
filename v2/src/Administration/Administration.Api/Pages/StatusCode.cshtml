@@ -1,0 +1,14 @@
+@page "/error/{code:int}"
+@model Administration.Api.Pages.StatusCodeModel
+@{
+    ViewData["Title"] = Model.Code.ToString();
+}
+
+<div class="ss-auth-shell">
+    <div class="ss-auth-wordmark">Strnadi</div>
+    <div class="ss-card ss-auth-card">
+        <h1>@Model.Code</h1>
+        <p>@(Model.Code == 404 ? L["PageNotFound"] : L["SomethingWentWrong"])</p>
+        <a class="ss-btn ss-btn--primary" href="/dashboard">@L["BackToHome"]</a>
+    </div>
+</div>

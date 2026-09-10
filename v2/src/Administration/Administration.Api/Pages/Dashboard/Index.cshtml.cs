@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Administration.Api.Pages.Dashboard;
 
-public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions)
-    : DashboardPageModel(users, db, permissions)
+public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions, ILogger<DashboardPageModel> logger)
+    : DashboardPageModel(users, db, permissions, logger)
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();

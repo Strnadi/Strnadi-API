@@ -5,6 +5,7 @@ using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,11 @@ namespace Administration.Api.Pages.Dashboard;
 public record ProjectSummary(Guid Id, string Name);
 
 [Authorize]
-public abstract class DashboardPageModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions) : PageModel
+public abstract class DashboardPageModel(
+    UserManager<User> users,
+    AdminDbContext db,
+    IUserPermissionsRepository permissions,
+    ILogger<DashboardPageModel> logger) : PageModel
 {
     public User CurrentUser { get; private set; } = null!;
     public bool CanManageUsers { get; private set; }
@@ -23,6 +28,17 @@ public abstract class DashboardPageModel(UserManager<User> users, AdminDbContext
 
     protected AdminDbContext Db => db;
     protected UserManager<User> Users => users;
+    protected ILogger<DashboardPageModel> Logger => logger;
+
+    protected IActionResult RequirePermission(bool granted, string permission)
+    {
+        if (granted)
+            return Page();
+
+        logger.LogWarning("Denied user {UserId} access to {Path} - missing permission {Permission}",
+            CurrentUser.Id, Request.Path, permission);
+        return RedirectToPage("/Dashboard/AccessDenied");
+    }
 
     public override async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
     {

@@ -182,6 +182,10 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
+app.UseWhen(
+    context => context.Request.Headers.Accept.Any(a => a is not null && a.Contains("text/html")),
+    branch => branch.UseStatusCodePagesWithReExecute("/error/{0}"));
+
 using (var scope = app.Services.CreateScope())
     await SyncOpenIddictClientAsync(scope.ServiceProvider);
 

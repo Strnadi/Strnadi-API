@@ -114,4 +114,19 @@
   <data name="NoProjects" xml:space="preserve">
     <value>Zatím nemáte roli v žádném projektu.</value>
   </data>
+  <data name="AccessDenied" xml:space="preserve">
+    <value>Přístup odepřen</value>
+  </data>
+  <data name="AccessDeniedMessage" xml:space="preserve">
+    <value>Nemáte oprávnění zobrazit tuto stránku.</value>
+  </data>
+  <data name="PageNotFound" xml:space="preserve">
+    <value>Stránka nebyla nalezena.</value>
+  </data>
+  <data name="SomethingWentWrong" xml:space="preserve">
+    <value>Něco se pokazilo.</value>
+  </data>
+  <data name="BackToHome" xml:space="preserve">
+    <value>Zpět na úvod</value>
+  </data>
 </root>

@@ -1,3 +1,4 @@
+using Administration.Domain.Authorization;
 using Administration.Domain.Entities;
 using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
@@ -6,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Administration.Api.Pages.Dashboard;
 
-public class UsersModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions)
-    : DashboardPageModel(users, db, permissions)
+public class UsersModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions, ILogger<DashboardPageModel> logger)
+    : DashboardPageModel(users, db, permissions, logger)
 {
-    public IActionResult OnGet() => CanManageUsers ? Page() : NotFound();
+    public IActionResult OnGet() => RequirePermission(CanManageUsers, Permissions.ManageUsers);
 }
