@@ -20,7 +20,8 @@ public class AccountController(
     SignInManager<User> signIn,
     IEmailSender<User> emailSender,
     IFileStorage fileStorage,
-    AdminDbContext db) : Controller
+    AdminDbContext db,
+    ILogger<AccountController> logger) : Controller
 {
     /// <summary>Confirms a user's email using the token from the confirmation link.</summary>
     [HttpGet("confirm-email")]
@@ -28,10 +29,20 @@ public class AccountController(
     {
         var user = await users.FindByIdAsync(userId.ToString());
         if (user is null)
+        {
+            logger.LogWarning("Email confirmation failed: user {UserId} not found", userId);
             return NotFound();
+        }
 
         var result = await users.ConfirmEmailAsync(user, token);
-        return result.Succeeded ? Ok() : BadRequest(result.Errors);
+        if (!result.Succeeded)
+        {
+            logger.LogWarning("Email confirmation failed for user {UserId}: {Errors}", user.Id, result.Errors);
+            return BadRequest(result.Errors);
+        }
+
+        logger.LogInformation("Confirmed email for user {UserId}", user.Id);
+        return Ok();
     }
 
     /// <summary>Resends the email confirmation link for the given email, if it belongs to a user.</summary>
@@ -47,6 +58,7 @@ public class AccountController(
             $"?userId={user.Id}&token={Uri.EscapeDataString(token)}";
 
         await emailSender.SendConfirmationLinkAsync(user, user.Email!, confirmLink);
+        logger.LogInformation("Resent confirmation email to user {UserId}", user.Id);
         return Ok();
     }
 
@@ -63,6 +75,7 @@ public class AccountController(
             $"?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}";
 
         await emailSender.SendPasswordResetLinkAsync(user, user.Email!, resetLink);
+        logger.LogInformation("Sent password reset email to user {UserId}", user.Id);
         return Ok();
     }
 
@@ -80,7 +93,14 @@ public class AccountController(
             return Unauthorized();
 
         var result = await users.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
-        return result.Succeeded ? Ok() : BadRequest(result.Errors);
+        if (!result.Succeeded)
+        {
+            logger.LogWarning("Password change failed for user {UserId}: {Errors}", user.Id, result.Errors);
+            return BadRequest(result.Errors);
+        }
+
+        logger.LogInformation("Changed password for user {UserId}", user.Id);
+        return Ok();
     }
 
     /// <summary>Deletes the caller's own account.</summary>
@@ -94,9 +114,13 @@ public class AccountController(
 
         var result = await users.DeleteAsync(user);
         if (!result.Succeeded)
+        {
+            logger.LogWarning("Account deletion failed for user {UserId}: {Errors}", user.Id, result.Errors);
             return BadRequest(result.Errors);
+        }
 
         await signIn.SignOutAsync();
+        logger.LogInformation("Deleted account for user {UserId}", user.Id);
         return Ok();
     }
 
@@ -115,23 +139,38 @@ public class AccountController(
     {
         var info = await signIn.GetExternalLoginInfoAsync();
         if (info is null)
+        {
+            logger.LogWarning("External login callback failed: no external login info");
             return Unauthorized();
+        }
 
         var result = await signIn.ExternalLoginSignInAsync(
             info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
 
         if (result.Succeeded)
+        {
+            logger.LogInformation("Signed in via external login provider {Provider}", info.LoginProvider);
             return LocalRedirect(returnUrl ?? "/dashboard");
+        }
 
         if (result.IsLockedOut || result.IsNotAllowed)
+        {
+            logger.LogWarning("External login denied for provider {Provider}: account locked out or not allowed", info.LoginProvider);
             return Forbid();
+        }
 
         var email = info.Principal.FindFirstValue(ClaimTypes.Email);
         if (email is null)
+        {
+            logger.LogWarning("External login failed: provider {Provider} did not return an email", info.LoginProvider);
             return BadRequest("External provider did not return an email");
+        }
 
         if (info.Principal.FindFirstValue("email_verified") is "false")
+        {
+            logger.LogWarning("External login failed: provider {Provider} did not verify the email", info.LoginProvider);
             return BadRequest("External provider did not verify this email");
+        }
 
         var user = await users.FindByEmailAsync(email);
         if (user is null)
@@ -148,14 +187,23 @@ public class AccountController(
 
             var createResult = await users.CreateAsync(user);
             if (!createResult.Succeeded)
+            {
+                logger.LogWarning("External login failed: could not create user for provider {Provider}: {Errors}",
+                    info.LoginProvider, createResult.Errors);
                 return BadRequest(createResult.Errors);
+            }
         }
 
         var addLoginResult = await users.AddLoginAsync(user, info);
         if (!addLoginResult.Succeeded)
+        {
+            logger.LogWarning("External login failed: could not link provider {Provider} to user {UserId}: {Errors}",
+                info.LoginProvider, user.Id, addLoginResult.Errors);
             return BadRequest(addLoginResult.Errors);
+        }
 
         await signIn.SignInAsync(user, isPersistent: true);
+        logger.LogInformation("Created and signed in user {UserId} via external login provider {Provider}", user.Id, info.LoginProvider);
         return LocalRedirect(returnUrl ?? "/dashboard");
     }
 
@@ -198,7 +246,11 @@ public class AccountController(
         {
             var userNameResult = await users.SetUserNameAsync(user, request.UserName);
             if (!userNameResult.Succeeded)
+            {
+                logger.LogWarning("Profile update failed for user {UserId}: could not set username: {Errors}",
+                    user.Id, userNameResult.Errors);
                 return BadRequest(userNameResult.Errors);
+            }
         }
 
         user.FirstName = request.FirstName;
@@ -208,8 +260,12 @@ public class AccountController(
 
         var result = await users.UpdateAsync(user);
         if (!result.Succeeded)
+        {
+            logger.LogWarning("Profile update failed for user {UserId}: {Errors}", user.Id, result.Errors);
             return BadRequest(result.Errors);
+        }
 
+        logger.LogInformation("Updated profile for user {UserId}", user.Id);
         var roles = await GetCurrentProjectRolesAsync(user.Id);
         return Ok(new UserProfileResponse(user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.City, user.PostCode, roles));
     }
@@ -231,7 +287,14 @@ public class AccountController(
         user.ProfilePhotoFormat = request.Format;
 
         var result = await users.UpdateAsync(user);
-        return result.Succeeded ? Ok() : BadRequest(result.Errors);
+        if (!result.Succeeded)
+        {
+            logger.LogWarning("Profile photo upload failed for user {UserId}: {Errors}", user.Id, result.Errors);
+            return BadRequest(result.Errors);
+        }
+
+        logger.LogInformation("Updated profile photo for user {UserId}", user.Id);
+        return Ok();
     }
 
     /// <summary>Signs the caller out of the cookie session.</summary>
@@ -239,7 +302,9 @@ public class AccountController(
     [HttpPost("logout")]
     public async Task<IActionResult> LogoutAsync()
     {
+        var userId = User.FindFirstValue(Claims.Subject) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
         await signIn.SignOutAsync();
+        logger.LogInformation("Signed out user {UserId}", userId);
         return Ok();
     }
 

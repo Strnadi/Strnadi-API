@@ -17,7 +17,7 @@ namespace Administration.Api.Controllers;
 
 [ApiController]
 [Route("connect")]
-public class AuthorizationController(UserManager<User> users, AdminDbContext db) : ControllerBase
+public class AuthorizationController(UserManager<User> users, AdminDbContext db, ILogger<AuthorizationController> logger) : ControllerBase
 {
     [HttpGet("authorize"), HttpPost("authorize"), IgnoreAntiforgeryToken]
     public async Task<IActionResult> AuthorizeAsync(
@@ -41,7 +41,10 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
 
         var user = await users.FindByIdAsync(authResult.Principal!.FindFirstValue(ClaimTypes.NameIdentifier)!);
         if (user is null)
+        {
+            logger.LogWarning("Authorization request failed: authenticated principal has no matching user");
             return Forbid(IdentityConstants.ApplicationScheme);
+        }
 
         var identity = new ClaimsIdentity(
             TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
@@ -54,6 +57,7 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
         identity.SetScopes(request.GetScopes());
         identity.SetDestinations(GetDestinations);
 
+        logger.LogInformation("Issued authorization code to user {UserId} for client {ClientId}", user.Id, clientId);
         return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
@@ -67,16 +71,21 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
         {
             var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             var userId = result.Principal!.GetClaim(Claims.Subject)!;
-            
+
             if (request.IsRefreshTokenGrantType() && !await users.IsActiveAsync(userId))
+            {
+                logger.LogWarning("Token refresh denied for inactive user {UserId}", userId);
                 return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            
+            }
+
+            logger.LogInformation("Issued {GrantType} token for user {UserId}", request.GrantType, userId);
             return SignIn(result.Principal!, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         if (request.IsTokenExchangeGrantType())
             return await ExchangeForProjectTokenAsync(request);
 
+        logger.LogWarning("Token request failed: unsupported grant type {GrantType}", request.GrantType);
         return BadRequest(new OpenIddictResponse
         {
             Error = Errors.UnsupportedGrantType
@@ -90,7 +99,10 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
         var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
         if (!result.Succeeded)
+        {
+            logger.LogWarning("Userinfo request failed: unauthenticated");
             return Challenge(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
 
         var claims = new Dictionary<string, object>
         {
@@ -110,7 +122,9 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
     [Route("logout")]
     public async Task<IActionResult> LogoutAsync([FromQuery(Name = "redirect_uri")] string? redirectUri)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        logger.LogInformation("Ended OpenIddict session for user {UserId}", userId);
 
         return SignOut(
             new AuthenticationProperties
@@ -123,13 +137,19 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
     {
         var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         if (!result.Succeeded)
+        {
+            logger.LogWarning("Project token exchange failed: unauthenticated");
             return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
 
         var userId = Guid.Parse(result.Principal!.GetClaim(Claims.Subject)!);
         var projectId = Guid.Parse(request.GetParameter("project_id")!.ToString()!);
-        
+
         if (!await db.ProjectMemberships.AnyAsync(m => m.UserId == userId && m.ProjectId == projectId))
+        {
+            logger.LogWarning("Project token exchange denied: user {UserId} is not a member of project {ProjectId}", userId, projectId);
             return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
 
         var roles = await db.UserRoles
             .Where(ur => ur.UserId == userId)
@@ -150,7 +170,8 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db)
         identity.SetClaims("permission", permissions.ToImmutableArray());
         identity.SetAudiences($"project:{projectId}");
         identity.SetDestinations(GetDestinations);
-        
+
+        logger.LogInformation("Issued project-scoped token for user {UserId}, project {ProjectId}", userId, projectId);
         return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
