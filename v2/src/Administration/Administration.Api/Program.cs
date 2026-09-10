@@ -68,9 +68,6 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddCookie(IdentityConstants.ApplicationScheme, options =>
     {
         options.LoginPath = "/account/login";
-        // Force a plain redirect here - something in the pipeline (possibly interaction with
-        // .AddValidation() below, registering its own Bearer scheme) was turning this into a
-        // bare 401 with a Location header instead of an actual 302 the browser follows.
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.Redirect(context.RedirectUri);
@@ -94,8 +91,6 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     });
 
 builder.Services.AddAuthorizationBuilder()
-    // Accepts either the Identity cookie (web) or an OpenIddict-issued Bearer access token
-    // (mobile) - AccountController's own mutation endpoints need both callers to work.
     .AddPolicy("AccountMutation", policy => policy
         .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme, OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
         .RequireAuthenticatedUser());

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Administration.Api.Pages.Account;
 
-public class LoginModel(SignInManager<User> signIn) : PageModel
+public class LoginModel(SignInManager<User> signIn, UserManager<User> users) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
@@ -32,8 +32,10 @@ public class LoginModel(SignInManager<User> signIn) : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        var result = await signIn.PasswordSignInAsync(
-            Input.Email, Input.Password, isPersistent: true, lockoutOnFailure: true);
+        var user = await users.FindByEmailAsync(Input.Email);
+        var result = user is null
+            ? Microsoft.AspNetCore.Identity.SignInResult.Failed
+            : await signIn.PasswordSignInAsync(user, Input.Password, isPersistent: true, lockoutOnFailure: true);
 
         if (!result.Succeeded)
         {
