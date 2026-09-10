@@ -242,7 +242,7 @@ a {
   flex: 1;
   min-width: 0;
 }
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .ss-field-row {
     flex-direction: column;
     gap: 0;
@@ -281,6 +281,11 @@ a {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   padding: var(--space-6);
+}
+@media (max-width: 480px) {
+  .ss-card {
+    padding: var(--space-4);
+  }
 }
 
 /* ---------- Badges ---------- */
@@ -349,6 +354,12 @@ a {
   color: var(--color-primary);
   background: var(--color-primary-subtle);
 }
+@media (max-width: 480px) {
+  .ss-lang-switch {
+    top: var(--space-2);
+    right: var(--space-2);
+  }
+}
 
 /* ---------- Auth layout ---------- */
 
@@ -360,6 +371,12 @@ a {
   justify-content: center;
   gap: var(--space-6);
   padding: var(--space-6);
+}
+@media (max-width: 480px) {
+  .ss-auth-shell {
+    padding: var(--space-4);
+    gap: var(--space-4);
+  }
 }
 
 .ss-auth-wordmark {
@@ -382,6 +399,12 @@ a {
 .ss-auth-card h1 {
   font-size: var(--font-size-2xl);
   margin-bottom: var(--space-5);
+}
+@media (max-width: 480px) {
+  .ss-auth-card h1 {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-4);
+  }
 }
 
 .ss-auth-divider {

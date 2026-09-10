@@ -170,7 +170,7 @@ one place accent color is used as a border, not just for small highlights. Inval
 `--color-danger`.
 
 `.ss-field-row` pairs two `.ss-field` side by side (flex, `--space-4` gap, collapses to a single
-column under 480px) — use it to shorten a tall form instead of stacking every field full-width
+column under 600px, before the paired inputs get cramped) — use it to shorten a tall form instead of stacking every field full-width
 (e.g. first/last name, password/confirm on Register). Don't pair fields that need the full width
 for their content or error text (email, anything with a long validation message).
 

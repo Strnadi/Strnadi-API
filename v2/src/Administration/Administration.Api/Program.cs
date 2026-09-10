@@ -138,9 +138,11 @@ builder.Services.AddOpenIddict()
     });
 
 builder.Services.AddControllers();
-builder.Services.AddLocalization(o => o.ResourcesPath = "Resources");
+// No ResourcesPath here: SharedResource already lives in the Resources/ folder/namespace, so its
+// resx base name is "Administration.Api.Resources.SharedResource" already. Setting ResourcesPath
+// would prepend "Resources." a second time and the localizer would never find a match.
+builder.Services.AddLocalization();
 builder.Services.AddRazorPages()
-    .AddViewLocalization()
     .AddDataAnnotationsLocalization(o =>
         o.DataAnnotationLocalizerProvider = (_, factory) => factory.Create(typeof(SharedResource)));
 builder.Services.AddOpenApi();
