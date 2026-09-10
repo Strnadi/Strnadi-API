@@ -13,5 +13,7 @@ public class Project
     public string Domain { get; set; }
     
     public ProjectState State { get; set; } 
+    
+    public string? PhotoPath { get; set; }
 }
 

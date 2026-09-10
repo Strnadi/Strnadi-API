@@ -31,6 +31,8 @@ public static class InfrastructureExtensions
             serviceCollection.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
             serviceCollection.AddSingleton<IEncryptionSettings, EncryptionSettings>();
 
+            serviceCollection.AddMemoryCache();
+
             serviceCollection.AddSingleton<IFileStorage, LocalStorage>();
             // Singleton is required, not just convenient: TenantDbContext bakes the converter
             // instance into the EF model, which EF builds once and caches for the app's lifetime.

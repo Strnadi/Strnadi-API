@@ -17,6 +17,7 @@ public static class ApplicationExtensions
         public IServiceCollection AddApplication()
         {
             serviceCollection.AddScoped<NotificationsService>();
+            serviceCollection.AddSingleton<ClusterSnapshotStore>();
             serviceCollection.AddScoped<MapClustersService>();
             serviceCollection.AddScoped<DevicesService>();
             serviceCollection.AddScoped<AchievementsService>();

@@ -2,32 +2,62 @@ using Tenant.Domain.Persistence.Repositories;
 
 namespace Tenant.Application.Maps;
 
-public record MapClustersResult(MapBounds Bounds, int ClusterResolutionPx, double DetailZoomThreshold, MapCluster[] Clusters);
-
 public record Coords(double Latitude, double Longitude);
 
-public record MapCluster(
-    string Id,
-    Coords Center,
-    int Count,
-    int RadiusPx,
-    bool Expandable,
-    bool Leaf,
-    MapDialectBreakdown[] Dialects,
-    MapClusterItem[]? Items);
+public record MapClustersResult(
+    MapBounds Bounds,
+    bool Clustered,
+    double? ClusterDistanceMeters,
+    int VisibleRecordingCount,
+    object[] Features);
 
-public record MapDialectBreakdown(
-    int? DialectId, 
-    string Key,
-    string Label,
-    int Count,
-    double Ratio);
+public record DialectAggregate(
+    int Id,
+    string DialectCode,
+    string Color,
+    int HintOrder,
+    bool IsDialect,
+    int ContributionCount,
+    double Percentage);
 
-public record MapClusterItem(
+public record RecordingFeature(
     int RecordingId,
-    int PartId,
-    Coords Location,
+    int? RepresentativePartId,
+    int LocationPartId,
+    string LocationSource,
+    double Latitude,
+    double Longitude,
+    string? Name,
     DateTime CreatedAt,
-    int? DialectId,
-    string? DialectLabel,
+    DialectAggregate[] Dialects,
+    string Source)
+{
+    public string Kind => "recording";
+}
+
+public record ClusterItem(
+    int RecordingId,
+    int? RepresentativePartId,
+    int LocationPartId,
+    string LocationSource,
+    string? Name,
+    DateTime CreatedAt,
+    Coords Position,
     string Source);
+
+public record ClusterFeature(
+    string Id,
+    double Latitude,
+    double Longitude,
+    MapBounds Bounds,
+    int Count,
+    DialectAggregate[] Dialects,
+    string Source,
+    ClusterItem[] Items,
+    bool HasMoreItems,
+    string? NextItemsCursor)
+{
+    public string Kind => "cluster";
+}
+
+public record ClusterItemsPage(string ClusterId, int Count, ClusterItem[] Items, bool HasMoreItems, string? NextItemsCursor);

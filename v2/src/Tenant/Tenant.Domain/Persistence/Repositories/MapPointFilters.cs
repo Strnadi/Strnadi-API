@@ -1,7 +1,12 @@
 namespace Tenant.Domain.Persistence.Repositories;
 
-// Note: no DialectMode here on purpose. The repository always returns all three dialect id tiers
-// (confirmed/predicted/user-guess) for a point; picking which one is "the" dialect per dialectMode
-// is a display concern, not a row-filtering concern, so it belongs to Application (MapClustersService),
-// not this query.
-public record MapPointFilters(bool Verified, Guid? UserId, DateOnly? CreatedFrom, DateOnly? CreatedTo);
+public enum OwnerScope { All, Mine, Others }
+
+// Row-filtering concerns only (who/when). Dialect-tier selection and the meaningful-dialect
+// filters are display/aggregation concerns decided later in Application (RecordingPointResolver),
+// since they depend on DialectMode and on resolving each recording's winning dialect first.
+public record MapRecordingFilters(
+    OwnerScope OwnerScope,
+    Guid? UserId,
+    DateOnly? CreatedFrom,
+    DateOnly? CreatedTo);
