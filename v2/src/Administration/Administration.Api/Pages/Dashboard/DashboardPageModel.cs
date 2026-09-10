@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using Administration.Domain.Authorization;
 using Administration.Domain.Entities;
+using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,10 +14,11 @@ namespace Administration.Api.Pages.Dashboard;
 public record ProjectSummary(Guid Id, string Name);
 
 [Authorize]
-public abstract class DashboardPageModel(UserManager<User> users, AdminDbContext db) : PageModel
+public abstract class DashboardPageModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions) : PageModel
 {
     public User CurrentUser { get; private set; } = null!;
-    public bool IsAdmin { get; private set; }
+    public bool CanManageUsers { get; private set; }
+    public bool CanManageProjects { get; private set; }
     public IReadOnlyList<ProjectSummary> Projects { get; private set; } = [];
 
     protected AdminDbContext Db => db;
@@ -32,12 +35,8 @@ public abstract class DashboardPageModel(UserManager<User> users, AdminDbContext
         }
 
         CurrentUser = user;
-
-        var roleNames = await db.UserRoles
-            .Where(ur => ur.UserId == user.Id)
-            .Join(db.Roles, ur => ur.RoleId, r => r.Id, (_, r) => r.Name)
-            .ToListAsync();
-        IsAdmin = roleNames.Contains("admin");
+        CanManageUsers = await permissions.HasPermissionAsync(user.Id, Permissions.ManageUsers);
+        CanManageProjects = await permissions.HasPermissionAsync(user.Id, Permissions.ManageProjects);
 
         Projects = await db.UserRoles
             .Where(ur => ur.UserId == user.Id)

@@ -1,12 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using Administration.Domain.Entities;
+using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Administration.Api.Pages.Dashboard;
 
-public class IndexModel(UserManager<User> users, AdminDbContext db) : DashboardPageModel(users, db)
+public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions)
+    : DashboardPageModel(users, db, permissions)
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();

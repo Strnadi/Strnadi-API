@@ -1,4 +1,5 @@
 using Administration.Domain.Entities;
+using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Administration.Api.Pages.Dashboard.Projects;
 
-public class DetailsModel(UserManager<User> users, AdminDbContext db) : DashboardPageModel(users, db)
+public class DetailsModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions)
+    : DashboardPageModel(users, db, permissions)
 {
     public Project Project { get; private set; } = null!;
     public IReadOnlyList<string> RoleNames { get; private set; } = [];

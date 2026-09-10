@@ -6,11 +6,13 @@ using Administration.Api.Logging;
 using Administration.Api.Resources;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
+using Administration.Domain.Persistence.Repositories;
 using Administration.Domain.Services;
 using Administration.Infrastructure.Configuration;
 using Administration.Infrastructure.Email;
 using Administration.Infrastructure.Identity;
 using Administration.Infrastructure.Persistence;
+using Administration.Infrastructure.Persistence.Repositories;
 using Administration.Infrastructure.Security;
 using Administration.Infrastructure.Storage;
 using Microsoft.AspNetCore.Diagnostics;
@@ -54,6 +56,8 @@ builder.Services.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
 builder.Services.AddSingleton<IFileStorage, LocalStorage>();
 
 builder.Services.AddSingleton<IScalarSettings, ScalarSettings>();
+
+builder.Services.AddScoped<IUserPermissionsRepository, UserPermissionsRepository>();
 
 builder.Services.AddIdentityCore<User>(o => o.User.RequireUniqueEmail = true)
     .AddRoles<Role>()

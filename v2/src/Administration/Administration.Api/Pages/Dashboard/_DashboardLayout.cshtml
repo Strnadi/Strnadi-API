@@ -8,12 +8,12 @@
     <nav class="ss-sidebar__nav">
         <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard") && !path.StartsWithSegments("/dashboard/users") && !path.StartsWithSegments("/dashboard/projects") ? " ss-sidebar__link--active" : "")"
            href="/dashboard">@L["MyAccount"]</a>
-        @if (Model.IsAdmin)
+        @if (Model.CanManageUsers)
         {
             <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard/users") ? " ss-sidebar__link--active" : "")"
                href="/dashboard/users">@L["Users"]</a>
         }
-        @if (Model.Projects.Count > 0)
+        @if (Model.CanManageProjects)
         {
             <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard/projects") ? " ss-sidebar__link--active" : "")"
                href="/dashboard/projects">@L["Projects"]</a>
