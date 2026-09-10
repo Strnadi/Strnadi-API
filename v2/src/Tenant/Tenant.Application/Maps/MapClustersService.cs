@@ -20,7 +20,7 @@ public class MapClustersService(IMapPointsRepository mapPoints, IDialectsReposit
 
         var catalog = await dialects.GetAllAsync(cancellationToken);
         var dialectsById = catalog.ToDictionary(d => d.Id);
-        var unknown = catalog.FirstOrDefault(d => d.DialectCode == "unknown")
+        var unknown = catalog.FirstOrDefault(d => d.DialectCode == "Unknown")
             ?? throw new CatalogInconsistentException("Dialect catalog is missing the 'unknown' row required for map-clusters fallbacks.");
 
         var filters = new MapRecordingFilters(query.OwnerScope, query.UserId, query.CreatedFrom, query.CreatedTo);

@@ -11,7 +11,7 @@ public class ArticleCategoriesController(ArticleCategoriesService categoriesServ
 {
     /// <summary>All article categories, optionally with their articles.</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(ArticleCategory[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ArticleCategoryResponse[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAsync([FromQuery] bool articles, CancellationToken cancellationToken)
     {
         return Ok(await categoriesService.GetAllAsync(articles, cancellationToken));

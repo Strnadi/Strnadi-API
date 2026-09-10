@@ -6,7 +6,7 @@ namespace Tenant.Api.Controllers;
 
 [ApiController]
 [Route("recordings/map-clusters")]
-public class MapClustersController(MapClustersService mapClusters) : ControllerBase
+public class MapClustersController(MapClustersService mapClusters, ILogger<MapClustersController> logger) : ControllerBase
 {
     private const double MaxLatitude = 85.05112878;
 
@@ -131,6 +131,7 @@ public class MapClustersController(MapClustersService mapClusters) : ControllerB
         }
         catch (CatalogInconsistentException ex)
         {
+            logger.LogError(ex, "map-clusters catalog inconsistency: {Message}", ex.Message);
             return Error(500, "catalog_inconsistent", ex.Message);
         }
     }

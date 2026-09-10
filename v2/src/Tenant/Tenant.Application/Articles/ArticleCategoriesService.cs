@@ -7,8 +7,22 @@ namespace Tenant.Application.Articles;
 
 public class ArticleCategoriesService(IArticleCategoriesRepository categories, IUnitOfWork unitOfWork)
 {
-    public Task<ArticleCategory[]> GetAllAsync(bool includeArticles, CancellationToken cancellationToken = default) =>
-        categories.GetAllAsync(includeArticles, cancellationToken);
+    public async Task<ArticleCategoryResponse[]> GetAllAsync(bool includeArticles, CancellationToken cancellationToken = default)
+    {
+        var result = await categories.GetAllAsync(includeArticles, cancellationToken);
+
+        return result.Select(c => new ArticleCategoryResponse(
+            c.Id,
+            c.Label,
+            c.Name,
+            c.Order,
+            includeArticles
+                ? c.ArticleCategoryAssignments
+                    .OrderBy(a => a.Order)
+                    .Select(a => new ArticleSummaryResponse(a.Article.Id, a.Article.Name, a.Article.Description))
+                    .ToArray()
+                : null)).ToArray();
+    }
 
     public async Task<int> CreateAsync(ArticleCategoryUploadRequest request, CancellationToken cancellationToken = default)
     {
