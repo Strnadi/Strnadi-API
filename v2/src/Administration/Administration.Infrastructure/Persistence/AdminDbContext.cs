@@ -62,6 +62,7 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
 
             entity.Property(p => p.Domain).HasMaxLength(256);
             entity.HasIndex(p => p.Domain).IsUnique();
+            entity.Property(p => p.PhotoPath).HasMaxLength(512);
         });
 
         modelBuilder.Entity<ProjectMembership>(entity =>
