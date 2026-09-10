@@ -80,6 +80,11 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
             return Task.CompletedTask;
         };
     })
+    .AddCookie(IdentityConstants.ExternalScheme, options =>
+    {
+        options.Cookie.Name = IdentityConstants.ExternalScheme;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+    })
     .AddGoogle(options =>
     {
         options.ClientId = googleAuthSettings.ClientId;
