@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Administration.Api.ExceptionHandling;
 using Administration.Api.Logging;
 using Administration.Api.Resources;
 using Administration.Domain.Configuration;
@@ -24,8 +25,6 @@ using ServiceDefaults;
 
 const string clientId = "strnadi-app";
 
-// Czech is the primary/default audience (strnadi.cz); English is the only other supported UI
-// language for now. Keep in sync with Resources/SharedResource*.resx culture suffixes.
 string[] supportedCultures = ["cs", "en"];
 
 var builder = WebApplication.CreateBuilder(args);
@@ -142,10 +141,10 @@ builder.Services.AddOpenIddict()
         o.UseAspNetCore();
     });
 
+builder.Services.AddExceptionHandler<DomainExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddControllers();
-// No ResourcesPath here: SharedResource already lives in the Resources/ folder/namespace, so its
-// resx base name is "Administration.Api.Resources.SharedResource" already. Setting ResourcesPath
-// would prepend "Resources." a second time and the localizer would never find a match.
 builder.Services.AddLocalization();
 builder.Services.AddRazorPages()
     .AddDataAnnotationsLocalization(o =>
@@ -157,6 +156,7 @@ builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
 app.UseForwardedHeaders();
+app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
     await SyncOpenIddictClientAsync(scope.ServiceProvider);
