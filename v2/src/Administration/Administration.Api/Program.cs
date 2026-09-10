@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Administration.Api.ExceptionHandling;
 using Administration.Api.Logging;
 using Administration.Api.Resources;
 using Administration.Domain.Configuration;
@@ -157,6 +158,25 @@ builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
 app.UseForwardedHeaders();
+
+// Guarantees a single greppable ERROR line (with method+path) for every unhandled exception,
+// regardless of where in the pipeline it came from - don't rely on framework default logging
+// being visible/unfiltered. This is what turns into the response the client saw as a bare 500.
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerPathFeature>()?.Error;
+        if (exception is not null)
+        {
+            context.RequestServices.GetRequiredService<ILogger<Program>>().LogError(
+                exception, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        return Task.CompletedTask;
+    });
+});
 
 using (var scope = app.Services.CreateScope())
     await SyncOpenIddictClientAsync(scope.ServiceProvider);
