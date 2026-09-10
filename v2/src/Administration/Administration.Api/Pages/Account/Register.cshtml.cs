@@ -43,7 +43,7 @@ public class RegisterModel(UserManager<User> users, SignInManager<User> signIn, 
 
         var user = new User
         {
-            UserName = Input.Email,
+            UserName = null,
             Email = Input.Email,
             FirstName = Input.FirstName,
             LastName = Input.LastName,
