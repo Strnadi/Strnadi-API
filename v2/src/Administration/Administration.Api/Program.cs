@@ -10,12 +10,14 @@ using Administration.Infrastructure.Email;
 using Administration.Infrastructure.Identity;
 using Administration.Infrastructure.Persistence;
 using Administration.Infrastructure.Persistence.Repositories;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using Platform.Shared.Infrastructure.Configuration;
@@ -29,6 +31,7 @@ using Scalar.AspNetCore;
 using ServiceDefaults;
 
 const string clientId = "strnadi-app";
+const string projectOriginsCorsPolicy = "ProjectOrigins";
 
 string[] supportedCultures = ["cs", "en"];
 
@@ -62,6 +65,8 @@ builder.Services.AddSingleton<IFileStorage, LocalStorage>();
 builder.Services.AddSingleton<IScalarSettings, ScalarSettings>();
 
 builder.Services.AddScoped<IUserPermissionsRepository, UserPermissionsRepository>();
+
+builder.Services.AddCors();
 
 builder.Services.AddIdentityCore<User>(o => o.User.RequireUniqueEmail = true)
     .AddRoles<Role>()
@@ -170,9 +175,6 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
 
-// Guarantees a single greppable ERROR line (with method+path) for every unhandled exception,
-// regardless of where in the pipeline it came from - don't rely on framework default logging
-// being visible/unfiltered. This is what turns into the response the client saw as a bare 500.
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(context =>
@@ -193,18 +195,25 @@ app.UseWhen(
     context => context.Request.Headers.Accept.Any(a => a is not null && a.Contains("text/html")),
     branch => branch.UseStatusCodePagesWithReExecute("/error/{0}"));
 
-// Explicit, because without it ASP.NET Core implicitly inserts routing at the very start of the
-// pipeline - upstream of UseStatusCodePagesWithReExecute above. A re-executed request (new path,
-// e.g. /error/404) would then have nowhere downstream to re-match against, and would fall through
-// to another blank 404 instead of rendering StatusCode.cshtml.
 app.UseRouting();
+app.UseCors(projectOriginsCorsPolicy);
 
 using (var scope = app.Services.CreateScope())
 {
     if (app.Environment.IsDevelopment())
         await scope.ServiceProvider.GetRequiredService<AdminDbContext>().Database.MigrateAsync();
 
-    await SyncOpenIddictClientAsync(scope.ServiceProvider);
+    var projectDomains = await scope.ServiceProvider.GetRequiredService<AdminDbContext>().Projects
+        .Where(p => p.Domain != null && p.Domain != "")
+        .Select(p => p.Domain)
+        .ToListAsync();
+
+    await SyncOpenIddictClientAsync(scope.ServiceProvider, projectDomains);
+
+    app.Services.GetRequiredService<IOptions<CorsOptions>>().Value.AddPolicy(projectOriginsCorsPolicy, policy =>
+        policy.WithOrigins(projectDomains.Select(d => d.TrimEnd('/')).ToArray())
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 }
 
 if (!app.Environment.IsDevelopment())
@@ -319,15 +328,9 @@ static X509Certificate2 LoadCertificate(IConfiguration configuration, string con
         Convert.FromBase64String(configuration[$"{configSection}:Pfx"]!),
         configuration[$"{configSection}:Password"]);
 
-static async Task SyncOpenIddictClientAsync(IServiceProvider services)
+static async Task SyncOpenIddictClientAsync(IServiceProvider services, IReadOnlyList<string> domains)
 {
     var applicationManager = services.GetRequiredService<IOpenIddictApplicationManager>();
-    var db = services.GetRequiredService<AdminDbContext>();
-
-    var domains = await db.Projects
-        .Where(p => p.Domain != null && p.Domain != "")
-        .Select(p => p.Domain)
-        .ToListAsync();
 
     var descriptor = new OpenIddictApplicationDescriptor
     {
