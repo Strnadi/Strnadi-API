@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Tenant.Infrastructure\Tenant.Infrastructure.csproj" />
     <ProjectReference Include="..\Tenant.Application\Tenant.Application.csproj" />
     <ProjectReference Include="..\..\ServiceDefaults\ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Platform.Shared\Platform.Shared.csproj" />
   </ItemGroup>
 
 </Project>

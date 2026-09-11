@@ -26,8 +26,14 @@
   <data name="LastName" xml:space="preserve">
     <value>Příjmení</value>
   </data>
+  <data name="CurrentPassword" xml:space="preserve">
+    <value>Současné heslo</value>
+  </data>
   <data name="NewPassword" xml:space="preserve">
     <value>Nové heslo</value>
+  </data>
+  <data name="ChangePassword" xml:space="preserve">
+    <value>Změnit heslo</value>
   </data>
   <data name="ConfirmPassword" xml:space="preserve">
     <value>Potvrzení hesla</value>
@@ -107,6 +113,57 @@
   </data>
   <data name="ComingSoon" xml:space="preserve">
     <value>Tato část připravujeme.</value>
+  </data>
+  <data name="NoUsers" xml:space="preserve">
+    <value>Zatím tu nejsou žádní uživatelé.</value>
+  </data>
+  <data name="RegisteredAt" xml:space="preserve">
+    <value>Registrován</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Stav</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Aktivní</value>
+  </data>
+  <data name="Deleted" xml:space="preserve">
+    <value>Smazán</value>
+  </data>
+  <data name="Domain" xml:space="preserve">
+    <value>Doména</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Koncept</value>
+  </data>
+  <data name="Archived" xml:space="preserve">
+    <value>Archivován</value>
+  </data>
+  <data name="Deactivated" xml:space="preserve">
+    <value>Deaktivován</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Název</value>
+  </data>
+  <data name="DomainAlreadyTaken" xml:space="preserve">
+    <value>Tato doména je již použita jiným projektem.</value>
+  </data>
+  <data name="Legacy" xml:space="preserve">
+    <value>Legacy</value>
+  </data>
+  <data name="EmailConfirmed" xml:space="preserve">
+    <value>E-mail ověřen</value>
+  </data>
+  <data name="Confirmed" xml:space="preserve">
+    <value>Ověřen</value>
+  </data>
+  <data name="Unconfirmed" xml:space="preserve">
+    <value>Neověřen</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Upravit</value>
+  </data>
+  <data name="LeaveBlankToKeepPassword" xml:space="preserve">
+    <value>Nechte prázdné, pokud nechcete heslo měnit.</value>
   </data>
   <data name="YourRoles" xml:space="preserve">
     <value>Vaše role</value>

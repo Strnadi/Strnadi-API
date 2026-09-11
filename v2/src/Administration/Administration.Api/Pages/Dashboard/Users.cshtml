@@ -7,5 +7,77 @@
 <h1>@L["Users"]</h1>
 
 <div class="ss-card">
-    <p>@L["ComingSoon"]</p>
+    @if (Model.UserList.Count == 0)
+    {
+        <p>@L["NoUsers"]</p>
+    }
+    else
+    {
+        <table class="ss-table">
+            <thead>
+                <tr>
+                    <th>@L["FirstName"] / @L["LastName"]</th>
+                    @if (Model.CanViewUsersConfidential)
+                    {
+                        <th>@L["Email"]</th>
+                        <th>@L["City"]</th>
+                        <th>@L["PostCode"]</th>
+                    }
+                    <th>@L["RegisteredAt"]</th>
+                    <th>@L["Status"]</th>
+                    <th>@L["Legacy"]</th>
+                    <th>@L["EmailConfirmed"]</th>
+                    @if (Model.CanManageUsers)
+                    {
+                        <th></th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.UserList)
+                {
+                    <tr>
+                        <td>@user.FirstName @user.LastName</td>
+                        @if (Model.CanViewUsersConfidential)
+                        {
+                            <td>@user.Email</td>
+                            <td>@user.City</td>
+                            <td>@user.PostCode</td>
+                        }
+                        <td>@user.CreatedAt.ToString("d")</td>
+                        <td>
+                            @if (user.Deleted)
+                            {
+                                <span class="ss-badge ss-badge--danger">@L["Deleted"]</span>
+                            }
+                            else
+                            {
+                                <span class="ss-badge ss-badge--success">@L["Active"]</span>
+                            }
+                        </td>
+                        <td>
+                            @if (user.Legacy)
+                            {
+                                <span class="ss-badge ss-badge--warning">@L["Legacy"]</span>
+                            }
+                        </td>
+                        <td>
+                            @if (user.EmailConfirmed)
+                            {
+                                <span class="ss-badge ss-badge--success">@L["Confirmed"]</span>
+                            }
+                            else
+                            {
+                                <span class="ss-badge ss-badge--warning">@L["Unconfirmed"]</span>
+                            }
+                        </td>
+                        @if (Model.CanManageUsers)
+                        {
+                            <td><a class="ss-btn ss-btn--ghost ss-btn--sm" href="/dashboard/users/@user.Id/edit">@L["Edit"]</a></td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </div>

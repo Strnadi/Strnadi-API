@@ -13,6 +13,7 @@
     <ProjectReference Include="..\Administration.Infrastructure\Administration.Infrastructure.csproj" />
     <ProjectReference Include="..\Administration.Application\Administration.Application.csproj" />
     <ProjectReference Include="..\..\ServiceDefaults\ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Platform.Shared\Platform.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

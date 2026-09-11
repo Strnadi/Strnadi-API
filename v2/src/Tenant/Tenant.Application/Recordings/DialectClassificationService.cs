@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Platform.Shared.Kernel.Services;
 using Tenant.Domain.Entities;
 using Tenant.Domain.Enums;
 using Tenant.Domain.Persistence;

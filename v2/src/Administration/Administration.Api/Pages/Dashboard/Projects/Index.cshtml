@@ -1,4 +1,5 @@
 @page "/dashboard/projects"
+@using Administration.Domain.Entities.Enums
 @model Administration.Api.Pages.Dashboard.Projects.IndexModel
 @{
     ViewData["Title"] = L["Projects"].Value;
@@ -17,16 +18,33 @@
             <thead>
                 <tr>
                     <th>@L["Projects"]</th>
+                    <th>@L["Domain"]</th>
+                    <th>@L["Status"]</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var project in Model.Projects)
                 {
+                    var status = StatusBadge(project.State);
                     <tr>
                         <td><a href="/dashboard/projects/@project.Id">@project.Name</a></td>
+                        <td>@project.Domain</td>
+                        <td><span class="ss-badge @status.Modifier">@L[status.LabelKey]</span></td>
                     </tr>
                 }
             </tbody>
         </table>
     }
 </div>
+
+@functions {
+    private (string Modifier, string LabelKey) StatusBadge(ProjectState state) => state switch
+    {
+        ProjectState.Active => ("ss-badge--success", "Active"),
+        ProjectState.Draft => ("", "Draft"),
+        ProjectState.Archived => ("ss-badge--warning", "Archived"),
+        ProjectState.Deactivated => ("ss-badge--warning", "Deactivated"),
+        ProjectState.Deleted => ("ss-badge--danger", "Deleted"),
+        _ => ("", state.ToString())
+    };
+}

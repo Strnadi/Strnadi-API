@@ -1,0 +1,40 @@
+@page "/dashboard/projects/{id:guid}/edit"
+@using Administration.Domain.Entities.Enums
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model Administration.Api.Pages.Dashboard.Projects.EditModel
+@{
+    ViewData["Title"] = Model.TargetProject.Name;
+    var stateOptions = Enum.GetValues<ProjectState>()
+        .Select(s => new SelectListItem(L[s.ToString()].Value, s.ToString()))
+        .ToList();
+}
+
+<a href="/dashboard/projects/@Model.TargetProject.Id">&larr; @Model.TargetProject.Name</a>
+
+<h1>@Model.TargetProject.Name</h1>
+
+<div class="ss-card">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Name" class="ss-field__label">@L["Name"]</label>
+            <input asp-for="Input.Name" class="ss-field__input" />
+            <span asp-validation-for="Input.Name" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Domain" class="ss-field__label">@L["Domain"]</label>
+            <input asp-for="Input.Domain" class="ss-field__input" />
+            <span asp-validation-for="Input.Domain" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.State" class="ss-field__label">@L["Status"]</label>
+            <select asp-for="Input.State" asp-items="stateOptions" class="ss-field__input"></select>
+            <span asp-validation-for="Input.State" class="ss-field__error"></span>
+        </div>
+
+        <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>
+    </form>
+</div>

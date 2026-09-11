@@ -1,10 +1,17 @@
 @page "/dashboard/projects/{id:guid}"
+@using Administration.Domain.Entities.Enums
 @model Administration.Api.Pages.Dashboard.Projects.DetailsModel
 @{
     ViewData["Title"] = Model.Project.Name;
+    var status = StatusBadge(Model.Project.State);
 }
 
 <h1>@Model.Project.Name</h1>
+
+@if (Model.CanManageProjects)
+{
+    <a class="ss-btn ss-btn--secondary ss-btn--sm" href="/dashboard/projects/@Model.Project.Id/edit">@L["Edit"]</a>
+}
 
 <div class="ss-stack">
     <div class="ss-card">
@@ -16,6 +23,19 @@
     </div>
 
     <div class="ss-card">
-        <p>@L["ComingSoon"]</p>
+        <p>@L["Domain"]: @Model.Project.Domain</p>
+        <p>@L["Status"]: <span class="ss-badge @status.Modifier">@L[status.LabelKey]</span></p>
     </div>
 </div>
+
+@functions {
+    private (string Modifier, string LabelKey) StatusBadge(ProjectState state) => state switch
+    {
+        ProjectState.Active => ("ss-badge--success", "Active"),
+        ProjectState.Draft => ("", "Draft"),
+        ProjectState.Archived => ("ss-badge--warning", "Archived"),
+        ProjectState.Deactivated => ("ss-badge--warning", "Deactivated"),
+        ProjectState.Deleted => ("ss-badge--danger", "Deleted"),
+        _ => ("", state.ToString())
+    };
+}

@@ -1,8 +1,8 @@
+using Platform.Shared.Kernel.Exceptions;
+using Platform.Shared.Kernel.Services;
 using Tenant.Domain.Entities;
-using Tenant.Domain.Exceptions;
 using Tenant.Domain.Persistence;
 using Tenant.Domain.Persistence.Repositories;
-using Tenant.Domain.Services;
 
 namespace Tenant.Application.Photos;
 

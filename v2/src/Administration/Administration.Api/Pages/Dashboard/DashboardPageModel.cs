@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Administration.Domain.Authorization;
 using Administration.Domain.Entities;
+using Administration.Domain.Entities.Enums;
 using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Administration.Api.Pages.Dashboard;
 
-public record ProjectSummary(Guid Id, string Name);
+public record ProjectSummary(Guid Id, string Name, string Domain, ProjectState State);
 
 [Authorize]
 public abstract class DashboardPageModel(
@@ -24,6 +25,8 @@ public abstract class DashboardPageModel(
     public User CurrentUser { get; private set; } = null!;
     public bool CanManageUsers { get; private set; }
     public bool CanManageProjects { get; private set; }
+    public bool CanViewUsersBasic { get; private set; }
+    public bool CanViewUsersConfidential { get; private set; }
     public IReadOnlyList<ProjectSummary> Projects { get; private set; } = [];
 
     protected AdminDbContext Db => db;
@@ -53,12 +56,14 @@ public abstract class DashboardPageModel(
         CurrentUser = user;
         CanManageUsers = await permissions.HasPermissionAsync(user.Id, Permissions.ManageUsers);
         CanManageProjects = await permissions.HasPermissionAsync(user.Id, Permissions.ManageProjects);
+        CanViewUsersBasic = CanManageUsers || await permissions.HasPermissionAsync(user.Id, Permissions.ViewUsersBasic);
+        CanViewUsersConfidential = CanManageUsers || await permissions.HasPermissionAsync(user.Id, Permissions.ViewUsersConfidential);
 
         Projects = await db.UserRoles
             .Where(ur => ur.UserId == user.Id)
             .Join(db.Roles, ur => ur.RoleId, r => r.Id, (_, r) => r.ProjectId)
             .Distinct()
-            .Join(db.Projects, projectId => projectId, p => p.Id, (_, p) => new ProjectSummary(p.Id, p.Name))
+            .Join(db.Projects, projectId => projectId, p => p.Id, (_, p) => new ProjectSummary(p.Id, p.Name, p.Domain, p.State))
             .ToListAsync();
 
         await next();

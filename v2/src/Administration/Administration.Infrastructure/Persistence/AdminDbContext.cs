@@ -1,10 +1,10 @@
 using Administration.Domain.Entities;
-using Administration.Domain.Services;
-using Administration.Infrastructure.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Platform.Shared.Infrastructure.Security;
+using Platform.Shared.Kernel.Services;
 
 namespace Administration.Infrastructure.Persistence;
 

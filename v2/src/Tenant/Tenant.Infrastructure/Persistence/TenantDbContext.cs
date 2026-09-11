@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Platform.Shared.Infrastructure.Security;
+using Platform.Shared.Kernel.Services;
 using Tenant.Domain.Entities;
-using Tenant.Domain.Services;
-using Tenant.Infrastructure.Security;
 
 namespace Tenant.Infrastructure.Persistence;
 

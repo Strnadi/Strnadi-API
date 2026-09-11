@@ -2,13 +2,13 @@ using System.Security.Claims;
 using Administration.Application.Auth;
 using Administration.Application.Users;
 using Administration.Domain.Entities;
-using Administration.Domain.Services;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Platform.Shared.Kernel.Services;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Administration.Api.Controllers;
@@ -150,7 +150,7 @@ public class AccountController(
         if (result.Succeeded)
         {
             logger.LogInformation("Signed in via external login provider {Provider}", info.LoginProvider);
-            return LocalRedirect(returnUrl ?? "/dashboard");
+            return LocalRedirect(string.IsNullOrEmpty(returnUrl) ? "/dashboard" : returnUrl);
         }
 
         if (result.IsLockedOut || result.IsNotAllowed)

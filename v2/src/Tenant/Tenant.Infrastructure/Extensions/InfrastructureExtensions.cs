@@ -1,4 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
+using Platform.Shared.Infrastructure.Configuration;
+using Platform.Shared.Infrastructure.Security;
+using Platform.Shared.Infrastructure.Storage;
+using Platform.Shared.Kernel.Configuration;
+using Platform.Shared.Kernel.Services;
 using Tenant.Domain.Configuration;
 using Tenant.Domain.Persistence;
 using Tenant.Domain.Persistence.Repositories;
@@ -11,8 +16,6 @@ using Tenant.Infrastructure.MapyCz;
 using Tenant.Infrastructure.Notifications;
 using Tenant.Infrastructure.Persistence;
 using Tenant.Infrastructure.Persistence.Repositories;
-using Tenant.Infrastructure.Security;
-using Tenant.Infrastructure.Storage;
 
 namespace Tenant.Infrastructure.Extensions;
 

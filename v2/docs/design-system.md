@@ -239,13 +239,21 @@ scale, since these are fixed layout dimensions, not gaps/padding.
 
 ### Language switch — `.ss-lang-switch`
 
-Fixed top-right corner, works on any layout (auth shell today, admin panel shell later).
+Fixed top-right corner. Used on the auth shell (rendered unconditionally by `_Layout.cshtml`).
 `.ss-lang-switch__item` is a plain text link (`--font-size-xs`, `--font-weight-semibold`,
 `--color-text-muted`); `.ss-lang-switch__item--active` marks the current UI culture
 (`--color-primary` text on `--color-primary-subtle` background). Links point at
 `GET /culture/set?culture={cs|en}&returnUrl=...`, which sets the culture cookie and redirects
 back — see the Localization section of the `strnadi-ui` skill (`.claude/skills/strnadi-ui/SKILL.md`)
 for how UI text is localized.
+
+On the admin panel shell, the same links render inline inside `.ss-topbar__user` via
+`.ss-topbar__langs` (`display: flex; gap: var(--space-2)`) instead of the fixed `.ss-lang-switch`
+wrapper — the fixed corner position would sit on top of the topbar's user cluster, which also
+anchors top-right. `_DashboardLayout.cshtml` sets `ViewData["HideLangSwitch"] = true` so
+`_Layout.cshtml` skips its own fixed widget when nested inside the dashboard shell; the anchor
+markup and `.ss-lang-switch__item`/`.ss-lang-switch__item--active` classes are reused as-is,
+only the positioning wrapper differs.
 
 ## Page layouts
 
@@ -276,14 +284,20 @@ Done: `Administration.Api/wwwroot/design-system.css` exists with all tokens and 
 buttons (`Pages/Account/_ExternalProviders.cshtml`) wired to the existing external-login endpoints,
 and are fully localized (cs default, en) — see the `strnadi-ui` skill for the localization pattern.
 The admin panel shell (`Pages/Dashboard/_DashboardLayout.cshtml`) is built on the same CSS and
-nests inside `_Layout.cshtml`; `/dashboard` (own profile), `/dashboard/users`, and
-`/dashboard/projects[/{id}]` exist as role-gated Razor Pages, with Users/project management still
-placeholder content pending their own build-out.
+nests inside `_Layout.cshtml`, with its own inline language switch in the topbar (see § Language
+switch); `/dashboard` (own profile) and `/dashboard/projects[/{id}]` exist as role-gated Razor
+Pages, with Projects management still placeholder content pending its own build-out.
+`/dashboard/users` and `/dashboard/users/{id}/edit` are built out: the list is gated on
+`ViewUsersBasic`/`ManageUsers` (basic columns: name, registration date, status) with
+`ViewUsersConfidential`/`ManageUsers` additionally showing email/city/postal code, and the edit
+page (gated on `ManageUsers` only) lets an admin change any of a user's own fields plus set a new
+password (`NewPassword`/`ConfirmNewPassword` — set-only, the current password is never shown or
+requested back).
 
 Not done yet:
 
-1. Users and Projects management screens are still placeholders (`.ss-card` with a "coming soon"
-   message) — the shell/nav/access-control around them is real, the CRUD UI inside isn't.
+1. Projects management screen is still a placeholder (`.ss-card` with a "coming soon" message) —
+   the shell/nav/access-control around it is real, the CRUD UI inside isn't.
 2. No `CLAUDE.md` entry points at this file yet; for now UI work in this repo is covered by the
    `strnadi-ui` Claude Code skill (`.claude/skills/strnadi-ui/SKILL.md`) instead.
 3. A Blazor Server rewrite of the admin panel remains optional future work, not a requirement —

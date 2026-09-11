@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Tenant.Domain.Configuration;
-using Tenant.Infrastructure.Security;
+using Platform.Shared.Infrastructure.Security;
+using Platform.Shared.Kernel.Configuration;
 
 namespace Tenant.Infrastructure.Persistence;
 

@@ -44,7 +44,9 @@ public class LoginModel(SignInManager<User> signIn, UserManager<User> users, ISt
             ModelState.AddModelError(string.Empty, localizer["InvalidLoginAttempt"]);
             return Page();
         }
+        
+        Console.WriteLine($@"Return {ReturnUrl}");
 
-        return LocalRedirect(ReturnUrl ?? "/dashboard");
+        return LocalRedirect(string.IsNullOrEmpty(ReturnUrl) ? "/dashboard" : ReturnUrl);
     }
 }

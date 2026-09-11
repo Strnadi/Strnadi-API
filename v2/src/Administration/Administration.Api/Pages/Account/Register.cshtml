@@ -21,6 +21,11 @@
                 <input asp-for="Input.Email" class="ss-field__input" />
                 <span asp-validation-for="Input.Email" class="ss-field__error"></span>
             </div>
+            <div class="ss-field">
+                <label asp-for="Input.UserName" class="ss-field__label">@L["UserName"]</label>
+                <input asp-for="Input.UserName" class="ss-field__input" />
+                <span asp-validation-for="Input.UserName" class="ss-field__error"></span>
+            </div>
             <div class="ss-field-row">
                 <div class="ss-field">
                     <label asp-for="Input.FirstName" class="ss-field__label">@L["FirstName"]</label>
@@ -31,6 +36,18 @@
                     <label asp-for="Input.LastName" class="ss-field__label">@L["LastName"]</label>
                     <input asp-for="Input.LastName" class="ss-field__input" />
                     <span asp-validation-for="Input.LastName" class="ss-field__error"></span>
+                </div>
+            </div>
+            <div class="ss-field-row">
+                <div class="ss-field">
+                    <label asp-for="Input.City" class="ss-field__label">@L["City"]</label>
+                    <input asp-for="Input.City" class="ss-field__input" />
+                    <span asp-validation-for="Input.City" class="ss-field__error"></span>
+                </div>
+                <div class="ss-field">
+                    <label asp-for="Input.PostCode" class="ss-field__label">@L["PostCode"]</label>
+                    <input asp-for="Input.PostCode" class="ss-field__input" />
+                    <span asp-validation-for="Input.PostCode" class="ss-field__error"></span>
                 </div>
             </div>
             <div class="ss-field-row">

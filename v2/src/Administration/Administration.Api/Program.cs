@@ -1,20 +1,15 @@
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Administration.Api.ExceptionHandling;
-using Administration.Api.Logging;
 using Administration.Api.Resources;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
 using Administration.Domain.Persistence.Repositories;
-using Administration.Domain.Services;
 using Administration.Infrastructure.Configuration;
 using Administration.Infrastructure.Email;
 using Administration.Infrastructure.Identity;
 using Administration.Infrastructure.Persistence;
 using Administration.Infrastructure.Persistence.Repositories;
-using Administration.Infrastructure.Security;
-using Administration.Infrastructure.Storage;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -23,6 +18,13 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Console;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
+using Platform.Shared.Infrastructure.Configuration;
+using Platform.Shared.Infrastructure.ExceptionHandling;
+using Platform.Shared.Infrastructure.Logging;
+using Platform.Shared.Infrastructure.Security;
+using Platform.Shared.Infrastructure.Storage;
+using Platform.Shared.Kernel.Configuration;
+using Platform.Shared.Kernel.Services;
 using Scalar.AspNetCore;
 using ServiceDefaults;
 
@@ -30,11 +32,13 @@ const string clientId = "strnadi-app";
 
 string[] supportedCultures = ["cs", "en"];
 
+LoadEnvFile(Path.Combine(AppContext.BaseDirectory, "preprod.env"));
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 builder.AddTrustedReverseProxy();
-if (builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
+if (!builder.Environment.IsDevelopment() && builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
     builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 builder.Services.AddHealthChecks().AddDbContextCheck<AdminDbContext>();
 
@@ -70,6 +74,9 @@ builder.Services.AddScoped<IPasswordHasher<User>, BCryptPasswordHasher>();
 
 builder.Services.RemoveAll<IUserValidator<User>>();
 builder.Services.AddScoped<IUserValidator<User>, CustomUserValidator>();
+
+builder.Services.RemoveAll<IUserClaimsPrincipalFactory<User>>();
+builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>, EmailClaimsPrincipalFactory>();
 
 var googleAuthSettings = new GoogleAuthSettings(builder.Configuration);
 var appleAuthSettings = new AppleAuthSettings(builder.Configuration);
@@ -186,8 +193,19 @@ app.UseWhen(
     context => context.Request.Headers.Accept.Any(a => a is not null && a.Contains("text/html")),
     branch => branch.UseStatusCodePagesWithReExecute("/error/{0}"));
 
+// Explicit, because without it ASP.NET Core implicitly inserts routing at the very start of the
+// pipeline - upstream of UseStatusCodePagesWithReExecute above. A re-executed request (new path,
+// e.g. /error/404) would then have nowhere downstream to re-match against, and would fall through
+// to another blank 404 instead of rendering StatusCode.cshtml.
+app.UseRouting();
+
 using (var scope = app.Services.CreateScope())
+{
+    if (app.Environment.IsDevelopment())
+        await scope.ServiceProvider.GetRequiredService<AdminDbContext>().Database.MigrateAsync();
+
     await SyncOpenIddictClientAsync(scope.ServiceProvider);
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -218,6 +236,9 @@ app.MapControllers();
 app.MapRazorPages();
 app.MapDefaultEndpoints();
 app.MapHealthChecks("/utils/health");
+
+app.MapGet("/", (HttpContext context) => Results.LocalRedirect(
+    context.User.Identity?.IsAuthenticated == true ? "/dashboard" : "/Account/Login?returnUrl=/dashboard"));
 
 app.MapGet("/culture/set", (string culture, string? returnUrl, HttpContext context) =>
 {
@@ -335,4 +356,27 @@ static async Task SyncOpenIddictClientAsync(IServiceProvider services)
         await applicationManager.CreateAsync(descriptor);
     else
         await applicationManager.UpdateAsync(existing, descriptor);
+}
+
+static void LoadEnvFile(string path)
+{
+    if (!File.Exists(path))
+        return;
+
+    foreach (var line in File.ReadAllLines(path))
+    {
+        var trimmed = line.Trim();
+        if (trimmed.Length == 0 || trimmed.StartsWith('#'))
+            continue;
+
+        var separatorIndex = trimmed.IndexOf('=');
+        if (separatorIndex < 0)
+            continue;
+
+        var key = trimmed[..separatorIndex].Trim();
+        var value = trimmed[(separatorIndex + 1)..].Trim().Trim('"');
+
+        if (Environment.GetEnvironmentVariable(key) is null)
+            Environment.SetEnvironmentVariable(key, value);
+    }
 }

@@ -1,14 +1,18 @@
+@using System.Globalization
 @model Administration.Api.Pages.Dashboard.DashboardPageModel
 @{
     Layout = "_Layout";
+    ViewData["HideLangSwitch"] = true;
     var path = Context.Request.Path;
+    var currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
 }
 <div class="ss-sidebar">
     <div class="ss-sidebar__brand">Strnadi</div>
     <nav class="ss-sidebar__nav">
         <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard") && !path.StartsWithSegments("/dashboard/users") && !path.StartsWithSegments("/dashboard/projects") ? " ss-sidebar__link--active" : "")"
            href="/dashboard">@L["MyAccount"]</a>
-        @if (Model.CanManageUsers)
+        @if (Model.CanViewUsersBasic)
         {
             <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard/users") ? " ss-sidebar__link--active" : "")"
                href="/dashboard/users">@L["Users"]</a>
@@ -23,9 +27,15 @@
 <header class="ss-topbar">
     <div class="ss-topbar__title">@ViewData["Title"]</div>
     <div class="ss-topbar__user">
+        <div class="ss-topbar__langs">
+            <a class="ss-lang-switch__item@(currentCulture == "cs" ? " ss-lang-switch__item--active" : "")"
+               href="/culture/set?culture=cs&returnUrl=@Uri.EscapeDataString(returnUrl)">CS</a>
+            <a class="ss-lang-switch__item@(currentCulture == "en" ? " ss-lang-switch__item--active" : "")"
+               href="/culture/set?culture=en&returnUrl=@Uri.EscapeDataString(returnUrl)">EN</a>
+        </div>
         <span>@Model.CurrentUser.FirstName @Model.CurrentUser.LastName</span>
         <a href="/dashboard">@L["MyAccount"]</a>
-        <form method="post" action="/account/sign-out">
+        <form method="post" asp-page="/Account/SignOut">
             <button type="submit" class="ss-btn ss-btn--ghost ss-btn--sm">@L["Logout"]</button>
         </form>
     </div>

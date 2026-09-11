@@ -19,11 +19,17 @@ public class RegisterModel(UserManager<User> users, SignInManager<User> signIn, 
         [Required(ErrorMessage = "FieldRequired"), EmailAddress(ErrorMessage = "EmailInvalid")]
         public string Email { get; set; } = string.Empty;
 
+        public string? UserName { get; set; }
+
         [Required(ErrorMessage = "FieldRequired")]
         public string FirstName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "FieldRequired")]
         public string LastName { get; set; } = string.Empty;
+
+        public string? City { get; set; }
+
+        public int? PostCode { get; set; }
 
         [Required(ErrorMessage = "FieldRequired"), DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
@@ -43,10 +49,12 @@ public class RegisterModel(UserManager<User> users, SignInManager<User> signIn, 
 
         var user = new User
         {
-            UserName = null,
+            UserName = string.IsNullOrWhiteSpace(Input.UserName) ? null : Input.UserName,
             Email = Input.Email,
             FirstName = Input.FirstName,
             LastName = Input.LastName,
+            City = string.IsNullOrWhiteSpace(Input.City) ? null : Input.City,
+            PostCode = Input.PostCode,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -66,6 +74,6 @@ public class RegisterModel(UserManager<User> users, SignInManager<User> signIn, 
         await emailSender.SendConfirmationLinkAsync(user, user.Email!, confirmLink);
 
         await signIn.SignInAsync(user, isPersistent: true);
-        return LocalRedirect(ReturnUrl ?? "/dashboard");
+        return LocalRedirect(string.IsNullOrEmpty(ReturnUrl) ? "/dashboard" : ReturnUrl);
     }
 }

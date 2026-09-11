@@ -1,0 +1,4 @@
+namespace Platform.Shared.Kernel.Exceptions;
+
+public class NotFoundException(string entity, object key)
+    : Exception($"{entity} not found in {key}");

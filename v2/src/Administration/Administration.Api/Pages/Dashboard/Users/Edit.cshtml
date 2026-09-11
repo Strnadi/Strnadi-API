@@ -1,0 +1,69 @@
+@page "/dashboard/users/{id:guid}/edit"
+@model Administration.Api.Pages.Dashboard.Users.EditModel
+@{
+    ViewData["Title"] = $"{Model.TargetUser.FirstName} {Model.TargetUser.LastName}";
+}
+
+<a href="/dashboard/users">&larr; @L["Users"]</a>
+
+<h1>@Model.TargetUser.FirstName @Model.TargetUser.LastName</h1>
+
+<div class="ss-card">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
+
+        <div class="ss-field-row">
+            <div class="ss-field">
+                <label asp-for="Input.FirstName" class="ss-field__label">@L["FirstName"]</label>
+                <input asp-for="Input.FirstName" class="ss-field__input" />
+                <span asp-validation-for="Input.FirstName" class="ss-field__error"></span>
+            </div>
+            <div class="ss-field">
+                <label asp-for="Input.LastName" class="ss-field__label">@L["LastName"]</label>
+                <input asp-for="Input.LastName" class="ss-field__input" />
+                <span asp-validation-for="Input.LastName" class="ss-field__error"></span>
+            </div>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.UserName" class="ss-field__label">@L["UserName"]</label>
+            <input asp-for="Input.UserName" class="ss-field__input" />
+            <span asp-validation-for="Input.UserName" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Email" class="ss-field__label">@L["Email"]</label>
+            <input asp-for="Input.Email" class="ss-field__input" />
+            <span asp-validation-for="Input.Email" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field-row">
+            <div class="ss-field">
+                <label asp-for="Input.City" class="ss-field__label">@L["City"]</label>
+                <input asp-for="Input.City" class="ss-field__input" />
+                <span asp-validation-for="Input.City" class="ss-field__error"></span>
+            </div>
+            <div class="ss-field">
+                <label asp-for="Input.PostCode" class="ss-field__label">@L["PostCode"]</label>
+                <input asp-for="Input.PostCode" class="ss-field__input" />
+                <span asp-validation-for="Input.PostCode" class="ss-field__error"></span>
+            </div>
+        </div>
+
+        <div class="ss-field-row">
+            <div class="ss-field">
+                <label asp-for="Input.NewPassword" class="ss-field__label">@L["NewPassword"]</label>
+                <input asp-for="Input.NewPassword" type="password" class="ss-field__input" autocomplete="new-password" />
+                <span class="ss-field__hint">@L["LeaveBlankToKeepPassword"]</span>
+                <span asp-validation-for="Input.NewPassword" class="ss-field__error"></span>
+            </div>
+            <div class="ss-field">
+                <label asp-for="Input.ConfirmNewPassword" class="ss-field__label">@L["ConfirmPassword"]</label>
+                <input asp-for="Input.ConfirmNewPassword" type="password" class="ss-field__input" autocomplete="new-password" />
+                <span asp-validation-for="Input.ConfirmNewPassword" class="ss-field__error"></span>
+            </div>
+        </div>
+
+        <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>
+    </form>
+</div>

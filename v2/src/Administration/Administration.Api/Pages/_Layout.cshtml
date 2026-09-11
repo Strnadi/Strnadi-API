@@ -16,12 +16,15 @@
     <link rel="stylesheet" href="~/design-system.css" asp-append-version="true" />
 </head>
 <body>
-    <div class="ss-lang-switch">
-        <a class="ss-lang-switch__item@(currentCulture == "cs" ? " ss-lang-switch__item--active" : "")"
-           href="/culture/set?culture=cs&returnUrl=@Uri.EscapeDataString(returnUrl)">CS</a>
-        <a class="ss-lang-switch__item@(currentCulture == "en" ? " ss-lang-switch__item--active" : "")"
-           href="/culture/set?culture=en&returnUrl=@Uri.EscapeDataString(returnUrl)">EN</a>
-    </div>
+    @if (ViewData["HideLangSwitch"] is not true)
+    {
+        <div class="ss-lang-switch">
+            <a class="ss-lang-switch__item@(currentCulture == "cs" ? " ss-lang-switch__item--active" : "")"
+               href="/culture/set?culture=cs&returnUrl=@Uri.EscapeDataString(returnUrl)">CS</a>
+            <a class="ss-lang-switch__item@(currentCulture == "en" ? " ss-lang-switch__item--active" : "")"
+               href="/culture/set?culture=en&returnUrl=@Uri.EscapeDataString(returnUrl)">EN</a>
+        </div>
+    }
     @RenderBody()
 </body>
 </html>

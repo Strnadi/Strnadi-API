@@ -1,8 +1,8 @@
-using Administration.Domain.Configuration;
-using Administration.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Platform.Shared.Infrastructure.Security;
+using Platform.Shared.Kernel.Configuration;
 
 namespace Administration.Infrastructure.Persistence;
 
