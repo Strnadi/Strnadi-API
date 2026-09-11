@@ -77,6 +77,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.MapInboundClaims = false;
         options.TokenValidationParameters.ValidateAudience = true;
         options.TokenValidationParameters.ValidAudience = $"project:{projectSettings.ProjectId}";
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("Authentication")
+                    .LogWarning(context.Exception, "JWT validation failed on {Path}", context.HttpContext.Request.Path);
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorizationBuilder()
