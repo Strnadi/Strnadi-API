@@ -14,6 +14,7 @@ COPY v2/src/Tenant/Tenant.Application/Tenant.Application.csproj ./v2/src/Tenant/
 COPY v2/src/Tenant/Tenant.Domain/Tenant.Domain.csproj ./v2/src/Tenant/Tenant.Domain/
 COPY v2/src/Tenant/Tenant.Infrastructure/Tenant.Infrastructure.csproj ./v2/src/Tenant/Tenant.Infrastructure/
 COPY v2/src/ServiceDefaults/ServiceDefaults.csproj ./v2/src/ServiceDefaults/
+COPY v2/src/Platform.Shared/Platform.Shared.csproj ./v2/src/Platform.Shared/
 
 RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
     dotnet restore v2/src/Tenant/Tenant.Api/Tenant.Api.csproj
@@ -22,6 +23,7 @@ FROM restore AS build
 
 COPY v2/src/Tenant/ ./v2/src/Tenant/
 COPY v2/src/ServiceDefaults/ ./v2/src/ServiceDefaults/
+COPY v2/src/Platform.Shared/ ./v2/src/Platform.Shared/
 
 RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
     dotnet build v2/src/Tenant/Tenant.Api/Tenant.Api.csproj \
@@ -91,12 +93,14 @@ COPY v2/src/Administration/Administration.Application/Administration.Application
 COPY v2/src/Administration/Administration.Domain/Administration.Domain.csproj ./v2/src/Administration/Administration.Domain/
 COPY v2/src/Administration/Administration.Infrastructure/Administration.Infrastructure.csproj ./v2/src/Administration/Administration.Infrastructure/
 COPY v2/src/ServiceDefaults/ServiceDefaults.csproj ./v2/src/ServiceDefaults/
+COPY v2/src/Platform.Shared/Platform.Shared.csproj ./v2/src/Platform.Shared/
 RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
     dotnet restore v2/src/Administration/Administration.Api/Administration.Api.csproj
 
 FROM administration-restore AS administration-build
 COPY v2/src/Administration/ ./v2/src/Administration/
 COPY v2/src/ServiceDefaults/ ./v2/src/ServiceDefaults/
+COPY v2/src/Platform.Shared/ ./v2/src/Platform.Shared/
 RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing=locked \
     dotnet build v2/src/Administration/Administration.Api/Administration.Api.csproj \
       --configuration Release --no-restore
