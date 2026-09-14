@@ -1,5 +1,8 @@
+using System.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Infrastructure.Authorization;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Application.Articles;
 using Tenant.Domain.Entities;
 
@@ -18,8 +21,9 @@ public class ArticleCategoriesController(ArticleCategoriesService categoriesServ
     }
 
     /// <summary>Creates a category. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
     [HttpPost]
+    [RequirePermission(Permissions.ManageArticleCategories)]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -39,6 +43,7 @@ public class ArticleCategoriesController(ArticleCategoriesService categoriesServ
 
     /// <summary>Updates a category's translation.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticleTranslations)]
     [HttpPatch("translations/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -51,6 +56,7 @@ public class ArticleCategoriesController(ArticleCategoriesService categoriesServ
 
     /// <summary>Deletes a category's translation.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticleTranslations)]
     [HttpDelete("translations/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -61,8 +67,9 @@ public class ArticleCategoriesController(ArticleCategoriesService categoriesServ
         return Ok();
     }
 
-    /// <summary>Deletes a category. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    /// <summary>Deletes a category</summary>
+    [Authorize]
+    [RequirePermission(Permissions.ManageArticleCategories)]
     [HttpDelete("{categoryName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -74,8 +81,9 @@ public class ArticleCategoriesController(ArticleCategoriesService categoriesServ
         return Ok();
     }
 
-    /// <summary>Unassigns an article from a category. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    /// <summary>Unassigns an article from a category</summary>
+    [Authorize]
+    [RequirePermission(Permissions.ManageArticleCategories)]
     [HttpDelete("{categoryName}/{articleId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

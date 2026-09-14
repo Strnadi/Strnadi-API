@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Infrastructure.Authorization;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Application.Notifications;
 
 namespace Tenant.Api.Controllers;
@@ -9,7 +11,8 @@ namespace Tenant.Api.Controllers;
 public class NotificationsController(NotificationsService notificationsService) : ControllerBase
 {
     /// <summary>Pushes a custom notification to all of a user's devices. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.SendNotifications)]
     [HttpPost("send-notification")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

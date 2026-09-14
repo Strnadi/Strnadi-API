@@ -2,6 +2,8 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Infrastructure.Authorization;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Application.Achievements;
 
 namespace Tenant.Api.Controllers;
@@ -28,9 +30,10 @@ public class AchievementsController(AchievementsService achievementsService) : C
         return File(bytes, "image/png");
     }
 
-    /// <summary>Defines a new achievement: an SQL rule for who earns it, localized text, and an icon. Admin only.</summary>
+    /// <summary>Defines a new achievement: an SQL rule for who earns it, localized text, and an icon.</summary>
     // TODO(security): sql field is executed as raw SQL server-side - see backend-review.md.
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ManageAchievements)]
     [HttpPost]
     [RequestSizeLimit(int.MaxValue)]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]

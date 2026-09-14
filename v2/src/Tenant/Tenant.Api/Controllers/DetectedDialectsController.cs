@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Infrastructure.Authorization;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Application.Recordings;
 using Tenant.Domain.Entities;
 
@@ -27,7 +29,8 @@ public class DetectedDialectsController(DetectedDialectsService detectedDialects
     }
 
     /// <summary>Records a detected dialect for a filtered recording part. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ReviewFilteredRecordings)]
     [HttpPost]
     [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -39,7 +42,8 @@ public class DetectedDialectsController(DetectedDialectsService detectedDialects
     }
 
     /// <summary>Updates a detected dialect. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ReviewFilteredRecordings)]
     [HttpPatch]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -52,7 +56,8 @@ public class DetectedDialectsController(DetectedDialectsService detectedDialects
     }
 
     /// <summary>Deletes a detected dialect. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ReviewFilteredRecordings)]
     [HttpDelete("{ddId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.OpenApi.Models;
+using OpenIddict.Validation.AspNetCore;
+using Platform.Shared.Infrastructure.Authorization;
 using Platform.Shared.Infrastructure.ExceptionHandling;
 using Platform.Shared.Infrastructure.Logging;
 using ServiceDefaults;
@@ -68,30 +70,31 @@ builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 var projectSettings = new ProjectSettings(builder.Configuration);
+var openIddictSettings = new OpenIddictSettings(builder.Configuration);
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// Every request is validated against Administration.Api's introspection endpoint
+// (not a local JWKS check) so a revoked authorization - e.g. after a password
+// change - takes effect immediately instead of waiting out the access token's TTL.
+builder.Services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+
+builder.Services.AddOpenIddict()
+    .AddValidation(o =>
     {
-        options.Authority = projectSettings.Authority;
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-        options.MapInboundClaims = false;
-        options.TokenValidationParameters.ValidateAudience = true;
-        options.TokenValidationParameters.ValidAudience = $"project:{projectSettings.ProjectId}";
+        o.SetIssuer(projectSettings.Authority);
+        o.AddAudiences($"project:{projectSettings.ProjectId}");
 
-        options.Events = new JwtBearerEvents
-        {
-            OnAuthenticationFailed = context =>
-            {
-                context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Authentication")
-                    .LogWarning(context.Exception, "JWT validation failed on {Path}", context.HttpContext.Request.Path);
-                return Task.CompletedTask;
-            }
-        };
+        o.UseIntrospection()
+            .SetClientId("tenant-api")
+            .SetClientSecret(openIddictSettings.ClientSecret);
+
+        o.UseSystemNetHttp();
+        o.UseAspNetCore();
     });
 
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("AdminOnly", policy => policy.RequireClaim("role", "admin"));
+builder.Services.AddAuthorizationBuilder();
+
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
 builder.Services.AddCors();
 builder.Services.AddOptions<CorsOptions>()

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Infrastructure.Authorization;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Application.Articles;
 using Tenant.Domain.Entities;
 
@@ -46,6 +48,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Creates an article.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticles)]
     [HttpPost]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -56,6 +59,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Attaches a file to an article.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticles)]
     [HttpPost("{id:int}/{fileName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -68,6 +72,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Updates an article.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticles)]
     [HttpPatch("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -89,6 +94,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Updates an article's translation.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticleTranslations)]
     [HttpPatch("translations/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -101,6 +107,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Deletes an article's translation.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticleTranslations)]
     [HttpDelete("translations/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -111,8 +118,9 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
         return Ok();
     }
 
-    /// <summary>Replaces an article's attachment. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    /// <summary>Replaces an article's attachment.</summary>
+    [Authorize]
+    [RequirePermission(Permissions.ManageArticles)]
     [HttpPatch("{id:int}/{fileName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -124,8 +132,9 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
         return Ok();
     }
 
-    /// <summary>Assigns an article to a category. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    /// <summary>Assigns an article to a category.</summary>
+    [Authorize]
+    [RequirePermission(Permissions.ManageArticleCategories)]
     [HttpPatch("{categoryName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -139,6 +148,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Deletes an article.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticles)]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -151,6 +161,7 @@ public class ArticlesController(ArticlesService articlesService) : ControllerBas
 
     /// <summary>Deletes a file attached to an article.</summary>
     [Authorize]
+    [RequirePermission(Permissions.ManageArticles)]
     [HttpDelete("{id:int}/{fileName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -1,10 +1,10 @@
 using Administration.Api.Pages.Dashboard;
-using Administration.Domain.Authorization;
 using Administration.Domain.Entities;
 using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Kernel.Authorization;
 
 namespace Administration.Api.Pages.Dashboard.Projects;
 

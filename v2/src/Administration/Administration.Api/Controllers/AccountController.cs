@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OpenIddict.Abstractions;
 using Platform.Shared.Kernel.Services;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -21,6 +22,7 @@ public class AccountController(
     IEmailSender<User> emailSender,
     IFileStorage fileStorage,
     AdminDbContext db,
+    IOpenIddictAuthorizationManager authorizations,
     ILogger<AccountController> logger) : Controller
 {
     /// <summary>Confirms a user's email using the token from the confirmation link.</summary>
@@ -79,11 +81,7 @@ public class AccountController(
         return Ok();
     }
 
-    // Password reset is now handled entirely by Pages/Account/ResetPassword.cshtml (same
-    // /account/reset-password URL the email link already points to) - no separate JSON action
-    // needed, and one would collide with the page's own POST handler on that route.
-
-    /// <summary>Changes the caller's own password.</summary>
+    /// <summary> Changes the caller's own password. </summary>
     [Authorize(Policy = "AccountMutation")]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequest request)
@@ -99,6 +97,7 @@ public class AccountController(
             return BadRequest(result.Errors);
         }
 
+        await RevokeAllAuthorizationsAsync(user.Id);
         logger.LogInformation("Changed password for user {UserId}", user.Id);
         return Ok();
     }
@@ -308,18 +307,20 @@ public class AccountController(
         return Ok();
     }
 
-    // UserManager.GetUserAsync(User) looks up ClaimTypes.NameIdentifier, which is what cookie
-    // sign-in sets - but a Bearer-authenticated (mobile) principal carries the claim as OpenIddict
-    // issued it, "sub" (Claims.Subject), unmapped. Check both so either caller resolves correctly.
+    private async Task RevokeAllAuthorizationsAsync(Guid userId)
+    {
+        await foreach (var authorization in authorizations.FindBySubjectAsync(userId.ToString()))
+        {
+            await authorizations.TryRevokeAsync(authorization);
+        }
+    }
+
     private Task<User?> GetCurrentUserAsync()
     {
         var userId = User.FindFirstValue(Claims.Subject) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
         return userId is null ? Task.FromResult<User?>(null) : users.FindByIdAsync(userId);
     }
 
-    // "project role" only makes sense relative to a project - only project-scoped tokens (from
-    // the token-exchange grant) carry a project_id claim; a base authorization_code token has
-    // none, so this returns no roles rather than guessing which project was meant.
     private async Task<string[]> GetCurrentProjectRolesAsync(Guid userId)
     {
         var projectIdClaim = User.FindFirstValue("project_id");

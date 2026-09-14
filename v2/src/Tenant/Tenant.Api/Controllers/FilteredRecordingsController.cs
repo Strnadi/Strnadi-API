@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Infrastructure.Authorization;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Application.Recordings;
 using Tenant.Domain.Entities;
 
@@ -38,7 +40,8 @@ public class FilteredRecordingsController(FilteredRecordingPartsService filtered
     }
 
     /// <summary>Confirms a dialect for a filtered part. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ReviewFilteredRecordings)]
     [HttpPost("post-confirmed-dialect")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -50,7 +53,8 @@ public class FilteredRecordingsController(FilteredRecordingPartsService filtered
     }
 
     /// <summary>Updates a confirmed dialect. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ReviewFilteredRecordings)]
     [HttpPatch("update-confirmed-dialect")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -63,7 +67,8 @@ public class FilteredRecordingsController(FilteredRecordingPartsService filtered
     }
 
     /// <summary>Updates a filtered recording part. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ReviewFilteredRecordings)]
     [HttpPatch("{fpId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -77,7 +82,8 @@ public class FilteredRecordingsController(FilteredRecordingPartsService filtered
 
     /// <summary>Superseded by <see cref="DeleteAsync"/>; kept for old clients.</summary>
     [Obsolete("use {fpId} DELETE instead")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ReviewFilteredRecordings)]
     [HttpDelete("delete-confirmed-dialect/{filteredPartId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -90,7 +96,8 @@ public class FilteredRecordingsController(FilteredRecordingPartsService filtered
     }
 
     /// <summary>Deletes a filtered recording part. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize]
+    [RequirePermission(Permissions.ReviewFilteredRecordings)]
     [HttpDelete("{fpId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

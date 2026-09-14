@@ -36,24 +36,24 @@ public class DevicesService(IDevicesRepository devices, IUnitOfWork unitOfWork, 
         logger.LogInformation("Device registered for user {UserId} ({Platform})", request.UserId, request.DevicePlatform);
     }
 
-    public async Task UpdateAsync(UpdateDeviceRequest request, Guid callerId, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(UpdateDeviceRequest request, Guid callerId, bool canManageDevices, CancellationToken cancellationToken = default)
     {
         var device = await devices.GetByFcmTokenAsync(request.OldFcmToken, cancellationToken)
             ?? throw new NotFoundException(nameof(Device), request.OldFcmToken);
 
-        if (device.UserId != callerId)
+        if (!canManageDevices && device.UserId != callerId)
             throw new ForbiddenException("You can only update your own device");
 
         device.FcmToken = request.NewFcmToken;
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(string fcmToken, Guid callerId, bool isAdmin, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(string fcmToken, Guid callerId, bool canManageDevices, CancellationToken cancellationToken = default)
     {
         var device = await devices.GetByFcmTokenAsync(fcmToken, cancellationToken)
             ?? throw new NotFoundException(nameof(Device), fcmToken);
 
-        if (!isAdmin && device.UserId != callerId)
+        if (!canManageDevices && device.UserId != callerId)
             throw new ForbiddenException("You can only delete your own device");
 
         devices.Remove(device);

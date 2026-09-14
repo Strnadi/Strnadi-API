@@ -5,10 +5,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using OpenIddict.Abstractions;
 
 namespace Administration.Api.Pages.Account;
 
-public class ResetPasswordModel(UserManager<User> users, IStringLocalizer<SharedResource> localizer) : PageModel
+public class ResetPasswordModel(
+    UserManager<User> users,
+    IStringLocalizer<SharedResource> localizer,
+    IOpenIddictAuthorizationManager authorizations) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string? Email { get; set; }
@@ -58,6 +62,9 @@ public class ResetPasswordModel(UserManager<User> users, IStringLocalizer<Shared
 
             return Page();
         }
+
+        await foreach (var authorization in authorizations.FindBySubjectAsync(user.Id.ToString()))
+            await authorizations.TryRevokeAsync(authorization);
 
         return RedirectToPage("Login");
     }

@@ -1,14 +1,20 @@
 using System.ComponentModel.DataAnnotations;
-using Administration.Domain.Authorization;
 using Administration.Domain.Entities;
 using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
+using Platform.Shared.Kernel.Authorization;
 
 namespace Administration.Api.Pages.Dashboard.Users;
 
-public class EditModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions, ILogger<DashboardPageModel> logger)
+public class EditModel(
+    UserManager<User> users,
+    AdminDbContext db,
+    IUserPermissionsRepository permissions,
+    IOpenIddictAuthorizationManager authorizations,
+    ILogger<DashboardPageModel> logger)
     : DashboardPageModel(users, db, permissions, logger)
 {
     public User TargetUser { get; private set; } = null!;
@@ -124,6 +130,9 @@ public class EditModel(UserManager<User> users, AdminDbContext db, IUserPermissi
                     ModelState.AddModelError(string.Empty, error.Description);
                 return Page();
             }
+
+            await foreach (var authorization in authorizations.FindBySubjectAsync(user.Id.ToString()))
+                await authorizations.TryRevokeAsync(authorization);
         }
 
         Logger.LogInformation("Admin {AdminId} updated user {UserId}", CurrentUser.Id, user.Id);

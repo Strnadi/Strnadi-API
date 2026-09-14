@@ -30,12 +30,12 @@ public class RecordingPhotosService(
         return results.ToArray();
     }
 
-    public async Task<int> UploadAsync(int recordingId, UploadRecordingPhotoRequest request, Guid callerId, bool isAdmin, CancellationToken cancellationToken = default)
+    public async Task<int> UploadAsync(int recordingId, UploadRecordingPhotoRequest request, Guid callerId, bool canModerateRecordings, CancellationToken cancellationToken = default)
     {
         var recording = await recordings.GetByIdAsync(recordingId, cancellationToken)
             ?? throw new NotFoundException(nameof(Recording), recordingId);
 
-        if (!isAdmin && recording.UserId != callerId)
+        if (!canModerateRecordings && recording.UserId != callerId)
             throw new ForbiddenException("You are not the owner of this recording");
 
         var photo = new RecordingPhoto { RecordingId = recordingId, Format = request.Format };
@@ -51,12 +51,12 @@ public class RecordingPhotosService(
         return photo.Id;
     }
 
-    public async Task DeleteAsync(int recordingId, int photoId, Guid callerId, bool isAdmin, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(int recordingId, int photoId, Guid callerId, bool canModerateRecordings, CancellationToken cancellationToken = default)
     {
         var recording = await recordings.GetByIdAsync(recordingId, cancellationToken)
             ?? throw new NotFoundException(nameof(Recording), recordingId);
 
-        if (!isAdmin && recording.UserId != callerId)
+        if (!canModerateRecordings && recording.UserId != callerId)
             throw new ForbiddenException("You are not the owner of this recording");
 
         var photo = await photos.GetByIdAsync(photoId, cancellationToken);

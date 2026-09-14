@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Infrastructure.Authorization;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Api.Extensions;
 using Tenant.Application.Recordings;
 using Tenant.Domain.Entities;
@@ -18,8 +20,9 @@ public class RecordingsController(RecordingsService recordingsService) : Control
         return Ok(await recordingsService.GetAllAsync(userId, parts, sound, cancellationToken));
     }
 
-    /// <summary>Soft-deleted recordings. Admin only.</summary>
-    [Authorize(Policy = "AdminOnly")]
+    /// <summary>Soft-deleted recordings. </summary>
+    [Authorize]
+    [RequirePermission(Permissions.ModerateRecordings)]
     [HttpGet("deleted")]
     [ProducesResponseType(typeof(Recording[]), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -47,7 +50,7 @@ public class RecordingsController(RecordingsService recordingsService) : Control
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id, [FromQuery] bool final, CancellationToken cancellationToken)
     {
-        await recordingsService.DeleteAsync(id, final, this.GetCallerId(), this.IsAdmin(), cancellationToken);
+        await recordingsService.DeleteAsync(id, final, this.GetCallerId(), this.HasPermission(Permissions.ModerateRecordings), this.HasPermission(Permissions.DeleteRecordings), cancellationToken);
         return Ok();
     }
 
@@ -80,7 +83,7 @@ public class RecordingsController(RecordingsService recordingsService) : Control
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] UpdateRecordingRequest request, CancellationToken cancellationToken)
     {
-        await recordingsService.UpdateAsync(id, request, this.GetCallerId(), this.IsAdmin(), cancellationToken);
+        await recordingsService.UpdateAsync(id, request, this.GetCallerId(), this.HasPermission(Permissions.ModerateRecordings), cancellationToken);
         return Ok();
     }
 

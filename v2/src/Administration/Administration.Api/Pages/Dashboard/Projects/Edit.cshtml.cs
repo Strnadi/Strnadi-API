@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Administration.Api.Resources;
-using Administration.Domain.Authorization;
 using Administration.Domain.Entities;
 using Administration.Domain.Entities.Enums;
 using Administration.Domain.Persistence.Repositories;
@@ -9,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Platform.Shared.Kernel.Authorization;
 
 namespace Administration.Api.Pages.Dashboard.Projects;
 

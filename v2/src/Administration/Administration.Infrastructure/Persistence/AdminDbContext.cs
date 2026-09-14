@@ -18,11 +18,6 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
 
     public virtual DbSet<ProjectMembership> ProjectMemberships { get; set; }
 
-    // No DateTime->Unspecified conversion here, unlike Tenant: Administration's columns are
-    // `timestamp with time zone` (see new_schema), which - the opposite of Tenant's `timestamp
-    // without time zone` - requires Kind=Utc and rejects Unspecified. DateTime.UtcNow writes
-    // straight through with no converter needed.
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -40,6 +35,7 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
 #pragma warning disable CS8620
             entity.Property(e => e.City).HasConversion(_encryptedString);
 #pragma warning restore CS8620
+            entity.Property(e => e.PostCode).HasConversion(_encryptedString);
         });
 
         modelBuilder.Entity<Role>(entity =>

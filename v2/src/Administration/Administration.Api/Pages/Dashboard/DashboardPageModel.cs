@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Administration.Domain.Authorization;
 using Administration.Domain.Entities;
 using Administration.Domain.Entities.Enums;
 using Administration.Domain.Persistence.Repositories;
@@ -10,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Platform.Shared.Kernel.Authorization;
 
 namespace Administration.Api.Pages.Dashboard;
 

@@ -70,15 +70,15 @@ public class RecordingsService(
             recording.UserId, recording.ExpectedPartsCount, recording.UploadConfirmed, parts);
     }
 
-    public async Task DeleteAsync(int id, bool final, Guid callerId, bool isAdmin, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(int id, bool final, Guid callerId, bool canModerateRecordings, bool canDeleteRecordings, CancellationToken cancellationToken = default)
     {
         var recording = await recordings.GetByIdAsync(id, cancellationToken) ?? throw new NotFoundException(nameof(Recording), id);
 
-        if (!isAdmin && recording.UserId != callerId)
+        if (!canModerateRecordings && recording.UserId != callerId)
             throw new ForbiddenException("You are not the owner of this recording");
 
-        if (final && !isAdmin)
-            throw new ForbiddenException("Only admins can permanently delete a recording");
+        if (final && !canDeleteRecordings)
+            throw new ForbiddenException("You are not allowed to permanently delete a recording");
 
         if (final)
             recordings.Remove(recording);
@@ -115,11 +115,11 @@ public class RecordingsService(
     public Task<Recording[]> GetIncompleteAsync(Guid callerId, CancellationToken cancellationToken = default) =>
         recordings.GetIncompleteAsync(callerId, cancellationToken);
 
-    public async Task UpdateAsync(int id, UpdateRecordingRequest request, Guid callerId, bool isAdmin, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(int id, UpdateRecordingRequest request, Guid callerId, bool canModerateRecordings, CancellationToken cancellationToken = default)
     {
         var recording = await recordings.GetByIdAsync(id, cancellationToken) ?? throw new NotFoundException(nameof(Recording), id);
 
-        if (!isAdmin && recording.UserId != callerId)
+        if (!canModerateRecordings && recording.UserId != callerId)
             throw new ForbiddenException("You are not the owner of this recording");
 
         recording.Name = request.Name ?? recording.Name;

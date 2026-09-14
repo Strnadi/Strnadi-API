@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Api.Extensions;
 using Tenant.Application.Photos;
 
@@ -27,7 +28,7 @@ public class RecordingPhotosController(RecordingPhotosService photos) : Controll
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UploadAsync([FromRoute] int recordingId, [FromBody] UploadRecordingPhotoRequest request, CancellationToken cancellationToken)
     {
-        var id = await photos.UploadAsync(recordingId, request, this.GetCallerId(), this.IsAdmin(), cancellationToken);
+        var id = await photos.UploadAsync(recordingId, request, this.GetCallerId(), this.HasPermission(Permissions.ModerateRecordings), cancellationToken);
         return Ok(id);
     }
 
@@ -40,7 +41,7 @@ public class RecordingPhotosController(RecordingPhotosService photos) : Controll
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync([FromRoute] int recordingId, [FromRoute] int photoId, CancellationToken cancellationToken)
     {
-        await photos.DeleteAsync(recordingId, photoId, this.GetCallerId(), this.IsAdmin(), cancellationToken);
+        await photos.DeleteAsync(recordingId, photoId, this.GetCallerId(), this.HasPermission(Permissions.ModerateRecordings), cancellationToken);
         return Ok();
     }
 }

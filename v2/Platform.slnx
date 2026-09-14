@@ -11,6 +11,7 @@
     <Project Path="src/Administration/Administration.Domain/Administration.Domain.csproj"/>
     <Project Path="src/Administration/Administration.Infrastructure/Administration.Infrastructure.csproj"/>
   </Folder>
+  <Project Path="src/Platform.Shared/Platform.Shared.csproj" />
   <Project Path="src/AppHost/AppHost.csproj" />
   <Project Path="src/ServiceDefaults/ServiceDefaults.csproj" />
 </Solution>

@@ -31,6 +31,7 @@ using Scalar.AspNetCore;
 using ServiceDefaults;
 
 const string clientId = "strnadi-app";
+const string tenantApiClientId = "tenant-api";
 const string projectOriginsCorsPolicy = "ProjectOrigins";
 
 string[] supportedCultures = ["cs", "en"];
@@ -55,6 +56,8 @@ builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
 builder.Services.AddSingleton<IGoogleAuthSettings, GoogleAuthSettings>();
 builder.Services.AddSingleton<IAppleAuthSettings, AppleAuthSettings>();
 builder.Services.AddSingleton<IAuthSettings, AuthSettings>();
+
+builder.Services.AddSingleton<IOpenIddictSettings, OpenIddictSettings>();
 
 builder.Services.AddSingleton<ISmtpSettings, SmtpSettings>();
 builder.Services.AddScoped<IEmailSender<User>, SmtpEmailSender>();
@@ -130,6 +133,7 @@ builder.Services.AddOpenIddict()
             .SetTokenEndpointUris("/connect/token")
             .SetUserInfoEndpointUris("/connect/user-info")
             .SetEndSessionEndpointUris("/connect/logout")
+            .SetIntrospectionEndpointUris("/connect/introspect")
             .AllowAuthorizationCodeFlow()
             .RequireProofKeyForCodeExchange()
             .AllowRefreshTokenFlow()
@@ -142,15 +146,11 @@ builder.Services.AddOpenIddict()
             .EnableEndSessionEndpointPassthrough();
 
         if (builder.Environment.IsDevelopment())
-        {
             o.AddDevelopmentEncryptionCertificate()
                 .AddDevelopmentSigningCertificate();
-        }
         else
-        {
             o.AddSigningCertificate(LoadCertificate(builder.Configuration, "OAuth:Signing"))
                 .AddEncryptionCertificate(LoadCertificate(builder.Configuration, "OAuth:Encryption"));
-        }
     })
     .AddValidation(o =>
     {
@@ -209,6 +209,9 @@ using (var scope = app.Services.CreateScope())
         .ToListAsync();
 
     await SyncOpenIddictClientAsync(scope.ServiceProvider, projectDomains);
+
+    var openIddictSettings = scope.ServiceProvider.GetRequiredService<IOpenIddictSettings>();
+    await SyncTenantApiClientAsync(scope.ServiceProvider, openIddictSettings.TenantClientSecret);
 
     app.Services.GetRequiredService<IOptions<CorsOptions>>().Value.AddPolicy(projectOriginsCorsPolicy, policy =>
         policy.WithOrigins(projectDomains.Select(d => d.TrimEnd('/')).ToArray())
@@ -282,7 +285,7 @@ if (!app.Environment.IsDevelopment())
         }
 
         if (string.IsNullOrEmpty(scalarUsername) || string.IsNullOrEmpty(scalarPassword)
-            || !HasValidScalarCredentials(context.Request, scalarUsername, scalarPassword))
+                                                 || !HasValidScalarCredentials(context.Request, scalarUsername, scalarPassword))
         {
             context.Response.Headers.WWWAuthenticate = "Basic realm=\"Scalar\"";
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -345,7 +348,7 @@ static async Task SyncOpenIddictClientAsync(IServiceProvider services, IReadOnly
             OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
             OpenIddictConstants.Permissions.Prefixes.GrantType + OpenIddictConstants.GrantTypes.TokenExchange,
             OpenIddictConstants.Permissions.ResponseTypes.Code
-        }
+        },
     };
 
     foreach (var domain in domains)
@@ -355,6 +358,28 @@ static async Task SyncOpenIddictClientAsync(IServiceProvider services, IReadOnly
     }
 
     var existing = await applicationManager.FindByClientIdAsync(clientId);
+    if (existing is null)
+        await applicationManager.CreateAsync(descriptor);
+    else
+        await applicationManager.UpdateAsync(existing, descriptor);
+}
+
+static async Task SyncTenantApiClientAsync(IServiceProvider services, string clientSecret)
+{
+    var applicationManager = services.GetRequiredService<IOpenIddictApplicationManager>();
+
+    var descriptor = new OpenIddictApplicationDescriptor
+    {
+        ClientId = tenantApiClientId,
+        ClientSecret = clientSecret,
+        ClientType = OpenIddictConstants.ClientTypes.Confidential,
+        Permissions =
+        {
+            OpenIddictConstants.Permissions.Endpoints.Introspection
+        }
+    };
+
+    var existing = await applicationManager.FindByClientIdAsync(tenantApiClientId);
     if (existing is null)
         await applicationManager.CreateAsync(descriptor);
     else

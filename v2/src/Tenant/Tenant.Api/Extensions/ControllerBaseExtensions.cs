@@ -13,7 +13,7 @@ public static class ControllerBaseExtensions
         public Guid? GetCallerIdOrDefault() =>
             controller.User.Identity?.IsAuthenticated == true ? controller.GetCallerId() : null;
 
-        public bool IsAdmin() =>
-            controller.User.HasClaim("role", "admin");
+        public bool HasPermission(string permission) =>
+            controller.User.HasClaim("permission", permission);
     }
 }

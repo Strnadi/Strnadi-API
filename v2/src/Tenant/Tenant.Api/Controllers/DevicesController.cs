@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Kernel.Authorization;
 using Tenant.Api.Extensions;
 using Tenant.Application.Devices;
 
@@ -30,7 +31,7 @@ public class DevicesController(DevicesService devicesService) : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAsync([FromBody] UpdateDeviceRequest request, CancellationToken cancellationToken)
     {
-        await devicesService.UpdateAsync(request, this.GetCallerId(), cancellationToken);
+        await devicesService.UpdateAsync(request, this.GetCallerId(), this.HasPermission(Permissions.ManageDevices), cancellationToken);
         return Ok();
     }
 
@@ -43,7 +44,7 @@ public class DevicesController(DevicesService devicesService) : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync([FromRoute] string fcmToken, CancellationToken cancellationToken)
     {
-        await devicesService.DeleteAsync(fcmToken, this.GetCallerId(), this.IsAdmin(), cancellationToken);
+        await devicesService.DeleteAsync(fcmToken, this.GetCallerId(), this.HasPermission(Permissions.ManageDevices), cancellationToken);
         return Ok();
     }
 }

@@ -33,6 +33,7 @@ public static class InfrastructureExtensions
             serviceCollection.AddSingleton<IMapyCzSettings, MapyCzSettings>();
             serviceCollection.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
             serviceCollection.AddSingleton<IEncryptionSettings, EncryptionSettings>();
+            serviceCollection.AddSingleton<IOpenIddictSettings, OpenIddictSettings>();
 
             serviceCollection.AddMemoryCache();
 
