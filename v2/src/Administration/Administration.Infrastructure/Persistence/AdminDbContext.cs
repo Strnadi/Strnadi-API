@@ -35,7 +35,9 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
 #pragma warning disable CS8620
             entity.Property(e => e.City).HasConversion(_encryptedString);
 #pragma warning restore CS8620
-            entity.Property(e => e.PostCode).HasConversion(_encryptedString);
+            entity.Property(e => e.PostCode).HasConversion(
+                i => i == null ? null : encryption.Encrypt(i.Value.ToString()),
+                s => s == null ? null : int.Parse(encryption.Decrypt(s)));
         });
 
         modelBuilder.Entity<Role>(entity =>
