@@ -64,6 +64,10 @@ RUN --mount=type=cache,id=strnadi-api-nuget,target=/root/.nuget/packages,sharing
 
 FROM ${DOTNET_ASPNET_IMAGE} AS tenant-final
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 RUN mkdir -p /var/lib/strnadi/storage \
