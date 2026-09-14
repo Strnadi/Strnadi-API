@@ -12,8 +12,9 @@ public class PermissionPolicyProvider(IOptions<AuthorizationOptions> options)
             return await base.GetPolicyAsync(policyName);
 
         var permission = policyName["Permission:".Length..];
-        return new AuthorizationPolicyBuilder()
-            .RequireAuthenticatedUser()
+        var defaultPolicy = await GetDefaultPolicyAsync();
+
+        return new AuthorizationPolicyBuilder(defaultPolicy)
             .AddRequirements(new PermissionRequirement(permission))
             .Build();
     }

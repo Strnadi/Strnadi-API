@@ -72,10 +72,7 @@ builder.Services.AddProblemDetails();
 var projectSettings = new ProjectSettings(builder.Configuration);
 var openIddictSettings = new OpenIddictSettings(builder.Configuration);
 
-// Every request is validated against Administration.Api's introspection endpoint
-// (not a local JWKS check) so a revoked authorization - e.g. after a password
-// change - takes effect immediately instead of waiting out the access token's TTL.
-builder.Services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+builder.Services.AddAuthentication();
 
 builder.Services.AddOpenIddict()
     .AddValidation(o =>
@@ -91,7 +88,10 @@ builder.Services.AddOpenIddict()
         o.UseAspNetCore();
     });
 
-builder.Services.AddAuthorizationBuilder();
+builder.Services.AddAuthorizationBuilder()
+    .SetDefaultPolicy(new AuthorizationPolicyBuilder(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+        .RequireAuthenticatedUser()
+        .Build());
 
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
@@ -143,10 +143,6 @@ app.UseSwaggerUI(options =>
 
 app.Run();
 
-// Loads KEY=VALUE pairs from a .env file into the process environment so
-// ASP.NET Core's built-in environment-variable configuration provider picks
-// them up (Jwt__SecretKey -> config key "Jwt:SecretKey"). Variables already
-// set in the environment take precedence over the file.
 static void LoadEnvFile(string path)
 {
     if (!File.Exists(path))
