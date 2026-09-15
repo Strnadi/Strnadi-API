@@ -10,7 +10,7 @@
 <div class="ss-sidebar">
     <div class="ss-sidebar__brand">Strnadi</div>
     <nav class="ss-sidebar__nav">
-        <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard") && !path.StartsWithSegments("/dashboard/users") && !path.StartsWithSegments("/dashboard/projects") ? " ss-sidebar__link--active" : "")"
+        <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard") && !path.StartsWithSegments("/dashboard/users") && !path.StartsWithSegments("/dashboard/projects") && !path.StartsWithSegments("/dashboard/documents") ? " ss-sidebar__link--active" : "")"
            href="/dashboard">@L["MyAccount"]</a>
         @if (Model.CanViewUsersBasic)
         {
@@ -21,6 +21,11 @@
         {
             <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard/projects") ? " ss-sidebar__link--active" : "")"
                href="/dashboard/projects">@L["Projects"]</a>
+        }
+        @if (Model.CanManageDocuments)
+        {
+            <a class="ss-sidebar__link@(path.StartsWithSegments("/dashboard/documents") ? " ss-sidebar__link--active" : "")"
+               href="/dashboard/documents">@L["Documents"]</a>
         }
     </nav>
 </div>

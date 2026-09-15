@@ -365,6 +365,13 @@ a {
   }
 }
 
+/* A card heading followed by a form or list needs more room than the default h1-h3 margin
+   (--space-2) gives it - that default is tuned for body copy, not a section header sitting
+   directly above dense form fields. */
+.ss-section-heading {
+  margin-bottom: var(--space-4);
+}
+
 /* ---------- Badges ---------- */
 
 .ss-badge {
@@ -380,6 +387,35 @@ a {
 .ss-badge--success { background: var(--color-success-subtle); color: var(--color-success); }
 .ss-badge--warning  { background: var(--color-warning-subtle); color: var(--color-warning); }
 .ss-badge--danger   { background: var(--color-danger-subtle); color: var(--color-danger); }
+
+/* ---------- Consent list (e.g. document acceptance status on the account page) ---------- */
+
+.ss-consent-list {
+  display: flex;
+  flex-direction: column;
+}
+.ss-consent-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.ss-consent-item:first-child {
+  padding-top: 0;
+}
+.ss-consent-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.ss-consent-item__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
 
 /* ---------- Data table ---------- */
 

@@ -220,6 +220,29 @@ key (`ModelState.AddModelError(string.Empty, ...)`, e.g. "Invalid login attempt.
 `--color-surface` background, `--radius-lg`, `--shadow-sm` at rest, border `--color-border`.
 Used for the auth card and for panel sections in the admin UI (e.g. a project's settings block).
 
+A card's `<h2>` heading sitting directly above a dense form or list needs `.ss-section-heading`
+(`margin-bottom: var(--space-4)`) instead of the default h1-h3 margin (`--space-2`, tuned for body
+copy) — otherwise the form crowds the heading. Used on the account page's Profile/Change
+password/Documents cards.
+
+### Consent list — `.ss-consent-list` / `.ss-consent-item`
+
+A vertical list of status rows inside a card (currently: document acceptance status on the
+account page). Not a `.ss-table` - too few columns and too much per-row content (title, multiple
+badges, an action button) for a table to read well; not a plain `.ss-stack` either, since rows
+need a hairline separator and first/last-child padding trimmed flush with the card edge.
+
+```
+.ss-consent-list
+  .ss-consent-item                  -- flex row, wraps on narrow widths, gap --space-4, hairline border-bottom
+    (title/link + .ss-consent-item__badges)
+    (action button/form)
+```
+
+`.ss-consent-item__badges` stacks badges with `margin-top: var(--space-2)` under the title so they
+read as a group, not crammed against it. First item drops top padding, last item drops bottom
+padding and its border, so the list sits flush with the card's own padding.
+
 ### Stack — `.ss-stack`
 
 `display: flex; flex-direction: column; gap: var(--space-5)`. Use this to space out multiple
@@ -317,6 +340,13 @@ Pages, with Projects management still placeholder content pending its own build-
 page (gated on `ManageUsers` only) lets an admin change any of a user's own fields plus set a new
 password (`NewPassword`/`ConfirmNewPassword` — set-only, the current password is never shown or
 requested back).
+`/dashboard/documents`, `/dashboard/documents/create`, and `/dashboard/documents/{id}/edit` are
+built out and gated on `ManageDocuments`: the list shows active documents with type/project/version/
+effective date/required badge; create makes version 1 of a platform-wide (non-project-scoped)
+document; edit doesn't mutate the row in place — it publishes a new version (deactivates the
+current one, increments `Version`) and emails everyone whose acceptance of the previous version no
+longer covers the new one (`IDocumentEmailSender`, same as the API's `PUT /documents/{id}`).
+Project-scoped document management is still API-only.
 
 Not done yet:
 

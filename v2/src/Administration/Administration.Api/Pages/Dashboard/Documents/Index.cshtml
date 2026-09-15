@@ -1,0 +1,59 @@
+@page "/dashboard/documents"
+@model Administration.Api.Pages.Dashboard.Documents.IndexModel
+@{
+    ViewData["Title"] = L["Documents"].Value;
+}
+
+<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-4);">
+    <h1 style="margin:0;">@L["Documents"]</h1>
+    <a class="ss-btn ss-btn--primary" href="/dashboard/documents/create">@L["NewDocument"]</a>
+</div>
+
+<div class="ss-card">
+    @if (Model.DocumentList.Count == 0)
+    {
+        <p>@L["NoDocumentsYet"]</p>
+    }
+    else
+    {
+        <table class="ss-table">
+            <thead>
+                <tr>
+                    <th>@L["Title"]</th>
+                    <th>@L["Type"]</th>
+                    <th>@L["Project"]</th>
+                    <th>@L["Version"]</th>
+                    <th>@L["EffectiveAt"]</th>
+                    <th>@L["Required"]</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var document in Model.DocumentList)
+                {
+                    <tr>
+                        <td>@document.Title</td>
+                        <td>@document.Type</td>
+                        <td>@(document.ProjectName ?? L["Global"].Value)</td>
+                        <td>@document.Version</td>
+                        <td>@document.EffectiveAt.ToString("d")</td>
+                        <td>
+                            @if (document.IsRequired)
+                            {
+                                <span class="ss-badge ss-badge--warning">@L["Required"]</span>
+                            }
+                            else
+                            {
+                                <span class="ss-badge">@L["Optional"]</span>
+                            }
+                        </td>
+                        <td style="display:flex;gap:var(--space-2);justify-content:flex-end;">
+                            <a class="ss-btn ss-btn--ghost ss-btn--sm" href="/documents/@document.Id/view" target="_blank" rel="noopener">@L["View"]</a>
+                            <a class="ss-btn ss-btn--ghost ss-btn--sm" href="/dashboard/documents/@document.Id/edit">@L["Edit"]</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

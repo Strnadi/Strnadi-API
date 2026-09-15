@@ -128,6 +128,9 @@
   <data name="MyAccount" xml:space="preserve">
     <value>Mein Konto</value>
   </data>
+  <data name="Profile" xml:space="preserve">
+    <value>Profil</value>
+  </data>
   <data name="Users" xml:space="preserve">
     <value>Benutzer</value>
   </data>
@@ -223,5 +226,46 @@
   </data>
   <data name="BackToHome" xml:space="preserve">
     <value>Zurück zur Startseite</value>
+  </data>
+
+  <!-- Dashboard: document management -->
+  <data name="Title" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="NewDocument" xml:space="preserve">
+    <value>Neues Dokument</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Typ</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="EffectiveAt" xml:space="preserve">
+    <value>Gültig ab</value>
+  </data>
+  <data name="Content" xml:space="preserve">
+    <value>Inhalt</value>
+  </data>
+  <data name="MarkdownSupported" xml:space="preserve">
+    <value>Unterstützt Markdown-Formatierung.</value>
+  </data>
+  <data name="Global" xml:space="preserve">
+    <value>Global</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>Projekt</value>
+  </data>
+  <data name="PublishNewVersion" xml:space="preserve">
+    <value>Neue Version veröffentlichen</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>Ansehen</value>
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value>Erforderlich</value>
+  </data>
+  <data name="NoDocumentsYet" xml:space="preserve">
+    <value>Es gibt noch keine Dokumente.</value>
   </data>
 </root>

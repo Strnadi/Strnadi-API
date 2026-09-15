@@ -128,6 +128,9 @@
   <data name="MyAccount" xml:space="preserve">
     <value>Můj účet</value>
   </data>
+  <data name="Profile" xml:space="preserve">
+    <value>Profil</value>
+  </data>
   <data name="Users" xml:space="preserve">
     <value>Uživatelé</value>
   </data>
@@ -223,5 +226,46 @@
   </data>
   <data name="BackToHome" xml:space="preserve">
     <value>Zpět na úvod</value>
+  </data>
+
+  <!-- Dashboard: document management -->
+  <data name="Title" xml:space="preserve">
+    <value>Název</value>
+  </data>
+  <data name="NewDocument" xml:space="preserve">
+    <value>Nový dokument</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Typ</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Verze</value>
+  </data>
+  <data name="EffectiveAt" xml:space="preserve">
+    <value>Účinnost od</value>
+  </data>
+  <data name="Content" xml:space="preserve">
+    <value>Obsah</value>
+  </data>
+  <data name="MarkdownSupported" xml:space="preserve">
+    <value>Podporuje formátování Markdown.</value>
+  </data>
+  <data name="Global" xml:space="preserve">
+    <value>Globální</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>Projekt</value>
+  </data>
+  <data name="PublishNewVersion" xml:space="preserve">
+    <value>Publikovat novou verzi</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>Zobrazit</value>
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value>Povinné</value>
+  </data>
+  <data name="NoDocumentsYet" xml:space="preserve">
+    <value>Zatím tu nejsou žádné dokumenty.</value>
   </data>
 </root>

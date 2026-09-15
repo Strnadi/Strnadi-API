@@ -1,0 +1,54 @@
+@page "/dashboard/documents/create"
+@using Administration.Domain.Entities.Enums
+@model Administration.Api.Pages.Dashboard.Documents.CreateModel
+@{
+    ViewData["Title"] = L["NewDocument"].Value;
+}
+
+<a href="/dashboard/documents">&larr; @L["Documents"]</a>
+
+<h1>@L["NewDocument"]</h1>
+
+<div class="ss-card">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
+
+        <div class="ss-field-row">
+            <div class="ss-field">
+                <label asp-for="Input.Type" class="ss-field__label">@L["Type"]</label>
+                <select asp-for="Input.Type" class="ss-field__input">
+                    @foreach (var type in Enum.GetValues<DocumentType>())
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+            <div class="ss-field">
+                <label asp-for="Input.Title" class="ss-field__label">@L["Title"]</label>
+                <input asp-for="Input.Title" class="ss-field__input" />
+                <span asp-validation-for="Input.Title" class="ss-field__error"></span>
+            </div>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Content" class="ss-field__label">@L["Content"]</label>
+            <textarea asp-for="Input.Content" class="ss-field__input" rows="14"></textarea>
+            <span class="ss-field__hint">@L["MarkdownSupported"]</span>
+            <span asp-validation-for="Input.Content" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field-row">
+            <div class="ss-field">
+                <label asp-for="Input.EffectiveAt" class="ss-field__label">@L["EffectiveAt"]</label>
+                <input asp-for="Input.EffectiveAt" type="datetime-local" class="ss-field__input" />
+                <span class="ss-field__hint">@L["Optional"]</span>
+            </div>
+            <div class="ss-field" style="display:flex;align-items:center;gap:var(--space-2);padding-top:var(--space-6);">
+                <input asp-for="Input.IsRequired" type="checkbox" class="ss-checkbox__input" style="margin:0;" />
+                <label asp-for="Input.IsRequired" class="ss-field__label" style="margin:0;">@L["Required"]</label>
+            </div>
+        </div>
+
+        <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>
+    </form>
+</div>

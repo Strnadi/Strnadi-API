@@ -8,6 +8,7 @@
 
 <div class="ss-stack">
     <div class="ss-card">
+        <h2 class="ss-section-heading">@L["Profile"]</h2>
         <form method="post">
             <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
 
@@ -51,7 +52,7 @@
     </div>
 
     <div class="ss-card">
-        <h2>@L["ChangePassword"]</h2>
+        <h2 class="ss-section-heading">@L["ChangePassword"]</h2>
         <form method="post" asp-page-handler="ChangePassword">
             <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
 
@@ -78,7 +79,7 @@
     </div>
 
     <div class="ss-card">
-        <h2>@L["Documents"]</h2>
+        <h2 class="ss-section-heading">@L["Documents"]</h2>
 
         @if (Model.ConsentDocuments.Count == 0)
         {
@@ -86,13 +87,13 @@
         }
         else
         {
-            <div class="ss-stack" style="gap:var(--space-3);">
+            <div class="ss-consent-list">
                 @foreach (var row in Model.ConsentDocuments)
                 {
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding-bottom:var(--space-3);border-bottom:1px solid var(--color-border);">
+                    <div class="ss-consent-item">
                         <div>
                             <a href="/documents/@row.Document.Id/view" target="_blank" rel="noopener">@row.Document.Title</a>
-                            <div style="margin-top:var(--space-1);display:flex;gap:var(--space-2);">
+                            <div class="ss-consent-item__badges">
                                 @if (row.IsAccepted)
                                 {
                                     <span class="ss-badge ss-badge--success">@L["Accepted"]</span>
