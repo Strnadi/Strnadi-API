@@ -142,6 +142,13 @@ public class FilteredRecordingPartsService(
                 detectedDialects.Add(new DetectedDialect { FilteredRecordingPartId = filteredPart.Id, ConfirmedDialectId = dialect.Id });
             else
                 detectedDialect.ConfirmedDialectId = dialect.Id;
+
+            // RecordingPointResolver (map rendering) only recognizes an admin decision via State,
+            // not via ConfirmedDialectId alone - without this the map keeps showing the AI/user
+            // source and color even after this confirmation.
+            filteredPart.State = (short)(detectedDialect?.PredictedDialectId is not null
+                ? FilteredRecordingPartState.DetectedByAiAndConfirmed
+                : FilteredRecordingPartState.ConfirmedManually);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
