@@ -282,7 +282,7 @@ Done: `Administration.Api/wwwroot/design-system.css` exists with all tokens and 
 `Pages/_Layout.cshtml` loads it for every Razor Page, and renders `.ss-lang-switch`. `Login.cshtml`,
 `Register.cshtml`, and `ResetPassword.cshtml` are built on it, including branded Google/Apple
 buttons (`Pages/Account/_ExternalProviders.cshtml`) wired to the existing external-login endpoints,
-and are fully localized (cs default, en) — see the `strnadi-ui` skill for the localization pattern.
+and are fully localized (cs default, en, de) — see the `strnadi-ui` skill for the localization pattern.
 The admin panel shell (`Pages/Dashboard/_DashboardLayout.cshtml`) is built on the same CSS and
 nests inside `_Layout.cshtml`, with its own inline language switch in the topbar (see § Language
 switch); `/dashboard` (own profile) and `/dashboard/projects[/{id}]` exist as role-gated Razor

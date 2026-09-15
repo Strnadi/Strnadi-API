@@ -52,14 +52,14 @@ new layout piece):
 
 ## Localization
 
-Czech (`cs`) is the default/primary language (strnadi.cz); English (`en`) is the only other
-supported UI language right now. All UI text goes through this, never a hardcoded literal:
+Czech (`cs`) is the default/primary language (strnadi.cz); English (`en`) and German (`de`) are
+the other two supported UI languages. All UI text goes through this, never a hardcoded literal:
 
 - Shared strings live in `Administration.Api/Resources/SharedResource.resx` (Czech — this is the
-  neutral/fallback resx, so it holds Czech directly, not English) and
-  `SharedResource.en.resx` (English translation). Add a key to **both** files in the same change
-  — a missing key falls back to displaying the raw key name to users, which is worse than not
-  localizing at all.
+  neutral/fallback resx, so it holds Czech directly, not English),
+  `SharedResource.en.resx` (English translation), and `SharedResource.de.resx` (German
+  translation). Add a key to **all three** files in the same change — a missing key falls back to
+  displaying the raw key name to users, which is worse than not localizing at all.
 - In `.cshtml` files: `L["KeyName"]` is available everywhere without an explicit `@inject` — it's
   set up once in `Pages/_ViewImports.cshtml`. Use it for headings, labels, buttons, links — every
   piece of static UI text.

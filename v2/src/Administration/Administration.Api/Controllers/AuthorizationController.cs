@@ -24,6 +24,8 @@ public class AuthorizationController(
     IUserPermissionsRepository permissions,
     ILogger<AuthorizationController> logger) : ControllerBase
 {
+    private static readonly string[] SupportedLanguages = ["cs", "en", "de"];
+
     [HttpGet("authorize"), HttpPost("authorize"), IgnoreAntiforgeryToken]
     public async Task<IActionResult> AuthorizeAsync(
         [FromQuery(Name = "client_id")] string? clientId,
@@ -32,7 +34,8 @@ public class AuthorizationController(
         [FromQuery] string? scope,
         [FromQuery] string? state,
         [FromQuery(Name = "code_challenge")] string? codeChallenge,
-        [FromQuery(Name = "code_challenge_method")] string? codeChallengeMethod)
+        [FromQuery(Name = "code_challenge_method")] string? codeChallengeMethod,
+        [FromQuery(Name = "preferred_language")] string? preferredLanguage)
     {
         var request = HttpContext.GetOpenIddictServerRequest()
                       ?? throw new InvalidOperationException("Cannot retrieve OpenIddict request");
@@ -49,6 +52,14 @@ public class AuthorizationController(
         {
             logger.LogWarning("Authorization request failed: authenticated principal has no matching user");
             return Forbid(IdentityConstants.ApplicationScheme);
+        }
+
+        if (preferredLanguage is not null && SupportedLanguages.Contains(preferredLanguage) &&
+            user.PreferredLanguage != preferredLanguage)
+        {
+            user.PreferredLanguage = preferredLanguage;
+            await users.UpdateAsync(user);
+            logger.LogInformation("Updated preferred language for user {UserId} to {PreferredLanguage}", user.Id, preferredLanguage);
         }
 
         var identity = new ClaimsIdentity(

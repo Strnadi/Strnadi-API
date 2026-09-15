@@ -34,7 +34,7 @@ const string clientId = "strnadi-app";
 const string tenantApiClientId = "tenant-api";
 const string projectOriginsCorsPolicy = "ProjectOrigins";
 
-string[] supportedCultures = ["cs", "en"];
+string[] supportedCultures = ["cs", "en", "de"];
 
 LoadEnvFile(Path.Combine(AppContext.BaseDirectory, "preprod.env"));
 
