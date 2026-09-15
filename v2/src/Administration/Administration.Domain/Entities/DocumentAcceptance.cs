@@ -10,9 +10,11 @@ public class DocumentAcceptance
 
     public Guid DocumentId { get; set; }
     
+    public virtual Document Document { get; set; }
+    
     public DateTime AcceptedAt { get; set; }
     
-    public string? IpAddress { get; set; }
+    public DateTime? RevokedAt { get; set; }
     
-    public virtual Document Document { get; set; }
+    public string? IpAddress { get; set; }
 }

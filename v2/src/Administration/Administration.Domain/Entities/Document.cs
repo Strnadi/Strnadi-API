@@ -13,7 +13,9 @@ public class Document
     public string Content { get; set; }
     
     public DateTime PublishedAt { get; set; }
-    
+
+    public DateTime EffectiveAt { get; set; }
+
     public bool IsActive { get; set; }
     
     public Guid? ProjectId { get; set; }

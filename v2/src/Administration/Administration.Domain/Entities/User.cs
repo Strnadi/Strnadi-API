@@ -22,6 +22,8 @@ public class User : IdentityUser<Guid>
 
     public bool Consent { get; set; }
 
+    public string PreferredLanguage { get; set; } = "cs";
+
     public string? ProfilePhotoPath { get; set; }
 
     public string? ProfilePhotoFormat { get; set; }

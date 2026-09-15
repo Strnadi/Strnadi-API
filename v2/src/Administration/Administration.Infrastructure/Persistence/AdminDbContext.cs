@@ -42,6 +42,8 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
             entity.Property(e => e.PostCode).HasConversion(
                 i => i == null ? null : encryption.Encrypt(i.Value.ToString()),
                 s => s == null ? null : int.Parse(encryption.Decrypt(s)));
+
+            entity.Property(e => e.PreferredLanguage).HasMaxLength(8);
         });
 
         modelBuilder.Entity<Role>(entity =>
@@ -112,7 +114,9 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
 
             entity.Property(da => da.IpAddress).HasMaxLength(45);
 
-            entity.HasIndex(da => new { da.UserId, da.DocumentId }).IsUnique();
+            entity.HasIndex(da => new { da.UserId, da.DocumentId })
+                .IsUnique()
+                .HasFilter("revoked_at IS NULL");
         });
     }
 }

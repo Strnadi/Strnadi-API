@@ -25,4 +25,6 @@ public static class Permissions
     public const string SendNotifications = "notifications.send";
 
     public const string ManageAchievements = "achievements.manage";
+
+    public const string ManageDocuments = "documents.manage";
 }

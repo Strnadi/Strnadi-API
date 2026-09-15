@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Security.Claims;
 using Administration.Domain.Entities;
+using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Identity;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore;
@@ -17,7 +18,11 @@ namespace Administration.Api.Controllers;
 
 [ApiController]
 [Route("connect")]
-public class AuthorizationController(UserManager<User> users, AdminDbContext db, ILogger<AuthorizationController> logger) : ControllerBase
+public class AuthorizationController(
+    UserManager<User> users,
+    AdminDbContext db,
+    IUserPermissionsRepository permissions,
+    ILogger<AuthorizationController> logger) : ControllerBase
 {
     [HttpGet("authorize"), HttpPost("authorize"), IgnoreAntiforgeryToken]
     public async Task<IActionResult> AuthorizeAsync(
@@ -151,23 +156,33 @@ public class AuthorizationController(UserManager<User> users, AdminDbContext db,
             return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
-        var roles = await db.UserRoles
-            .Where(ur => ur.UserId == userId)
-            .Join(db.Roles.Where(r => r.ProjectId == projectId), ur => ur.RoleId, r => r.Id, (_, r) => r)
-            .ToListAsync();
+        var hasOutstandingConsent = await permissions.HasOutstandingConsentAsync(userId, projectId);
+        if (hasOutstandingConsent)
+            logger.LogInformation(
+                "User {UserId} has outstanding consent for project {ProjectId}; issuing token without roles/permissions",
+                userId, projectId);
+
+        var roles = hasOutstandingConsent
+            ? []
+            : await db.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .Join(db.Roles.Where(r => r.ProjectId == projectId), ur => ur.RoleId, r => r.Id, (_, r) => r)
+                .ToListAsync();
 
         var roleIds = roles.Select(r => r.Id).ToList();
-        var permissions = await db.RoleClaims
-            .Where(rc => roleIds.Contains(rc.RoleId) && rc.ClaimType == "permission")
-            .Select(rc => rc.ClaimValue!)
-            .ToListAsync();
+        var permissionClaims = roleIds.Count == 0
+            ? []
+            : await db.RoleClaims
+                .Where(rc => roleIds.Contains(rc.RoleId) && rc.ClaimType == "permission")
+                .Select(rc => rc.ClaimValue!)
+                .ToListAsync();
 
         var identity =
             new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
         identity.SetClaim(Claims.Subject, userId.ToString())
             .SetClaim("project_id", projectId.ToString());
         identity.SetClaims(Claims.Role, roles.Select(r => r.Name!).ToImmutableArray());
-        identity.SetClaims("permission", permissions.ToImmutableArray());
+        identity.SetClaims("permission", permissionClaims.ToImmutableArray());
         identity.SetAudiences($"project:{projectId}");
         identity.SetDestinations(GetDestinations);
 

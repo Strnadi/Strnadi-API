@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using Administration.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -55,7 +56,8 @@ public class RegisterModel(UserManager<User> users, SignInManager<User> signIn, 
             LastName = Input.LastName,
             City = string.IsNullOrWhiteSpace(Input.City) ? null : Input.City,
             PostCode = Input.PostCode,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            PreferredLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName
         };
 
         var result = await users.CreateAsync(user, Input.Password);
