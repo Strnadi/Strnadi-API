@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Platform.Shared.Kernel.Authorization;
+using Tenant.Api.Extensions;
 using Tenant.Application.Recordings;
 
 namespace Tenant.Api.Controllers;
@@ -11,24 +13,33 @@ public class RecordingPartsController(RecordingPartsService recordingPartsServic
 {
     /// <summary>Kept for old clients still hitting the three-segment route; same as <see cref="GetSoundAsync"/>.</summary>
     [Obsolete("use part/{partId:int}/sound GET instead")]
+    [Authorize]
     [HttpGet("part/{recId:int}/{partId:int}/sound")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, "audio/wav")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status206PartialContent, "audio/wav")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSoundLegacyAsync([FromRoute] int recId, [FromRoute] int partId, CancellationToken cancellationToken)
     {
-        var bytes = await recordingPartsService.GetSoundAsync(partId, cancellationToken);
+        var bytes = await recordingPartsService.GetSoundAsync(
+            partId, this.GetCallerId(), this.HasPermission(Permissions.DownloadRecordings), cancellationToken);
         return File(bytes, "audio/wav", enableRangeProcessing: true);
     }
 
-    /// <summary>The audio for a recording part, seekable via range requests.</summary>
+    /// <summary>The audio for a recording part, seekable via range requests. Requires ownership of the
+    /// recording, or the <see cref="Permissions.DownloadRecordings"/> permission to download others'.</summary>
+    [Authorize]
     [HttpGet("part/{partId:int}/sound")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, "audio/wav")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status206PartialContent, "audio/wav")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSoundAsync([FromRoute] int partId, CancellationToken cancellationToken)
     {
-        var bytes = await recordingPartsService.GetSoundAsync(partId, cancellationToken);
+        var bytes = await recordingPartsService.GetSoundAsync(
+            partId, this.GetCallerId(), this.HasPermission(Permissions.DownloadRecordings), cancellationToken);
         return File(bytes, "audio/wav", enableRangeProcessing: true);
     }
 

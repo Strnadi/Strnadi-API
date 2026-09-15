@@ -16,10 +16,13 @@ public class RecordingPartsService(
     IUnitOfWork unitOfWork,
     ILogger<RecordingPartsService> logger)
 {
-    public async Task<byte[]> GetSoundAsync(int partId, CancellationToken cancellationToken = default)
+    public async Task<byte[]> GetSoundAsync(int partId, Guid callerId, bool canDownloadOthers, CancellationToken cancellationToken = default)
     {
-        var part = await recordingParts.GetByIdAsync(partId, cancellationToken)
+        var part = await recordingParts.GetByIdAsync(partId, includeRecording: true, cancellationToken)
             ?? throw new NotFoundException(nameof(RecordingPart), partId);
+
+        if (!canDownloadOthers && part.Recording?.UserId != callerId)
+            throw new ForbiddenException("You are not the owner of this recording");
 
         var bytes = part.FilePath is not null
             ? await fileStorage.ReadAsync(part.FilePath, cancellationToken)

@@ -74,11 +74,12 @@ public class EditModel(
 
         var publishedAt = DateTime.UtcNow;
 
-        // <input type="datetime-local"> has no timezone; the bound value comes back with
-        // Kind=Unspecified, which Npgsql refuses to write to a `timestamptz` column.
+        // The client converts the local datetime-local input to a UTC instant (ISO string with an
+        // explicit offset) before submitting - ToUniversalTime() here just normalizes whatever Kind
+        // model binding produced from that string into a true UTC DateTime for Npgsql.
         var effectiveAt = Input.EffectiveAt is null
             ? publishedAt
-            : DateTime.SpecifyKind(Input.EffectiveAt.Value, DateTimeKind.Utc);
+            : Input.EffectiveAt.Value.ToUniversalTime();
 
         var next = new Document
         {

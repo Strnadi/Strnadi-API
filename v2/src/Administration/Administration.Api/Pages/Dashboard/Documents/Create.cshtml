@@ -39,8 +39,10 @@
 
         <div class="ss-field-row">
             <div class="ss-field">
-                <label asp-for="Input.EffectiveAt" class="ss-field__label">@L["EffectiveAt"]</label>
-                <input asp-for="Input.EffectiveAt" type="datetime-local" class="ss-field__input" />
+                <label for="EffectiveAtLocal" class="ss-field__label">@L["EffectiveAt"]</label>
+                <input type="datetime-local" id="EffectiveAtLocal" class="ss-field__input" />
+                <input type="hidden" name="Input.EffectiveAt" id="EffectiveAtUtc"
+                       value="@(Model.Input.EffectiveAt?.ToString("yyyy-MM-ddTHH:mm:sszzz"))" />
                 <span class="ss-field__hint">@L["Optional"]</span>
             </div>
             <div class="ss-field" style="display:flex;align-items:center;gap:var(--space-2);padding-top:var(--space-6);">
@@ -52,3 +54,25 @@
         <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>
     </form>
 </div>
+
+<script>
+    (function () {
+        var localInput = document.getElementById('EffectiveAtLocal');
+        var utcInput = document.getElementById('EffectiveAtUtc');
+
+        // Server has no idea what timezone the browser is in, so EffectiveAt is entered as local
+        // wall-clock time here and converted to an absolute UTC instant client-side before submit.
+        if (utcInput.value) {
+            var parsed = new Date(utcInput.value);
+            if (!isNaN(parsed.getTime())) {
+                var pad = function (n) { return String(n).padStart(2, '0'); };
+                localInput.value = parsed.getFullYear() + '-' + pad(parsed.getMonth() + 1) + '-' + pad(parsed.getDate())
+                    + 'T' + pad(parsed.getHours()) + ':' + pad(parsed.getMinutes());
+            }
+        }
+
+        localInput.form.addEventListener('submit', function () {
+            utcInput.value = localInput.value ? new Date(localInput.value).toISOString() : '';
+        });
+    })();
+</script>

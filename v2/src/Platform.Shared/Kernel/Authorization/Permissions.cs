@@ -21,6 +21,7 @@ public static class Permissions
     
     public const string ModerateRecordings = "recordings.moderate";
     public const string DeleteRecordings = "recordings.delete";
+    public const string DownloadRecordings = "recordings.download";
 
     public const string SendNotifications = "notifications.send";
 

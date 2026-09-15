@@ -9,5 +9,14 @@ public class RecordingPartsRepository(TenantDbContext db) : IRecordingPartsRepos
     public Task<RecordingPart?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         db.RecordingParts.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
+    public Task<RecordingPart?> GetByIdAsync(int id, bool includeRecording, CancellationToken cancellationToken = default)
+    {
+        var query = db.RecordingParts.AsQueryable();
+        if (includeRecording)
+            query = query.Include(p => p.Recording);
+
+        return query.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+    }
+
     public void Add(RecordingPart recordingPart) => db.RecordingParts.Add(recordingPart);
 }

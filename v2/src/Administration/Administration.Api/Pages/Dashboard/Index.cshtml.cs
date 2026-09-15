@@ -184,8 +184,13 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
 
     private async Task<List<DocumentConsentRow>> LoadConsentDocumentsAsync()
     {
+        var now = DateTime.UtcNow;
+
+        // Matches HasOutstandingConsentAsync's own filter - a document that hasn't reached its
+        // EffectiveAt yet isn't enforced, so it shouldn't show up here as "not accepted" either;
+        // that combination was misleading (looked urgent, blocked nothing).
         var documents = await Db.Documents
-            .Where(d => d.IsActive && d.ProjectId == null)
+            .Where(d => d.IsActive && d.ProjectId == null && d.EffectiveAt <= now)
             .OrderByDescending(d => d.IsRequired)
             .ThenBy(d => d.Type)
             .ToListAsync();
