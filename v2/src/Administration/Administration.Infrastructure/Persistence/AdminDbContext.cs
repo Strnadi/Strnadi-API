@@ -18,6 +18,10 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
 
     public virtual DbSet<ProjectMembership> ProjectMemberships { get; set; }
 
+    public virtual DbSet<Document> Documents { get; set; }
+
+    public virtual DbSet<DocumentAcceptance> DocumentAcceptances { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -76,6 +80,39 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(pm => new { pm.UserId, pm.ProjectId }).IsUnique();
+        });
+
+        modelBuilder.Entity<Document>(entity =>
+        {
+            entity.Property(d => d.Type).HasConversion<string>().HasMaxLength(64);
+
+            entity.HasOne(d => d.Project)
+                .WithMany()
+                .HasForeignKey(d => d.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(d => new { d.Type, d.Version, d.ProjectId }).IsUnique();
+
+            entity.HasIndex(d => new { d.Type, d.ProjectId })
+                .IsUnique()
+                .HasFilter("is_active");
+        });
+
+        modelBuilder.Entity<DocumentAcceptance>(entity =>
+        {
+            entity.HasOne(da => da.User)
+                .WithMany()
+                .HasForeignKey(da => da.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(da => da.Document)
+                .WithMany()
+                .HasForeignKey(da => da.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(da => da.IpAddress).HasMaxLength(45);
+
+            entity.HasIndex(da => new { da.UserId, da.DocumentId }).IsUnique();
         });
     }
 }
