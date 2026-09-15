@@ -49,6 +49,15 @@
   <data name="ResetPassword" xml:space="preserve">
     <value>Passwort zurücksetzen</value>
   </data>
+  <data name="ForgotPassword" xml:space="preserve">
+    <value>Passwort vergessen?</value>
+  </data>
+  <data name="SendResetLink" xml:space="preserve">
+    <value>Link senden</value>
+  </data>
+  <data name="ResetLinkSentMessage" xml:space="preserve">
+    <value>Falls für diese E-Mail-Adresse ein Konto existiert, haben wir einen Link zum Zurücksetzen des Passworts gesendet.</value>
+  </data>
 
   <!-- Auth page extras -->
   <data name="ContinueWithGoogle" xml:space="preserve">

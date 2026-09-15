@@ -25,6 +25,9 @@
                 <label asp-for="Input.Password" class="ss-field__label">@L["Password"]</label>
                 <input asp-for="Input.Password" type="password" class="ss-field__input" />
                 <span asp-validation-for="Input.Password" class="ss-field__error"></span>
+                <div class="ss-field__hint" style="margin-top:var(--space-2);">
+                    <a href="/account/forgot-password">@L["ForgotPassword"]</a>
+                </div>
             </div>
 
             <button type="submit" class="ss-btn ss-btn--primary">@L["Login"]</button>
