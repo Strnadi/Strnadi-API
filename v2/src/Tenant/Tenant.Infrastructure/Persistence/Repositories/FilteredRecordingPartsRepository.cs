@@ -19,7 +19,7 @@ public class FilteredRecordingPartsRepository(TenantDbContext db) : IFilteredRec
 
     public Task<FilteredRecordingPart[]> GetAllAsync(int? recordingId, bool? verified, CancellationToken cancellationToken = default)
     {
-        var query = db.FilteredRecordingParts.AsQueryable();
+        var query = IncludeForResponse(db.FilteredRecordingParts);
 
         if (recordingId is not null)
             query = query.Where(p => p.RecordingId == recordingId);
@@ -31,7 +31,15 @@ public class FilteredRecordingPartsRepository(TenantDbContext db) : IFilteredRec
     }
 
     public Task<FilteredRecordingPart?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        db.FilteredRecordingParts.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        IncludeForResponse(db.FilteredRecordingParts).FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
+    // Eager-loads what FilteredRecordingPartResponse needs to nest `recording` and `detectedDialects`
+    // in the API response (mirroring the old v1 shape) without relying on lazy-loading proxies.
+    private static IQueryable<FilteredRecordingPart> IncludeForResponse(IQueryable<FilteredRecordingPart> query) =>
+        query
+            .Include(p => p.Recording)
+            .Include(p => p.DetectedDialect).ThenInclude(d => d!.ConfirmedDialect)
+            .Include(p => p.DetectedDialect).ThenInclude(d => d!.UserGuessDialect);
 
     public Task<bool> ExistsAsync(int id, CancellationToken cancellationToken = default) =>
         db.FilteredRecordingParts.AnyAsync(p => p.Id == id, cancellationToken);

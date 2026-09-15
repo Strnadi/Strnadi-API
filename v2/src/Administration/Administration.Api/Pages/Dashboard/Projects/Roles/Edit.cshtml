@@ -1,0 +1,75 @@
+@page "/dashboard/projects/{projectId:guid}/roles/{roleId:guid}/edit"
+@model Administration.Api.Pages.Dashboard.Projects.Roles.EditModel
+@{
+    ViewData["Title"] = Model.Role.Name;
+}
+
+<a href="/dashboard/projects/@Model.Project.Id/roles">&larr; @L["Roles"]</a>
+
+<h1>@Model.Role.Name</h1>
+
+<div class="ss-stack">
+    <div class="ss-card">
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
+
+        <form method="post">
+            <div class="ss-field">
+                <label asp-for="Input.Description" class="ss-field__label">@L["Description"]</label>
+                <input asp-for="Input.Description" class="ss-field__input" />
+            </div>
+
+            <div class="ss-field">
+                <span class="ss-field__label">@L["Permissions"]</span>
+                <div class="ss-checkbox-list">
+                    @foreach (var permission in Model.AllPermissions)
+                    {
+                        <div class="ss-checkbox">
+                            <input type="checkbox" class="ss-checkbox__input" id="perm_@permission"
+                                   name="Input.Permissions" value="@permission"
+                                   checked="@(Model.Input.Permissions.Contains(permission))" />
+                            <label class="ss-checkbox__label" for="perm_@permission">@permission</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>
+        </form>
+    </div>
+
+    <div class="ss-card">
+        <h2 class="ss-section-heading">@L["Members"]</h2>
+
+        @if (Model.RoleMembers.Count == 0)
+        {
+            <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NoMembers"]</p>
+        }
+        else
+        {
+            <div class="ss-consent-list">
+                @foreach (var member in Model.RoleMembers)
+                {
+                    <div class="ss-consent-item">
+                        <div>@member.FirstName @member.LastName <span style="color:var(--color-text-muted);">(@member.Email)</span></div>
+                        <form method="post" asp-page-handler="RemoveMember" asp-route-userId="@member.UserId">
+                            <button type="submit" class="ss-btn ss-btn--secondary ss-btn--sm">@L["Remove"]</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+
+        <form method="post" asp-page-handler="AssignUser" style="margin-top:var(--space-4);">
+            <div class="ss-field-row">
+                <div class="ss-field" style="flex:2;">
+                    <label asp-for="AssignInput.Email" class="ss-field__label">@L["Email"]</label>
+                    <input asp-for="AssignInput.Email" class="ss-field__input" />
+                    <span asp-validation-for="AssignInput.Email" class="ss-field__error"></span>
+                </div>
+                <div class="ss-field" style="display:flex;align-items:flex-end;">
+                    <button type="submit" class="ss-btn ss-btn--primary">@L["AssignUser"]</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

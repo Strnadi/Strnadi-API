@@ -1,0 +1,43 @@
+@page "/dashboard/projects/{projectId:guid}/roles/create"
+@model Administration.Api.Pages.Dashboard.Projects.Roles.CreateModel
+@{
+    ViewData["Title"] = L["NewRole"].Value;
+}
+
+<a href="/dashboard/projects/@Model.Project.Id/roles">&larr; @L["Roles"]</a>
+
+<h1>@L["NewRole"]</h1>
+
+<div class="ss-card">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Name" class="ss-field__label">@L["Name"]</label>
+            <input asp-for="Input.Name" class="ss-field__input" />
+            <span asp-validation-for="Input.Name" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Description" class="ss-field__label">@L["Description"]</label>
+            <input asp-for="Input.Description" class="ss-field__input" />
+        </div>
+
+        <div class="ss-field">
+            <span class="ss-field__label">@L["Permissions"]</span>
+            <div class="ss-checkbox-list">
+                @foreach (var permission in Model.AllPermissions)
+                {
+                    <div class="ss-checkbox">
+                        <input type="checkbox" class="ss-checkbox__input" id="perm_@permission"
+                               name="Input.Permissions" value="@permission"
+                               checked="@(Model.Input.Permissions.Contains(permission))" />
+                        <label class="ss-checkbox__label" for="perm_@permission">@permission</label>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>
+    </form>
+</div>

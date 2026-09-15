@@ -12,11 +12,63 @@ public class FilteredRecordingPartsService(
     IDialectsRepository dialects,
     IUnitOfWork unitOfWork)
 {
-    public Task<FilteredRecordingPart[]> GetAllAsync(int? recordingId, bool? verified, CancellationToken cancellationToken = default) =>
-        filteredParts.GetAllAsync(recordingId, verified, cancellationToken);
+    public async Task<FilteredRecordingPartResponse[]> GetAllAsync(int? recordingId, bool? verified, CancellationToken cancellationToken = default)
+    {
+        var parts = await filteredParts.GetAllAsync(recordingId, verified, cancellationToken);
+        var predictedDialectCodes = await GetPredictedDialectCodesAsync(parts, cancellationToken);
+        return parts.Select(p => BuildResponse(p, predictedDialectCodes)).ToArray();
+    }
 
-    public async Task<FilteredRecordingPart> GetByIdAsync(int fpId, CancellationToken cancellationToken = default) =>
-        await filteredParts.GetByIdAsync(fpId, cancellationToken) ?? throw new NotFoundException(nameof(FilteredRecordingPart), fpId);
+    public async Task<FilteredRecordingPartResponse> GetByIdAsync(int fpId, CancellationToken cancellationToken = default)
+    {
+        var part = await filteredParts.GetByIdAsync(fpId, cancellationToken)
+            ?? throw new NotFoundException(nameof(FilteredRecordingPart), fpId);
+
+        var predictedDialectCodes = await GetPredictedDialectCodesAsync([part], cancellationToken);
+        return BuildResponse(part, predictedDialectCodes);
+    }
+
+    // PredictedDialectId has no navigation property in the schema (only ConfirmedDialect/UserGuessDialect
+    // do), so resolving its code needs a manual lookup instead of an EF Include.
+    private async Task<Dictionary<int, string>> GetPredictedDialectCodesAsync(
+        IEnumerable<FilteredRecordingPart> parts, CancellationToken cancellationToken)
+    {
+        var predictedIds = parts
+            .Select(p => p.DetectedDialect?.PredictedDialectId)
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .ToHashSet();
+
+        if (predictedIds.Count == 0)
+            return [];
+
+        var allDialects = await dialects.GetAllAsync(cancellationToken);
+        return allDialects.Where(d => predictedIds.Contains(d.Id)).ToDictionary(d => d.Id, d => d.DialectCode);
+    }
+
+    private static FilteredRecordingPartResponse BuildResponse(FilteredRecordingPart part, Dictionary<int, string> predictedDialectCodes)
+    {
+        var recording = new RecordingResponse(
+            part.Recording.Id, part.Recording.CreatedAt, part.Recording.EstimatedBirdsCount, part.Recording.ByApp,
+            part.Recording.Name, part.Recording.Note, part.Recording.NotePost, part.Recording.Device,
+            part.Recording.UserId, part.Recording.ExpectedPartsCount, part.Recording.UploadConfirmed, null);
+
+        var detected = Array.Empty<DetectedDialectResponse>();
+        if (part.DetectedDialect is not null)
+        {
+            var dd = part.DetectedDialect;
+            var predictedDialect = dd.PredictedDialectId is not null
+                && predictedDialectCodes.TryGetValue(dd.PredictedDialectId.Value, out var code)
+                    ? code
+                    : null;
+
+            detected = [new DetectedDialectResponse(
+                dd.Id, dd.UserGuessDialect?.DialectCode, dd.ConfirmedDialect?.DialectCode, predictedDialect, dd.FilteredRecordingPartId)];
+        }
+
+        return new FilteredRecordingPartResponse(
+            part.Id, part.StartDate, part.EndDate, part.State, part.RepresentantFlag, part.RecordingId, recording, detected);
+    }
 
     public async Task<int> UploadAsync(FilteredRecordingPartUploadRequest request, CancellationToken cancellationToken = default)
     {

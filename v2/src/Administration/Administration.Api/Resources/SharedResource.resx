@@ -268,4 +268,45 @@
   <data name="NoDocumentsYet" xml:space="preserve">
     <value>Zatím tu nejsou žádné dokumenty.</value>
   </data>
+
+  <!-- Dashboard: role management -->
+  <data name="Description" xml:space="preserve">
+    <value>Popis</value>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="NewRole" xml:space="preserve">
+    <value>Nová role</value>
+  </data>
+  <data name="NoRoles" xml:space="preserve">
+    <value>Zatím tu nejsou žádné role.</value>
+  </data>
+  <data name="NoRoleInThisProject" xml:space="preserve">
+    <value>Nemáte roli v tomto projektu.</value>
+  </data>
+  <data name="Permissions" xml:space="preserve">
+    <value>Oprávnění</value>
+  </data>
+  <data name="Members" xml:space="preserve">
+    <value>Členové</value>
+  </data>
+  <data name="NoMembers" xml:space="preserve">
+    <value>Této roli zatím nikdo nemá přiřazenou.</value>
+  </data>
+  <data name="AssignUser" xml:space="preserve">
+    <value>Přiřadit uživatele</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Odebrat</value>
+  </data>
+  <data name="UserNotFound" xml:space="preserve">
+    <value>Uživatel s tímto e-mailem nebyl nalezen.</value>
+  </data>
+  <data name="UserAlreadyHasRole" xml:space="preserve">
+    <value>Uživatel už tuto roli má.</value>
+  </data>
+  <data name="RoleNameTaken" xml:space="preserve">
+    <value>V tomto projektu už role s tímto názvem existuje.</value>
+  </data>
 </root>

@@ -8,14 +8,24 @@
 
 <h1>@Model.Project.Name</h1>
 
-@if (Model.CanManageProjects)
-{
-    <a class="ss-btn ss-btn--secondary ss-btn--sm" href="/dashboard/projects/@Model.Project.Id/edit">@L["Edit"]</a>
-}
+<div style="display:flex;gap:var(--space-2);">
+    @if (Model.CanManageProjects)
+    {
+        <a class="ss-btn ss-btn--secondary ss-btn--sm" href="/dashboard/projects/@Model.Project.Id/edit">@L["Edit"]</a>
+    }
+    @if (Model.CanManageRoles)
+    {
+        <a class="ss-btn ss-btn--secondary ss-btn--sm" href="/dashboard/projects/@Model.Project.Id/roles">@L["Roles"]</a>
+    }
+</div>
 
 <div class="ss-stack">
     <div class="ss-card">
         <h2>@L["YourRoles"]</h2>
+        @if (Model.RoleNames.Count == 0)
+        {
+            <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NoRoleInThisProject"]</p>
+        }
         @foreach (var role in Model.RoleNames)
         {
             <span class="ss-badge">@role</span>

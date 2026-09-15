@@ -268,4 +268,45 @@
   <data name="NoDocumentsYet" xml:space="preserve">
     <value>Es gibt noch keine Dokumente.</value>
   </data>
+
+  <!-- Dashboard: role management -->
+  <data name="Description" xml:space="preserve">
+    <value>Beschreibung</value>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>Rollen</value>
+  </data>
+  <data name="NewRole" xml:space="preserve">
+    <value>Neue Rolle</value>
+  </data>
+  <data name="NoRoles" xml:space="preserve">
+    <value>Es gibt noch keine Rollen.</value>
+  </data>
+  <data name="NoRoleInThisProject" xml:space="preserve">
+    <value>Sie haben keine Rolle in diesem Projekt.</value>
+  </data>
+  <data name="Permissions" xml:space="preserve">
+    <value>Berechtigungen</value>
+  </data>
+  <data name="Members" xml:space="preserve">
+    <value>Mitglieder</value>
+  </data>
+  <data name="NoMembers" xml:space="preserve">
+    <value>Dieser Rolle ist noch niemand zugewiesen.</value>
+  </data>
+  <data name="AssignUser" xml:space="preserve">
+    <value>Benutzer zuweisen</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="UserNotFound" xml:space="preserve">
+    <value>Kein Benutzer mit dieser E-Mail-Adresse gefunden.</value>
+  </data>
+  <data name="UserAlreadyHasRole" xml:space="preserve">
+    <value>Dieser Benutzer hat diese Rolle bereits.</value>
+  </data>
+  <data name="RoleNameTaken" xml:space="preserve">
+    <value>In diesem Projekt existiert bereits eine Rolle mit diesem Namen.</value>
+  </data>
 </root>

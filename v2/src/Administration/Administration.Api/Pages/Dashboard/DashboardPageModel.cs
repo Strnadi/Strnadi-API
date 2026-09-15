@@ -26,6 +26,7 @@ public abstract class DashboardPageModel(
     public bool CanManageUsers { get; private set; }
     public bool CanManageProjects { get; private set; }
     public bool CanManageDocuments { get; private set; }
+    public bool CanManageRoles { get; private set; }
     public bool CanViewUsersBasic { get; private set; }
     public bool CanViewUsersConfidential { get; private set; }
     public IReadOnlyList<ProjectSummary> Projects { get; private set; } = [];
@@ -58,6 +59,7 @@ public abstract class DashboardPageModel(
         CanManageUsers = await permissions.HasPermissionAsync(user.Id, Permissions.ManageUsers);
         CanManageProjects = await permissions.HasPermissionAsync(user.Id, Permissions.ManageProjects);
         CanManageDocuments = await permissions.HasPermissionAsync(user.Id, Permissions.ManageDocuments);
+        CanManageRoles = await permissions.HasPermissionAsync(user.Id, Permissions.ManageRoles);
         CanViewUsersBasic = CanManageUsers || await permissions.HasPermissionAsync(user.Id, Permissions.ViewUsersBasic);
         CanViewUsersConfidential = CanManageUsers || await permissions.HasPermissionAsync(user.Id, Permissions.ViewUsersConfidential);
 

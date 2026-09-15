@@ -32,7 +32,9 @@ public class DetailsModel(
             .Join(Db.Roles.Where(r => r.ProjectId == id), ur => ur.RoleId, r => r.Id, (_, r) => r.Name!)
             .ToListAsync();
 
-        if (roleNames.Count == 0)
+        // A global project/role admin can manage a project they aren't personally a member of;
+        // everyone else needs an actual role in this specific project to see it at all.
+        if (roleNames.Count == 0 && !CanManageProjects && !CanManageRoles)
         {
             Logger.LogWarning("Denied user {UserId} access to project {ProjectId} - no role in that project", CurrentUser.Id, id);
             return NotFound();

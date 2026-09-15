@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Platform.Shared.Infrastructure.Authorization;
 using Platform.Shared.Kernel.Authorization;
 using Tenant.Application.Recordings;
-using Tenant.Domain.Entities;
 
 namespace Tenant.Api.Controllers;
 
@@ -13,7 +12,7 @@ public class FilteredRecordingsController(FilteredRecordingPartsService filtered
 {
     /// <summary>Filtered recording parts, optionally scoped to a recording or only the verified ones.</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(FilteredRecordingPart[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FilteredRecordingPartResponse[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAsync([FromQuery] int? recordingId, [FromQuery] bool verified, CancellationToken cancellationToken)
     {
         return Ok(await filteredRecordingPartsService.GetAllAsync(recordingId, verified, cancellationToken));
@@ -21,7 +20,7 @@ public class FilteredRecordingsController(FilteredRecordingPartsService filtered
 
     /// <summary>A filtered recording part by id.</summary>
     [HttpGet("{fpId:int}")]
-    [ProducesResponseType(typeof(FilteredRecordingPart), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FilteredRecordingPartResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByIdAsync([FromRoute] int fpId, CancellationToken cancellationToken)
     {
