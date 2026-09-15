@@ -27,6 +27,7 @@ using Platform.Shared.Infrastructure.Logging;
 using Platform.Shared.Infrastructure.Security;
 using Platform.Shared.Infrastructure.Storage;
 using Platform.Shared.Kernel.Configuration;
+using Platform.Shared.Kernel.Exceptions;
 using Platform.Shared.Kernel.Services;
 using Scalar.AspNetCore;
 using ServiceDefaults;
@@ -175,27 +176,44 @@ builder.Logging.AddConsole(options => options.FormatterName = "compact");
 
 var app = builder.Build();
 app.UseForwardedHeaders();
-app.UseExceptionHandler();
 
-app.UseExceptionHandler(errorApp =>
+// Browser navigations (Accept: text/html) get redirected to a friendly Pages/Error.cshtml instead
+// of the JSON ProblemDetails that DomainExceptionHandler writes for API clients - JSON callers
+// keep the existing behavior below.
+bool WantsHtml(HttpContext context) =>
+    context.Request.Headers.Accept.Any(a => a is not null && a.Contains("text/html"));
+
+app.UseWhen(WantsHtml, branch =>
 {
-    errorApp.Run(context =>
+    branch.UseExceptionHandler(errorApp =>
     {
-        var exception = context.Features.Get<IExceptionHandlerPathFeature>()?.Error;
-        if (exception is not null)
+        errorApp.Run(context =>
         {
+            var exception = context.Features.Get<IExceptionHandlerPathFeature>()?.Error;
+            var statusCode = exception switch
+            {
+                NotFoundException => StatusCodes.Status404NotFound,
+                ConflictException => StatusCodes.Status409Conflict,
+                ForbiddenException => StatusCodes.Status403Forbidden,
+                UnauthorizedException => StatusCodes.Status401Unauthorized,
+                ValidationException => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status500InternalServerError
+            };
+
             context.RequestServices.GetRequiredService<ILogger<Program>>().LogError(
                 exception, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-        }
 
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        return Task.CompletedTask;
+            context.Response.Redirect($"/error/{statusCode}");
+            return Task.CompletedTask;
+        });
     });
+
+    // Also catches plain error-status results (e.g. a controller returning NotFound()) that
+    // didn't throw, preserving the original URL instead of redirecting.
+    branch.UseStatusCodePagesWithReExecute("/error/{0}");
 });
 
-app.UseWhen(
-    context => context.Request.Headers.Accept.Any(a => a is not null && a.Contains("text/html")),
-    branch => branch.UseStatusCodePagesWithReExecute("/error/{0}"));
+app.UseWhen(context => !WantsHtml(context), branch => branch.UseExceptionHandler());
 
 app.UseRouting();
 app.UseCors(projectOriginsCorsPolicy);
