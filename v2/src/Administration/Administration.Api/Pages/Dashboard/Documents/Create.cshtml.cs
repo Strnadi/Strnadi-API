@@ -57,6 +57,12 @@ public class CreateModel(UserManager<User> users, AdminDbContext db, IUserPermis
 
         var publishedAt = DateTime.UtcNow;
 
+        // <input type="datetime-local"> has no timezone; the bound value comes back with
+        // Kind=Unspecified, which Npgsql refuses to write to a `timestamptz` column.
+        var effectiveAt = Input.EffectiveAt is null
+            ? publishedAt
+            : DateTime.SpecifyKind(Input.EffectiveAt.Value, DateTimeKind.Utc);
+
         var document = new Document
         {
             Id = Guid.NewGuid(),
@@ -65,7 +71,7 @@ public class CreateModel(UserManager<User> users, AdminDbContext db, IUserPermis
             Version = 1,
             Content = Input.Content,
             PublishedAt = publishedAt,
-            EffectiveAt = Input.EffectiveAt ?? publishedAt,
+            EffectiveAt = effectiveAt,
             IsActive = true,
             IsRequired = Input.IsRequired,
             ProjectId = null
