@@ -67,6 +67,35 @@
     <value>Already have an account?</value>
   </data>
 
+  <!-- Register: document consent -->
+  <data name="IAgreeTo" xml:space="preserve">
+    <value>I agree to</value>
+  </data>
+  <data name="MustAcceptAllDocuments" xml:space="preserve">
+    <value>You must accept all documents to register.</value>
+  </data>
+  <data name="Optional" xml:space="preserve">
+    <value>optional</value>
+  </data>
+  <data name="Documents" xml:space="preserve">
+    <value>Documents</value>
+  </data>
+  <data name="NoDocuments" xml:space="preserve">
+    <value>There are currently no documents to review.</value>
+  </data>
+  <data name="Accepted" xml:space="preserve">
+    <value>Accepted</value>
+  </data>
+  <data name="NotAccepted" xml:space="preserve">
+    <value>Not accepted</value>
+  </data>
+  <data name="Accept" xml:space="preserve">
+    <value>Accept</value>
+  </data>
+  <data name="Revoke" xml:space="preserve">
+    <value>Revoke consent</value>
+  </data>
+
   <!-- Validation messages -->
   <data name="FieldRequired" xml:space="preserve">
     <value>This field is required.</value>

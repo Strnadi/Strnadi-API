@@ -87,6 +87,8 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
         modelBuilder.Entity<Document>(entity =>
         {
             entity.Property(d => d.Type).HasConversion<string>().HasMaxLength(64);
+            entity.Property(d => d.Title).HasMaxLength(256);
+            entity.Property(d => d.IsRequired).HasDefaultValue(true);
 
             entity.HasOne(d => d.Project)
                 .WithMany()

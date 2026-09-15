@@ -76,4 +76,52 @@
             <button type="submit" class="ss-btn ss-btn--primary">@L["ChangePassword"]</button>
         </form>
     </div>
+
+    <div class="ss-card">
+        <h2>@L["Documents"]</h2>
+
+        @if (Model.ConsentDocuments.Count == 0)
+        {
+            <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NoDocuments"]</p>
+        }
+        else
+        {
+            <div class="ss-stack" style="gap:var(--space-3);">
+                @foreach (var row in Model.ConsentDocuments)
+                {
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding-bottom:var(--space-3);border-bottom:1px solid var(--color-border);">
+                        <div>
+                            <a href="/documents/@row.Document.Id/view" target="_blank" rel="noopener">@row.Document.Title</a>
+                            <div style="margin-top:var(--space-1);display:flex;gap:var(--space-2);">
+                                @if (row.IsAccepted)
+                                {
+                                    <span class="ss-badge ss-badge--success">@L["Accepted"]</span>
+                                }
+                                else
+                                {
+                                    <span class="ss-badge@(row.Document.IsRequired ? " ss-badge--warning" : "")">@L["NotAccepted"]</span>
+                                }
+                                @if (!row.Document.IsRequired)
+                                {
+                                    <span class="ss-badge">@L["Optional"]</span>
+                                }
+                            </div>
+                        </div>
+                        @if (row.IsAccepted)
+                        {
+                            <form method="post" asp-page-handler="RevokeDocument" asp-route-documentId="@row.Document.Id">
+                                <button type="submit" class="ss-btn ss-btn--secondary ss-btn--sm">@L["Revoke"]</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form method="post" asp-page-handler="AcceptDocument" asp-route-documentId="@row.Document.Id">
+                                <button type="submit" class="ss-btn ss-btn--primary ss-btn--sm">@L["Accept"]</button>
+                            </form>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
 </div>

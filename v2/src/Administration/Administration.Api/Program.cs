@@ -5,6 +5,7 @@ using Administration.Api.Resources;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
 using Administration.Domain.Persistence.Repositories;
+using Administration.Domain.Services;
 using Administration.Infrastructure.Configuration;
 using Administration.Infrastructure.Email;
 using Administration.Infrastructure.Identity;
@@ -61,6 +62,7 @@ builder.Services.AddSingleton<IOpenIddictSettings, OpenIddictSettings>();
 
 builder.Services.AddSingleton<ISmtpSettings, SmtpSettings>();
 builder.Services.AddScoped<IEmailSender<User>, SmtpEmailSender>();
+builder.Services.AddScoped<IDocumentEmailSender, SmtpEmailSender>();
 
 builder.Services.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
 builder.Services.AddSingleton<IFileStorage, LocalStorage>();

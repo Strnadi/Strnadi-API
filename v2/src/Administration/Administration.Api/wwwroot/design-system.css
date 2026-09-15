@@ -252,6 +252,80 @@ a {
   }
 }
 
+/* ---------- Checkbox list (e.g. document consent on Register) ---------- */
+
+.ss-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.ss-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.ss-checkbox__input {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.ss-checkbox__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: var(--line-height-normal);
+}
+
+.ss-checkbox__label a {
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---------- Prose (long-form rendered content, e.g. a document's Markdown) ---------- */
+
+.ss-prose {
+  color: var(--color-text);
+  line-height: var(--line-height-normal);
+}
+.ss-prose h1, .ss-prose h2, .ss-prose h3 {
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-2);
+}
+.ss-prose h1:first-child, .ss-prose h2:first-child, .ss-prose h3:first-child {
+  margin-top: 0;
+}
+.ss-prose p, .ss-prose ul, .ss-prose ol, .ss-prose blockquote, .ss-prose table {
+  margin: 0 0 var(--space-4);
+}
+.ss-prose a {
+  color: var(--color-primary);
+}
+.ss-prose code {
+  background: var(--color-surface-alt);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9em;
+}
+.ss-prose blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: var(--space-4);
+  color: var(--color-text-muted);
+}
+.ss-prose table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.ss-prose th, .ss-prose td {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-size: var(--font-size-sm);
+}
+
 /* ---------- Alerts ---------- */
 
 .ss-alert {

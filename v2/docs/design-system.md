@@ -178,6 +178,30 @@ column under 600px, before the paired inputs get cramped) — use it to shorten 
 (e.g. first/last name, password/confirm on Register). Don't pair fields that need the full width
 for their content or error text (email, anything with a long validation message).
 
+### Checkbox list — `.ss-checkbox-list` / `.ss-checkbox`
+
+For a stack of standalone checkbox items (currently: required-document consent on Register).
+Not a `.ss-field` variant — `.ss-field` is a labeled input wrapper for single-value form fields;
+a checkbox list is a set of independent boolean items, each with its own inline label.
+
+```
+.ss-checkbox-list
+  .ss-checkbox
+    input.ss-checkbox__input[type=checkbox]
+    label.ss-checkbox__label   -- wraps checkbox text, can contain an inline <a> (uses --color-primary via the global `a` rule)
+```
+
+`accent-color: var(--color-primary)` on the input itself (native checkbox styling, no custom
+box-drawing needed). Label text `--font-size-sm`, `--color-text`.
+
+### Prose — `.ss-prose`
+
+Long-form rendered content — currently only a document's Markdown content, rendered to HTML
+server-side (Markdig) and shown at `GET /documents/{id}/view`. Headings get top margin only (not
+before the first child), paragraphs/lists/blockquotes/tables get bottom margin, links use
+`--color-primary`, `code` gets a `--color-surface-alt` pill, tables get hairline row borders.
+Wrap the rendered HTML in `<article class="ss-card ss-prose">` for a readable single-column page.
+
 ### Alerts / validation summary — `.ss-alert`
 
 Replaces the bare `validation-summary-errors` div. Variants `--success` / `--warning` /

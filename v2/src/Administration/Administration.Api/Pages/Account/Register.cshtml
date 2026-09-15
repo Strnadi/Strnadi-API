@@ -63,6 +63,27 @@
                 </div>
             </div>
 
+            @if (Model.ConsentDocuments.Count > 0)
+            {
+                <div class="ss-checkbox-list">
+                    @foreach (var document in Model.ConsentDocuments)
+                    {
+                        <div class="ss-checkbox">
+                            <input type="checkbox" class="ss-checkbox__input" id="doc_@document.Id"
+                                   name="Input.AcceptedDocumentIds" value="@document.Id"
+                                   checked="@(Model.Input.AcceptedDocumentIds.Contains(document.Id))" />
+                            <label class="ss-checkbox__label" for="doc_@document.Id">
+                                @L["IAgreeTo"] <a href="/documents/@document.Id/view" target="_blank" rel="noopener">@document.Title</a>
+                                @if (!document.IsRequired)
+                                {
+                                    <span style="color:var(--color-text-muted);font-size:var(--font-size-sm);">(@L["Optional"])</span>
+                                }
+                            </label>
+                        </div>
+                    }
+                </div>
+            }
+
             <button type="submit" class="ss-btn ss-btn--primary">@L["Register"]</button>
         </form>
 

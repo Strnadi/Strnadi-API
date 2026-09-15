@@ -16,7 +16,7 @@ public class UserPermissionsRepository(AdminDbContext db) : IUserPermissionsRepo
             .Select(da => da.DocumentId);
 
         var blockedProjectIds = await db.Documents
-            .Where(d => d.ProjectId != null && d.IsActive && d.EffectiveAt <= now && !acceptedDocumentIds.Contains(d.Id))
+            .Where(d => d.ProjectId != null && d.IsActive && d.IsRequired && d.EffectiveAt <= now && !acceptedDocumentIds.Contains(d.Id))
             .Select(d => d.ProjectId!.Value)
             .ToListAsync();
 
@@ -36,7 +36,7 @@ public class UserPermissionsRepository(AdminDbContext db) : IUserPermissionsRepo
             .Select(da => da.DocumentId);
 
         return db.Documents
-            .Where(d => d.IsActive && d.EffectiveAt <= now)
+            .Where(d => d.IsActive && d.IsRequired && d.EffectiveAt <= now)
             .Where(d => d.ProjectId == null || d.ProjectId == projectId)
             .Where(d => !acceptedDocumentIds.Contains(d.Id))
             .AnyAsync();

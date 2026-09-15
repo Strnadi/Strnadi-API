@@ -67,6 +67,35 @@
     <value>Již máte účet?</value>
   </data>
 
+  <!-- Register: document consent -->
+  <data name="IAgreeTo" xml:space="preserve">
+    <value>Souhlasím s</value>
+  </data>
+  <data name="MustAcceptAllDocuments" xml:space="preserve">
+    <value>Pro registraci musíte odsouhlasit všechny dokumenty.</value>
+  </data>
+  <data name="Optional" xml:space="preserve">
+    <value>nepovinné</value>
+  </data>
+  <data name="Documents" xml:space="preserve">
+    <value>Dokumenty</value>
+  </data>
+  <data name="NoDocuments" xml:space="preserve">
+    <value>Momentálně nejsou žádné dokumenty k odsouhlasení.</value>
+  </data>
+  <data name="Accepted" xml:space="preserve">
+    <value>Odsouhlaseno</value>
+  </data>
+  <data name="NotAccepted" xml:space="preserve">
+    <value>Neodsouhlaseno</value>
+  </data>
+  <data name="Accept" xml:space="preserve">
+    <value>Odsouhlasit</value>
+  </data>
+  <data name="Revoke" xml:space="preserve">
+    <value>Odvolat souhlas</value>
+  </data>
+
   <!-- Validation messages -->
   <data name="FieldRequired" xml:space="preserve">
     <value>Toto pole je povinné.</value>

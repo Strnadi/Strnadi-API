@@ -2,12 +2,13 @@ using System.Net;
 using System.Net.Mail;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
+using Administration.Domain.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
 namespace Administration.Infrastructure.Email;
 
-public class SmtpEmailSender(ISmtpSettings smtpSettings, ILogger<SmtpEmailSender> logger) : IEmailSender<User>
+public class SmtpEmailSender(ISmtpSettings smtpSettings, ILogger<SmtpEmailSender> logger) : IEmailSender<User>, IDocumentEmailSender
 {
     private const string ColorBg = "#FAF8F3";
     private const string ColorSurfaceAlt = "#F1EDE3";
@@ -101,6 +102,38 @@ public class SmtpEmailSender(ISmtpSettings smtpSettings, ILogger<SmtpEmailSender
                 P($"Váš kód pro obnovu hesla k účtu v projektu <strong>Nářečí českých strnadů</strong>{namePart}:") +
                 CodeBlock(resetCode) +
                 Muted("Pokud heslo měnit nechcete, zprávu ignorujte.") +
+                Signature("Vaši strnadi"))
+        };
+
+        return SendAsync(email, subject, Wrap(body));
+    }
+
+    public Task SendDocumentUpdatedAsync(User user, string email, Document document, string documentLink)
+    {
+        var greetingName = string.IsNullOrEmpty(user.FirstName) ? "" : $" {user.FirstName}";
+
+        var (subject, body) = user.PreferredLanguage switch
+        {
+            "en" => (
+                $"Yellowhammer Dialects – \"{document.Title}\" has been updated",
+                P($"Hello{greetingName},") +
+                P($"The document <strong>{document.Title}</strong> you previously accepted has been updated to version {document.Version}.") +
+                Button(documentLink, "Review and accept") +
+                Muted("If you do not accept the new version, some account features may become unavailable.") +
+                Signature("Your Strnadi team")),
+            "de" => (
+                $"Dialekte des Goldammers – „{document.Title}“ wurde aktualisiert",
+                P($"Hallo{greetingName},") +
+                P($"Das Dokument <strong>{document.Title}</strong>, dem Sie zuvor zugestimmt haben, wurde auf Version {document.Version} aktualisiert.") +
+                Button(documentLink, "Prüfen und zustimmen") +
+                Muted("Wenn Sie der neuen Version nicht zustimmen, stehen Ihnen möglicherweise einige Kontofunktionen nicht mehr zur Verfügung.") +
+                Signature("Ihr Strnadi-Team")),
+            _ => (
+                $"Nářečí českých strnadů – aktualizace dokumentu „{document.Title}“",
+                P($"Dobrý den{greetingName},") +
+                P($"Dokument <strong>{document.Title}</strong>, se kterým jste dříve souhlasili, byl aktualizován na verzi {document.Version}.") +
+                Button(documentLink, "Zkontrolovat a odsouhlasit") +
+                Muted("Pokud nové znění neodsouhlasíte, některé funkce účtu nemusí být nadále dostupné.") +
                 Signature("Vaši strnadi"))
         };
 

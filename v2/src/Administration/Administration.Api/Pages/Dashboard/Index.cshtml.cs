@@ -4,8 +4,11 @@ using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Administration.Api.Pages.Dashboard;
+
+public record DocumentConsentRow(Document Document, bool IsAccepted);
 
 public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions, ILogger<DashboardPageModel> logger)
     : DashboardPageModel(users, db, permissions, logger)
@@ -15,6 +18,8 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
 
     [BindProperty]
     public PasswordInputModel PasswordInput { get; set; } = new();
+
+    public List<DocumentConsentRow> ConsentDocuments { get; set; } = [];
 
     public class InputModel
     {
@@ -46,7 +51,7 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
         public string ConfirmNewPassword { get; set; } = string.Empty;
     }
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
         Input = new InputModel
         {
@@ -57,6 +62,8 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
             City = CurrentUser.City,
             PostCode = CurrentUser.PostCode
         };
+
+        ConsentDocuments = await LoadConsentDocumentsAsync();
     }
 
     // Two independent forms share this page (profile fields, change password) - each POST only
@@ -65,6 +72,8 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
     // handler that actually ran cares about.
     public async Task<IActionResult> OnPostAsync()
     {
+        ConsentDocuments = await LoadConsentDocumentsAsync();
+
         ModelState.Clear();
         if (!TryValidateModel(Input, nameof(Input)))
             return Page();
@@ -112,6 +121,8 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
 
     public async Task<IActionResult> OnPostChangePasswordAsync()
     {
+        ConsentDocuments = await LoadConsentDocumentsAsync();
+
         ModelState.Clear();
         if (!TryValidateModel(PasswordInput, nameof(PasswordInput)))
             return Page();
@@ -127,5 +138,65 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
 
         Logger.LogInformation("User {UserId} changed their own password", CurrentUser.Id);
         return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostAcceptDocumentAsync(Guid documentId)
+    {
+        var document = await Db.Documents.FindAsync(documentId);
+        if (document is null || !document.IsActive)
+            return RedirectToPage();
+
+        var alreadyAccepted = await Db.DocumentAcceptances.AnyAsync(da =>
+            da.UserId == CurrentUser.Id && da.DocumentId == documentId && da.RevokedAt == null);
+
+        if (!alreadyAccepted)
+        {
+            Db.DocumentAcceptances.Add(new DocumentAcceptance
+            {
+                Id = Guid.NewGuid(),
+                UserId = CurrentUser.Id,
+                DocumentId = documentId,
+                AcceptedAt = DateTime.UtcNow,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+            });
+
+            await Db.SaveChangesAsync();
+            Logger.LogInformation("User {UserId} accepted document {DocumentId}", CurrentUser.Id, documentId);
+        }
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRevokeDocumentAsync(Guid documentId)
+    {
+        var acceptance = await Db.DocumentAcceptances.FirstOrDefaultAsync(da =>
+            da.UserId == CurrentUser.Id && da.DocumentId == documentId && da.RevokedAt == null);
+
+        if (acceptance is not null)
+        {
+            acceptance.RevokedAt = DateTime.UtcNow;
+            await Db.SaveChangesAsync();
+            Logger.LogInformation("User {UserId} revoked acceptance of document {DocumentId}", CurrentUser.Id, documentId);
+        }
+
+        return RedirectToPage();
+    }
+
+    private async Task<List<DocumentConsentRow>> LoadConsentDocumentsAsync()
+    {
+        var documents = await Db.Documents
+            .Where(d => d.IsActive && d.ProjectId == null)
+            .OrderByDescending(d => d.IsRequired)
+            .ThenBy(d => d.Type)
+            .ToListAsync();
+
+        var acceptedDocumentIds = await Db.DocumentAcceptances
+            .Where(da => da.UserId == CurrentUser.Id && da.RevokedAt == null)
+            .Select(da => da.DocumentId)
+            .ToListAsync();
+
+        return documents
+            .Select(d => new DocumentConsentRow(d, acceptedDocumentIds.Contains(d.Id)))
+            .ToList();
     }
 }
