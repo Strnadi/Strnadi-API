@@ -28,6 +28,8 @@ public class CreateModel(UserManager<User> users, AdminDbContext db, IUserPermis
 
         public bool IsRequired { get; set; } = true;
 
+        public bool IsActive { get; set; } = true;
+
         public DateTime? EffectiveAt { get; set; }
     }
 
@@ -48,11 +50,16 @@ public class CreateModel(UserManager<User> users, AdminDbContext db, IUserPermis
             return Page();
 
         // Document currently only manages platform-wide (non-project-scoped) documents from this screen.
-        var exists = await Db.Documents.AnyAsync(d => d.Type == Input.Type && d.ProjectId == null && d.IsActive);
-        if (exists)
+        // Only conflicts with an existing active document if this one is also being created active -
+        // multiple inactive/draft versions of the same type can coexist.
+        if (Input.IsActive)
         {
-            ModelState.AddModelError(string.Empty, $"An active document of type {Input.Type} already exists.");
-            return Page();
+            var exists = await Db.Documents.AnyAsync(d => d.Type == Input.Type && d.ProjectId == null && d.IsActive);
+            if (exists)
+            {
+                ModelState.AddModelError(string.Empty, $"An active document of type {Input.Type} already exists.");
+                return Page();
+            }
         }
 
         var publishedAt = DateTime.UtcNow;
@@ -73,7 +80,7 @@ public class CreateModel(UserManager<User> users, AdminDbContext db, IUserPermis
             Content = Input.Content,
             PublishedAt = publishedAt,
             EffectiveAt = effectiveAt,
-            IsActive = true,
+            IsActive = Input.IsActive,
             IsRequired = Input.IsRequired,
             ProjectId = null
         };

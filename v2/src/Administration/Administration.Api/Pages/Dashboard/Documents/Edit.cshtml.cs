@@ -33,6 +33,8 @@ public class EditModel(
 
         public bool IsRequired { get; set; } = true;
 
+        public bool IsActive { get; set; } = true;
+
         public DateTime? EffectiveAt { get; set; }
     }
 
@@ -50,7 +52,8 @@ public class EditModel(
         {
             Title = document.Title,
             Content = document.Content,
-            IsRequired = document.IsRequired
+            IsRequired = document.IsRequired,
+            IsActive = document.IsActive
         };
 
         return Page();
@@ -90,7 +93,7 @@ public class EditModel(
             Content = Input.Content,
             PublishedAt = publishedAt,
             EffectiveAt = effectiveAt,
-            IsActive = true,
+            IsActive = Input.IsActive,
             IsRequired = Input.IsRequired,
             ProjectId = current.ProjectId
         };
@@ -101,7 +104,9 @@ public class EditModel(
         Logger.LogInformation("Admin {AdminId} published document {DocumentId} as version {Version} (supersedes {PreviousId})",
             CurrentUser.Id, next.Id, next.Version, current.Id);
 
-        await NotifyAffectedUsersAsync(current, next);
+        // No point telling people to re-accept a replacement that isn't even active.
+        if (next.IsActive)
+            await NotifyAffectedUsersAsync(current, next);
 
         return RedirectToPage("/Dashboard/Documents/Index");
     }
