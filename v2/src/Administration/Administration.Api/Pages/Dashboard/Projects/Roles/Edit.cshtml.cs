@@ -199,7 +199,8 @@ public class EditModel(
     private Task<List<RoleMember>> LoadMembersAsync(Guid roleId) =>
         Db.UserRoles
             .Where(ur => ur.RoleId == roleId)
-            .Join(Db.Users, ur => ur.UserId, u => u.Id, (_, u) => new RoleMember(u.Id, u.Email!, u.FirstName, u.LastName))
-            .OrderBy(m => m.LastName).ThenBy(m => m.FirstName)
+            .Join(Db.Users, ur => ur.UserId, u => u.Id, (_, u) => u)
+            .OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
+            .Select(u => new RoleMember(u.Id, u.Email!, u.FirstName, u.LastName))
             .ToListAsync();
 }
