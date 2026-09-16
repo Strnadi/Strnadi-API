@@ -278,9 +278,18 @@ page opens with a glanceable summary instead of going straight into a form.
 Small pill, `--radius-full`, `--font-size-xs`, `--font-weight-semibold`. Semantic variants same
 as alerts (subtle bg + solid text). Used for role names, project status, account status.
 
-### Data table — `.ss-table`
+### Data table — `<ss-table>`
 
-For the user/project management screens.
+For the user/project management screens. Implemented as an ASP.NET Core Tag Helper
+(`Administration.Api/TagHelpers/SsTableTagHelper.cs`, registered project-wide via
+`@addTagHelper *, Administration.Api` in `Pages/_ViewImports.cshtml`), not just a CSS class — every
+table page writes a plain `<ss-table><thead>...</thead><tbody>...</tbody></ss-table>` and the tag
+helper renders that as `<div class="ss-table-wrapper"><table class="ss-table">...</table></div>`.
+This is what all four existing tables (`/dashboard/users`, `/dashboard/projects`,
+`/dashboard/documents`, `/dashboard/projects/{id}/roles`) use — a table page should never write
+`<table class="ss-table">` or `.ss-table-wrapper` by hand, always go through `<ss-table>`, so the
+wrapper fix below and any future shared table behavior lives in one place instead of being
+copy-pasted per page.
 
 - Header row: `--color-text-muted`, `--font-size-xs`, uppercase, `--font-weight-semibold`,
   bottom border `--color-border`.
@@ -289,6 +298,25 @@ For the user/project management screens.
   striping).
 - Row hover: `--color-primary-subtle`.
 - Row-level actions render as `.ss-btn--ghost.ss-btn--sm`, right-aligned last column.
+- `.ss-table-wrapper` (`overflow-x: auto`, applied automatically by the tag helper) exists because
+  a table with enough columns (Users showing the confidential columns is the case that surfaced
+  this) needs more width than its card, and without a scroll container it pushes past the card's
+  right edge — the last column (usually a row action button) reads as cut off — instead of
+  scrolling.
+- A page-specific table (e.g. `/dashboard/users`) can extract its `<ss-table>` markup into its own
+  partial (`_UsersTable.cshtml`, taking a small view-model record for the rows + the permission
+  flags that control which columns/actions show) when the surrounding page has enough else going
+  on that inlining the whole table clutters it. That's a per-page organizational choice on top of
+  `<ss-table>`, not a substitute for it.
+
+#### Table toolbar / search — `.ss-table-toolbar`
+
+An optional bar above `<ss-table>`, inside the same card: `display: flex;
+justify-content: space-between`, wraps on narrow widths. Holds a search input
+(`.ss-field__input.ss-table-toolbar__search`, which caps it at `max-width: 280px` instead of the
+field input's usual full width) plus, optionally, a submit button. Used on `/dashboard/users`: a
+plain `method="get"` form so the search term round-trips as a query string param (bookmarkable,
+no JS) and the page model filters server-side.
 
 ### Navigation — `.ss-sidebar` / `.ss-topbar`
 

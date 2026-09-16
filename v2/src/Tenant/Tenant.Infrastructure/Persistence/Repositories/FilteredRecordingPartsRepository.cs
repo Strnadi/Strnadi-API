@@ -33,8 +33,6 @@ public class FilteredRecordingPartsRepository(TenantDbContext db) : IFilteredRec
     public Task<FilteredRecordingPart?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         IncludeForResponse(db.FilteredRecordingParts).FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
-    // Eager-loads what FilteredRecordingPartResponse needs to nest `recording` and `detectedDialects`
-    // in the API response (mirroring the old v1 shape) without relying on lazy-loading proxies.
     private static IQueryable<FilteredRecordingPart> IncludeForResponse(IQueryable<FilteredRecordingPart> query) =>
         query
             .Include(p => p.Recording)

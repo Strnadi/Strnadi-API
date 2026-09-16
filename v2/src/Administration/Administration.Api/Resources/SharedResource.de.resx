@@ -152,6 +152,9 @@
   <data name="Save" xml:space="preserve">
     <value>Speichern</value>
   </data>
+  <data name="Search" xml:space="preserve">
+    <value>Suchen</value>
+  </data>
   <data name="ComingSoon" xml:space="preserve">
     <value>Dieser Bereich wird noch vorbereitet.</value>
   </data>

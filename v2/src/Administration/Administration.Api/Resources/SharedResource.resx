@@ -126,7 +126,7 @@
 
   <!-- Dashboard -->
   <data name="MyAccount" xml:space="preserve">
-    <value>Můj účet</value>
+    <value>Přehled</value>
   </data>
   <data name="Profile" xml:space="preserve">
     <value>Profil</value>
@@ -151,6 +151,9 @@
   </data>
   <data name="Save" xml:space="preserve">
     <value>Uložit</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Hledat</value>
   </data>
   <data name="ComingSoon" xml:space="preserve">
     <value>Tato část připravujeme.</value>

@@ -419,6 +419,14 @@ a {
 
 /* ---------- Data table ---------- */
 
+/* A table with enough columns (e.g. Users with the confidential columns shown) can need more
+   width than its card has - without this, the table pushes past the card's right edge instead of
+   shrinking, and the last column (usually a row action button) reads as cut off. Always wrap
+   .ss-table in this so it scrolls horizontally inside the card instead. */
+.ss-table-wrapper {
+  overflow-x: auto;
+}
+
 .ss-table {
   width: 100%;
   border-collapse: collapse;
@@ -440,6 +448,20 @@ a {
 }
 .ss-table tbody tr:hover {
   background: var(--color-primary-subtle);
+}
+
+/* Optional search/filter bar sitting above a .ss-table, inside the same card. */
+.ss-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.ss-table-toolbar__search {
+  width: 100%;
+  max-width: 280px;
 }
 
 /* ---------- Stack ---------- */
