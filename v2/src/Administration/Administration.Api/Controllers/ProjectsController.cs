@@ -1,3 +1,4 @@
+using Administration.Application.Projects;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,10 @@ public class ProjectsController(AdminDbContext db) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetProjects()
     {
-        return Ok(await db.Projects.ToListAsync());
+        var projects = await db.Projects
+            .Select(p => new ProjectResponse(p.Id, p.Name, p.Description, p.Domain))
+            .ToListAsync();
+
+        return Ok(projects);
     }
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Administration.Api.Resources;
+using Administration.Api.Services;
 using Administration.Domain.Entities;
 using Administration.Domain.Entities.Enums;
 using Administration.Domain.Persistence.Repositories;
@@ -20,7 +21,8 @@ public class EditModel(
     IUserPermissionsRepository permissions,
     ILogger<DashboardPageModel> logger,
     IStringLocalizer<SharedResource> localizer,
-    IFileStorage fileStorage)
+    IFileStorage fileStorage,
+    IProjectAccessSync projectAccessSync)
     : DashboardPageModel(users, db, permissions, logger)
 {
     public Project TargetProject { get; private set; } = null!;
@@ -119,6 +121,12 @@ public class EditModel(
         }
 
         await Db.SaveChangesAsync();
+
+        // Keeps the CORS policy / OpenIddict redirect URIs in step with the State/Domain change
+        // that was just saved - approving (or un-approving) a project takes effect immediately
+        // instead of waiting for the app to restart, which is when Program.cs would otherwise
+        // pick it up.
+        await projectAccessSync.SyncAsync();
 
         Logger.LogInformation("Admin {AdminId} updated project {ProjectId} (state {State})", CurrentUser.Id, project.Id, project.State);
         return RedirectToPage("/Dashboard/Projects/Details", new { id = project.Id });

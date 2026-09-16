@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Administration.Api.Resources;
+using Administration.Api.Services;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
-using Administration.Domain.Entities.Enums;
 using Administration.Domain.Persistence.Repositories;
 using Administration.Domain.Services;
 using Administration.Infrastructure.Configuration;
@@ -12,14 +12,12 @@ using Administration.Infrastructure.Email;
 using Administration.Infrastructure.Identity;
 using Administration.Infrastructure.Persistence;
 using Administration.Infrastructure.Persistence.Repositories;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using Platform.Shared.Infrastructure.Configuration;
@@ -33,9 +31,7 @@ using Platform.Shared.Kernel.Services;
 using Scalar.AspNetCore;
 using ServiceDefaults;
 
-const string clientId = "strnadi-app";
 const string tenantApiClientId = "tenant-api";
-const string projectOriginsCorsPolicy = "ProjectOrigins";
 
 string[] supportedCultures = ["cs", "en", "de"];
 
@@ -52,6 +48,8 @@ builder.Services.AddHealthChecks().AddDbContextCheck<AdminDbContext>();
 builder.Services.AddDbContext<AdminDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
         .UseSnakeCaseNamingConvention());
+
+builder.Services.AddScoped<IProjectAccessSync, ProjectAccessSync>();
 
 builder.Services.AddSingleton<IEncryptionSettings, EncryptionSettings>();
 builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
@@ -217,32 +215,17 @@ app.UseWhen(WantsHtml, branch =>
 app.UseWhen(context => !WantsHtml(context), branch => branch.UseExceptionHandler());
 
 app.UseRouting();
-app.UseCors(projectOriginsCorsPolicy);
+app.UseCors(ProjectAccessSync.CorsPolicyName);
 
 using (var scope = app.Services.CreateScope())
 {
     if (app.Environment.IsDevelopment())
         await scope.ServiceProvider.GetRequiredService<AdminDbContext>().Database.MigrateAsync();
 
-    // Draft/Rejected projects are unreviewed, publicly-submitted requests (see
-    // Pages/Dashboard/Projects/Create.cshtml.cs) - their domain must never become a trusted
-    // OAuth redirect target or CORS origin just because the app happened to restart before an
-    // admin reviewed them.
-    var projectDomains = await scope.ServiceProvider.GetRequiredService<AdminDbContext>().Projects
-        .Where(p => p.Domain != null && p.Domain != ""
-            && p.State != ProjectState.Draft && p.State != ProjectState.Rejected)
-        .Select(p => p.Domain)
-        .ToListAsync();
-
-    await SyncOpenIddictClientAsync(scope.ServiceProvider, projectDomains);
+    await scope.ServiceProvider.GetRequiredService<IProjectAccessSync>().SyncAsync();
 
     var openIddictSettings = scope.ServiceProvider.GetRequiredService<IOpenIddictSettings>();
     await SyncTenantApiClientAsync(scope.ServiceProvider, openIddictSettings.TenantClientSecret);
-
-    app.Services.GetRequiredService<IOptions<CorsOptions>>().Value.AddPolicy(projectOriginsCorsPolicy, policy =>
-        policy.WithOrigins(projectDomains.Select(d => d.TrimEnd('/')).ToArray())
-            .AllowAnyMethod()
-            .AllowAnyHeader());
 }
 
 if (!app.Environment.IsDevelopment())
@@ -356,39 +339,6 @@ static X509Certificate2 LoadCertificate(IConfiguration configuration, string con
     X509CertificateLoader.LoadPkcs12(
         Convert.FromBase64String(configuration[$"{configSection}:Pfx"]!),
         configuration[$"{configSection}:Password"]);
-
-static async Task SyncOpenIddictClientAsync(IServiceProvider services, IReadOnlyList<string> domains)
-{
-    var applicationManager = services.GetRequiredService<IOpenIddictApplicationManager>();
-
-    var descriptor = new OpenIddictApplicationDescriptor
-    {
-        ClientId = clientId,
-        ClientType = OpenIddictConstants.ClientTypes.Public,
-        RedirectUris = { new Uri("com.delta.strnadi://auth/callback") },
-        Permissions =
-        {
-            OpenIddictConstants.Permissions.Endpoints.Authorization,
-            OpenIddictConstants.Permissions.Endpoints.Token,
-            OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
-            OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
-            OpenIddictConstants.Permissions.Prefixes.GrantType + OpenIddictConstants.GrantTypes.TokenExchange,
-            OpenIddictConstants.Permissions.ResponseTypes.Code
-        },
-    };
-
-    foreach (var domain in domains)
-    {
-        descriptor.RedirectUris.Add(new Uri($"{domain.TrimEnd('/')}/ucet/prihlaseni"));
-        descriptor.RedirectUris.Add(new Uri($"{domain.TrimEnd('/')}/ucet/registrace"));
-    }
-
-    var existing = await applicationManager.FindByClientIdAsync(clientId);
-    if (existing is null)
-        await applicationManager.CreateAsync(descriptor);
-    else
-        await applicationManager.UpdateAsync(existing, descriptor);
-}
 
 static async Task SyncTenantApiClientAsync(IServiceProvider services, string clientSecret)
 {
