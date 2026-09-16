@@ -7,17 +7,5 @@
 <h1>@L["Users"]</h1>
 
 <div class="ss-card">
-    <form method="get" class="ss-table-toolbar">
-        <input type="search" name="Search" value="@Model.Search" class="ss-field__input ss-table-toolbar__search" placeholder="@L["Search"]" />
-        <button type="submit" class="ss-btn ss-btn--secondary ss-btn--sm">@L["Search"]</button>
-    </form>
-
-    @if (Model.UserList.Count == 0)
-    {
-        <p>@L["NoUsers"]</p>
-    }
-    else
-    {
-        <partial name="_UsersTable" model="new UsersTableViewModel(Model.UserList, Model.CanViewUsersConfidential, Model.CanManageUsers)" />
-    }
+    <partial name="_UsersTable" model="new UsersTableViewModel(Model.UserList, Model.CanViewUsersConfidential, Model.CanManageUsers, Model.Search, Model.SearchField)" />
 </div>

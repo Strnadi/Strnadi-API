@@ -1,6 +1,15 @@
+@using Administration.Api.TagHelpers
 @model Administration.Api.Pages.Dashboard.UsersTableViewModel
+@{
+    var searchFields = new List<SsTableSearchField> { new("name", L["Name"].Value) };
+    if (Model.CanViewUsersConfidential)
+        searchFields.Add(new("email", L["Email"].Value));
 
-<ss-table>
+    var columnCount = 5 + (Model.CanViewUsersConfidential ? 3 : 0) + (Model.CanManageUsers ? 1 : 0);
+}
+
+<ss-table search-name="Search" search-value="@Model.Search" search-placeholder="@L["Search"].Value" search-button-text="@L["Search"].Value"
+          search-field-name="SearchField" search-field-value="@Model.SearchField" search-fields="@searchFields">
     <thead>
         <tr>
             <th>@L["FirstName"] / @L["LastName"]</th>
@@ -21,48 +30,55 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var user in Model.Users)
+        @if (Model.Users.Count == 0)
         {
-            <tr>
-                <td>@user.FirstName @user.LastName</td>
-                @if (Model.CanViewUsersConfidential)
-                {
-                    <td>@user.Email</td>
-                    <td>@user.City</td>
-                    <td>@user.PostCode</td>
-                }
-                <td>@user.CreatedAt.ToString("d")</td>
-                <td>
-                    @if (user.Deleted)
+            <tr><td colspan="@columnCount" style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NoUsers"]</td></tr>
+        }
+        else
+        {
+            @foreach (var user in Model.Users)
+            {
+                <tr>
+                    <td>@user.FirstName @user.LastName</td>
+                    @if (Model.CanViewUsersConfidential)
                     {
-                        <span class="ss-badge ss-badge--danger">@L["Deleted"]</span>
+                        <td>@user.Email</td>
+                        <td>@user.City</td>
+                        <td>@user.PostCode</td>
                     }
-                    else
+                    <td>@user.CreatedAt.ToString("d")</td>
+                    <td>
+                        @if (user.Deleted)
+                        {
+                            <span class="ss-badge ss-badge--danger">@L["Deleted"]</span>
+                        }
+                        else
+                        {
+                            <span class="ss-badge ss-badge--success">@L["Active"]</span>
+                        }
+                    </td>
+                    <td>
+                        @if (user.Legacy)
+                        {
+                            <span class="ss-badge ss-badge--warning">@L["Legacy"]</span>
+                        }
+                    </td>
+                    <td>
+                        @if (user.EmailConfirmed)
+                        {
+                            <span class="ss-badge ss-badge--success">@L["Confirmed"]</span>
+                        }
+                        else
+                        {
+                            <span class="ss-badge ss-badge--warning">@L["Unconfirmed"]</span>
+                        }
+                    </td>
+                    @if (Model.CanManageUsers)
                     {
-                        <span class="ss-badge ss-badge--success">@L["Active"]</span>
+                        <td><a class="ss-btn ss-btn--ghost ss-btn--sm" href="/dashboard/users/@user.Id/edit">@L["Edit"]</a></td>
                     }
-                </td>
-                <td>
-                    @if (user.Legacy)
-                    {
-                        <span class="ss-badge ss-badge--warning">@L["Legacy"]</span>
-                    }
-                </td>
-                <td>
-                    @if (user.EmailConfirmed)
-                    {
-                        <span class="ss-badge ss-badge--success">@L["Confirmed"]</span>
-                    }
-                    else
-                    {
-                        <span class="ss-badge ss-badge--warning">@L["Unconfirmed"]</span>
-                    }
-                </td>
-                @if (Model.CanManageUsers)
-                {
-                    <td><a class="ss-btn ss-btn--ghost ss-btn--sm" href="/dashboard/users/@user.Id/edit">@L["Edit"]</a></td>
-                }
-            </tr>
+                </tr>
+            }
         }
     </tbody>
 </ss-table>

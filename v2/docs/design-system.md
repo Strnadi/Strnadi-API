@@ -308,15 +308,50 @@ copy-pasted per page.
   flags that control which columns/actions show) when the surrounding page has enough else going
   on that inlining the whole table clutters it. That's a per-page organizational choice on top of
   `<ss-table>`, not a substitute for it.
+- `create-href`/`create-text` attributes render a `.ss-btn--primary.ss-btn--sm` link top-right,
+  above the table (`Pages/Dashboard/Documents/Index.cshtml`, `Pages/Dashboard/Projects/Roles/Index.cshtml`).
+  Use these instead of a page hand-building its own title-row button — the default `.ss-btn` is
+  `width: 100%` (sized for auth-form submit buttons), and a page-built button that forgets
+  `.ss-btn--sm` renders full-width instead of as a normal button; routing every "New X" action
+  through `<ss-table>` fixes that in one place. Because the button is part of `<ss-table>`, always
+  pass it as an attribute on the same `<ss-table>` element the page always renders (even for an
+  empty list) - don't gate the whole `<ss-table>` behind an `if (list.Count == 0)` the way the
+  empty-state message used to be, or the create button disappears along with the table when the
+  list is empty. Put the empty-state message inside `<tbody>` instead, as a single
+  `<tr><td colspan="N">` spanning the header's column count.
 
 #### Table toolbar / search — `.ss-table-toolbar`
 
-An optional bar above `<ss-table>`, inside the same card: `display: flex;
-justify-content: space-between`, wraps on narrow widths. Holds a search input
-(`.ss-field__input.ss-table-toolbar__search`, which caps it at `max-width: 280px` instead of the
-field input's usual full width) plus, optionally, a submit button. Used on `/dashboard/users`: a
-plain `method="get"` form so the search term round-trips as a query string param (bookmarkable,
-no JS) and the page model filters server-side.
+`<ss-table>` also renders the search box, not just the create button — like `create-href`, this is
+an attribute on `<ss-table>` (`Pages/Dashboard/_UsersTable.cshtml` is the current example), not
+markup a page writes by hand:
+
+- `search-name` / `search-value` / `search-placeholder` / `search-button-text` — a plain search
+  input + submit button. Omitting `search-name` renders no search UI at all (Projects/Documents/
+  Roles don't have one).
+- `search-field-name` / `search-field-value` / `search-fields` — an optional `<select>` next to
+  the input, letting the caller pick which column to search (`/dashboard/users` offers "Name" and,
+  only for `CanViewUsersConfidential`, "Email"). `search-fields` takes a
+  `IReadOnlyList<SsTableSearchField>` (a `(Value, Text)` record from
+  `Administration.Api.TagHelpers`) built by the page/partial; omit `search-field-name` for a plain
+  single-box search with no column picker. The page's `OnGetAsync` is what actually branches on
+  the selected field when building its EF query — the tag helper only renders the picker and
+  round-trips the bound values.
+
+All of it renders as one `method="get"` form inside `.ss-table-toolbar` (`display: flex;
+justify-content: space-between`, wraps on narrow widths) so the search term/field are bookmarkable
+query-string params with no JS, and the page model filters server-side. The search input itself is
+`.ss-field__input.ss-table-toolbar__search` (caps it at `max-width: 280px` instead of the field
+input's usual full width); the column `<select>` is `.ss-field__input.ss-table-search__field`
+(`width: auto`, same reasoning as the create button - the default `.ss-field__input` is full
+width). When both a search form and a create button are configured, the search form takes the
+toolbar's left side and the create button the right (`.ss-table-toolbar--end` only applies when
+there's a create button and no search form, so a lone item doesn't collapse to the left).
+
+Like the create button, the search form is part of `<ss-table>` itself, so it always renders even
+when the filtered result set is empty — the empty-state message goes inside `<tbody>` as a
+spanning `<tr><td colspan="N">` row (see `_UsersTable.cshtml`), not as a sibling that replaces the
+whole table, or the search box would disappear exactly when it's needed to change the query.
 
 ### Navigation — `.ss-sidebar` / `.ss-topbar`
 
@@ -334,7 +369,7 @@ scale, since these are fixed layout dimensions, not gaps/padding.
   user's name, a "My account" link, and the logout button. This is also the entry point for a
   non-admin user managing their own profile — same shell, just fewer sidebar links.
 - `.ss-admin-content` offsets by `--sidebar-width`/`--topbar-height` (0 under 768px, sidebar and
-  topbar go static there) and holds `.ss-admin-content__inner` (`max-width: 1100px`, `--space-6`
+  topbar go static there) and holds `.ss-admin-content__inner` (`max-width: 1440px`, `--space-6`
   padding) for the actual page content.
 
 ### Language switch — `.ss-lang-switch`

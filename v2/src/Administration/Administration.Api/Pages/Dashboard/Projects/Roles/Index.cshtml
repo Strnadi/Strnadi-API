@@ -6,28 +6,25 @@
 
 <a href="/dashboard/projects/@Model.Project.Id">&larr; @Model.Project.Name</a>
 
-<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-4);">
-    <h1 style="margin:0;">@L["Roles"]</h1>
-    <a class="ss-btn ss-btn--primary" href="/dashboard/projects/@Model.Project.Id/roles/create">@L["NewRole"]</a>
-</div>
+<h1>@L["Roles"]</h1>
 
 <div class="ss-card">
-    @if (Model.RoleList.Count == 0)
-    {
-        <p>@L["NoRoles"]</p>
-    }
-    else
-    {
-        <ss-table>
-            <thead>
-                <tr>
-                    <th>@L["Name"]</th>
-                    <th>@L["Permissions"]</th>
-                    <th>@L["Members"]</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
+    <ss-table create-href="/dashboard/projects/@Model.Project.Id/roles/create" create-text="@L["NewRole"].Value">
+        <thead>
+            <tr>
+                <th>@L["Name"]</th>
+                <th>@L["Permissions"]</th>
+                <th>@L["Members"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.RoleList.Count == 0)
+            {
+                <tr><td colspan="4" style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NoRoles"]</td></tr>
+            }
+            else
+            {
                 @foreach (var role in Model.RoleList)
                 {
                     <tr>
@@ -45,7 +42,7 @@
                         </td>
                     </tr>
                 }
-            </tbody>
-        </ss-table>
-    }
+            }
+        </tbody>
+    </ss-table>
 </div>

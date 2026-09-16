@@ -4,31 +4,28 @@
     ViewData["Title"] = L["Documents"].Value;
 }
 
-<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-4);">
-    <h1 style="margin:0;">@L["Documents"]</h1>
-    <a class="ss-btn ss-btn--primary" href="/dashboard/documents/create">@L["NewDocument"]</a>
-</div>
+<h1>@L["Documents"]</h1>
 
 <div class="ss-card">
-    @if (Model.DocumentList.Count == 0)
-    {
-        <p>@L["NoDocumentsYet"]</p>
-    }
-    else
-    {
-        <ss-table>
-            <thead>
-                <tr>
-                    <th>@L["Title"]</th>
-                    <th>@L["Type"]</th>
-                    <th>@L["Project"]</th>
-                    <th>@L["Version"]</th>
-                    <th>@L["EffectiveAt"]</th>
-                    <th>@L["Required"]</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
+    <ss-table create-href="/dashboard/documents/create" create-text="@L["NewDocument"].Value">
+        <thead>
+            <tr>
+                <th>@L["Title"]</th>
+                <th>@L["Type"]</th>
+                <th>@L["Project"]</th>
+                <th>@L["Version"]</th>
+                <th>@L["EffectiveAt"]</th>
+                <th>@L["Required"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.DocumentList.Count == 0)
+            {
+                <tr><td colspan="7" style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NoDocumentsYet"]</td></tr>
+            }
+            else
+            {
                 @foreach (var document in Model.DocumentList)
                 {
                     <tr>
@@ -53,7 +50,7 @@
                         </td>
                     </tr>
                 }
-            </tbody>
-        </ss-table>
-    }
+            }
+        </tbody>
+    </ss-table>
 </div>

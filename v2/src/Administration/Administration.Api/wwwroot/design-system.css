@@ -463,6 +463,23 @@ a {
   width: 100%;
   max-width: 280px;
 }
+/* Used when the toolbar only holds a single trailing item (the <ss-table> create-href button) -
+   space-between would otherwise collapse it against the left edge with nothing to space against. */
+.ss-table-toolbar--end {
+  justify-content: flex-end;
+}
+
+/* The <ss-table search-*> form: optional column-select + search input + submit button, grouped
+   so they wrap together as one unit inside .ss-table-toolbar instead of the select and input
+   wrapping onto separate lines independently. */
+.ss-table-search {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.ss-table-search__field {
+  width: auto;
+}
 
 /* ---------- Stack ---------- */
 
@@ -607,7 +624,7 @@ a {
   background: var(--color-bg);
 }
 .ss-admin-content__inner {
-  max-width: 1100px;
+  max-width: 1440px;
   padding: var(--space-6);
 }
 
