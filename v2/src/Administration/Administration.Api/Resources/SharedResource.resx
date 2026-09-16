@@ -285,6 +285,36 @@
   <data name="NewProject" xml:space="preserve">
     <value>Nový projekt</value>
   </data>
+  <data name="ApiDomain" xml:space="preserve">
+    <value>API doména</value>
+  </data>
+  <data name="Rejected" xml:space="preserve">
+    <value>Zamítnuto</value>
+  </data>
+  <data name="Logo" xml:space="preserve">
+    <value>Logo</value>
+  </data>
+  <data name="CreatedBy" xml:space="preserve">
+    <value>Vytvořil</value>
+  </data>
+  <data name="RequestSubmitted" xml:space="preserve">
+    <value>Žádost odeslána</value>
+  </data>
+  <data name="RequestSubmittedHint" xml:space="preserve">
+    <value>Děkujeme za žádost o vytvoření projektu. Administrátor ji brzy zkontroluje.</value>
+  </data>
+  <data name="RequestNewProject" xml:space="preserve">
+    <value>Požádat o nový projekt</value>
+  </data>
+  <data name="RequestNewProjectHint" xml:space="preserve">
+    <value>Vyplňte údaje o svém projektu. Po odeslání žádost zkontroluje administrátor a rozhodne o jejím schválení.</value>
+  </data>
+  <data name="RejectionReason" xml:space="preserve">
+    <value>Důvod zamítnutí</value>
+  </data>
+  <data name="RejectionReasonHint" xml:space="preserve">
+    <value>Vyplňte při zamítnutí žádosti - žadatel uvidí tento důvod.</value>
+  </data>
   <data name="NoRoles" xml:space="preserve">
     <value>Zatím tu nejsou žádné role.</value>
   </data>

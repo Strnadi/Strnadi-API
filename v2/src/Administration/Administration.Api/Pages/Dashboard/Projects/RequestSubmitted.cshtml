@@ -1,0 +1,12 @@
+@page "/dashboard/projects/request-submitted"
+@model Administration.Api.Pages.Dashboard.Projects.RequestSubmittedModel
+@{
+    ViewData["Title"] = L["RequestSubmitted"].Value;
+}
+
+<h1>@L["RequestSubmitted"]</h1>
+
+<div class="ss-card">
+    <p>@L["RequestSubmittedHint"]</p>
+    <a class="ss-btn ss-btn--secondary ss-btn--sm" href="/dashboard">@L["MyAccount"]</a>
+</div>

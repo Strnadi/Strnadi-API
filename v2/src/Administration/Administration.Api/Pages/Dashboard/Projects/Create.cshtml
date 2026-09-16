@@ -4,12 +4,17 @@
     ViewData["Title"] = L["NewProject"].Value;
 }
 
-<a href="/dashboard/projects">&larr; @L["Projects"]</a>
+@if (Model.CanManageProjects)
+{
+    <a href="/dashboard/projects">&larr; @L["Projects"]</a>
+}
 
 <h1>@L["NewProject"]</h1>
 
 <div class="ss-card">
-    <form method="post">
+    <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["RequestNewProjectHint"]</p>
+
+    <form method="post" enctype="multipart/form-data">
         <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
 
         <div class="ss-field">
@@ -19,9 +24,28 @@
         </div>
 
         <div class="ss-field">
-            <label asp-for="Input.Domain" class="ss-field__label">@L["Domain"]</label>
-            <input asp-for="Input.Domain" class="ss-field__input" />
-            <span asp-validation-for="Input.Domain" class="ss-field__error"></span>
+            <label asp-for="Input.Description" class="ss-field__label">@L["Description"]</label>
+            <textarea asp-for="Input.Description" class="ss-field__input" rows="4"></textarea>
+            <span asp-validation-for="Input.Description" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field-row">
+            <div class="ss-field">
+                <label asp-for="Input.Domain" class="ss-field__label">@L["Domain"]</label>
+                <input asp-for="Input.Domain" class="ss-field__input" placeholder="https://example.strnadi.cz" />
+                <span asp-validation-for="Input.Domain" class="ss-field__error"></span>
+            </div>
+            <div class="ss-field">
+                <label asp-for="Input.ApiDomain" class="ss-field__label">@L["ApiDomain"]</label>
+                <input asp-for="Input.ApiDomain" class="ss-field__input" placeholder="https://api.example.strnadi.cz" />
+                <span asp-validation-for="Input.ApiDomain" class="ss-field__error"></span>
+            </div>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Logo" class="ss-field__label">@L["Logo"]</label>
+            <input asp-for="Input.Logo" type="file" accept="image/*" class="ss-field__input" />
+            <span asp-validation-for="Input.Logo" class="ss-field__error"></span>
         </div>
 
         <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>

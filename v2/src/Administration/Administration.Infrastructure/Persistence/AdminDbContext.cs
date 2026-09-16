@@ -65,8 +65,24 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
             entity.Property(p => p.State).HasConversion<string>().HasMaxLength(32);
 
             entity.Property(p => p.Domain).HasMaxLength(256);
-            entity.HasIndex(p => p.Domain).IsUnique();
+            entity.Property(p => p.ApiDomain).HasMaxLength(256);
+            // A rejected project's domain is reusable by a fresh submission instead of being
+            // squatted forever - see Program.cs's CORS/OpenIddict sync for the other half of why
+            // Draft/Rejected projects must never be treated as "real" (that query filters them
+            // out entirely, this index just governs uniqueness).
+            entity.HasIndex(p => p.Domain).IsUnique().HasFilter("state <> 'Rejected'");
             entity.Property(p => p.PhotoPath).HasMaxLength(512);
+            entity.Property(p => p.CreatedAt).HasDefaultValueSql("now()");
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(p => p.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(p => p.ApprovedBy)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ProjectMembership>(entity =>

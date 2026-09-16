@@ -21,6 +21,12 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
     [BindProperty(SupportsGet = true)]
     public string SearchField { get; set; } = "name";
 
+    [BindProperty(SupportsGet = true)]
+    public string? Sort { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string Dir { get; set; } = "asc";
+
     public IReadOnlyList<ProjectListItem> ProjectList { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync()
@@ -38,8 +44,18 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
                 : query.Where(p => EF.Functions.ILike(p.Name, $"%{term}%"));
         }
 
+        var descending = Dir == "desc";
+        query = (Sort, descending) switch
+        {
+            ("domain", true) => query.OrderByDescending(p => p.Domain),
+            ("domain", false) => query.OrderBy(p => p.Domain),
+            ("status", true) => query.OrderByDescending(p => p.State),
+            ("status", false) => query.OrderBy(p => p.State),
+            (_, true) => query.OrderByDescending(p => p.Name),
+            (_, false) => query.OrderBy(p => p.Name)
+        };
+
         ProjectList = await query
-            .OrderBy(p => p.Name)
             .Select(p => new ProjectListItem(p.Id, p.Name, p.Domain, p.State))
             .ToListAsync();
 

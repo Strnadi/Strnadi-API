@@ -341,20 +341,37 @@ an attribute on `<ss-table>` (`Pages/Dashboard/_UsersTable.cshtml`, `Pages/Dashb
   the selected field when building its EF query — the tag helper only renders the picker and
   round-trips the bound values.
 
-All of it renders as one `method="get"` form inside `.ss-table-toolbar` (`display: flex;
-justify-content: space-between`, wraps on narrow widths) so the search term/field are bookmarkable
-query-string params with no JS, and the page model filters server-side. The search input itself is
-`.ss-field__input.ss-table-toolbar__search` (caps it at `max-width: 280px` instead of the field
-input's usual full width); the column `<select>` is `.ss-field__input.ss-table-search__field`
-(`width: auto`, same reasoning as the create button - the default `.ss-field__input` is full
-width). When both a search form and a create button are configured, the search form takes the
-toolbar's left side and the create button the right (`.ss-table-toolbar--end` only applies when
-there's a create button and no search form, so a lone item doesn't collapse to the left).
+All of it renders as one `method="get"` form (`.ss-table-search`, `display: flex; align-items:
+center`) inside `.ss-table-toolbar` (`display: flex; justify-content: space-between`, wraps on
+narrow widths) so the search term/field are bookmarkable query-string params with no JS, and the
+page model filters server-side. The column `<select>` and the search input sit side by side in
+that one form, not stacked — the select is `.ss-field__input.ss-table-search__field` (`width:
+auto; flex: 0 0 auto`, same reasoning as the create button: the default `.ss-field__input` is full
+width) and the input is `.ss-field__input.ss-table-toolbar__search` (`flex: 1 1 200px; max-width:
+280px` — a plain `width: 100%` here would claim the whole flex row for the input alone and wrap
+the select onto its own line, which is why it's `flex`-based instead). When both a search form and
+a create button are configured, the search form takes the toolbar's left side and the create
+button the right (`.ss-table-toolbar--end` only applies when there's a create button and no search
+form, so a lone item doesn't collapse to the left).
 
 Like the create button, the search form is part of `<ss-table>` itself, so it always renders even
 when the filtered result set is empty — the empty-state message goes inside `<tbody>` as a
 spanning `<tr><td colspan="N">` row (see `_UsersTable.cshtml`), not as a sibling that replaces the
 whole table, or the search box would disappear exactly when it's needed to change the query.
+
+#### Sortable columns — `<ss-th sort="...">`
+
+A separate tag helper (`Administration.Api/TagHelpers/SsThTagHelper.cs`), used inside a
+`<ss-table>`'s `<thead>` in place of a plain `<th>` for any column that should be sortable —
+`/dashboard/projects` is the current example (`name`/`domain`/`status`). `sort` is an opaque
+string key the page chooses; clicking the header round-trips `?Sort={key}&Dir=asc|desc` (fixed
+query-string names, the same on every table) toggling direction on repeat clicks, while preserving
+every other query param already on the URL (an active `Search` doesn't get wiped by sorting). A
+`<th>` with no `sort` attribute renders exactly as before. The page's `OnGetAsync` reads
+`[BindProperty(SupportsGet = true)] public string? Sort` / `public string Dir = "asc"` and maps
+the known keys to `OrderBy`/`OrderByDescending` itself with a plain `switch` — the tag helper only
+renders the link and arrow (`.ss-table__sort-link`, `--active`, `.ss-table__sort-arrow`), it has no
+idea how any column is actually ordered.
 
 ### Navigation — `.ss-sidebar` / `.ss-topbar`
 
@@ -424,11 +441,19 @@ and are fully localized (cs default, en, de) — see the `strnadi-ui` skill for 
 The admin panel shell (`Pages/Dashboard/_DashboardLayout.cshtml`) is built on the same CSS and
 nests inside `_Layout.cshtml`, with its own inline language switch in the topbar (see § Language
 switch); `/dashboard` (own profile) and `/dashboard/projects[/{id}]` exist as role-gated Razor
-Pages. `/dashboard/projects` (gated on `ManageProjects`) and `/dashboard/projects/create` are built
-out: the list has a Name/Domain search (via `<ss-table>`'s `search-fields`) and a create button;
-create only takes Name/Domain (State defaults to `Draft`) and checks Domain uniqueness the same way
-`/dashboard/projects/{id}/edit` does. Per-project settings beyond Name/Domain/State (photo, etc.)
-are still not exposed here.
+Pages. `/dashboard/projects` (gated on `ManageProjects`) has a Name/Domain search and
+`name`/`domain`/`status` sorting (via `<ss-table>`'s `search-fields` and `<ss-th sort="...">`) —
+sorting by status is how an admin finds all pending (`Draft`) submissions.
+`/dashboard/projects/create` is **not** gated on `ManageProjects` — any authenticated user reaches
+it to submit a project (Name/Description/Domain/ApiDomain/Logo), which is inserted straight away
+as `State = Draft`, `CreatedBy` = the submitter. Approving or rejecting a submission is just
+`/dashboard/projects/{id}/edit` (admin-only) changing `State` to `Active` (stamps `ApprovedBy`/
+`ApprovedAt`) or `Rejected` (requires a `RejectionReason`) — there's no separate review workflow
+or table, `Projects` holds both real and pending-review rows, distinguished only by `State`.
+`Program.cs`'s CORS/OpenIddict startup sync explicitly excludes `Draft`/`Rejected` projects'
+domains, and the `Domain` unique index ignores `Rejected` rows (`HasFilter`) so a rejected
+submission's domain can be resubmitted — see the comments on `Project.Domain` and in
+`AdminDbContext.OnModelCreating`'s `Project` block before changing either.
 `/dashboard/users` and `/dashboard/users/{id}/edit` are built out: the list is gated on
 `ViewUsersBasic`/`ManageUsers` (basic columns: name, registration date, status) with
 `ViewUsersConfidential`/`ManageUsers` additionally showing email/city/postal code, and the edit

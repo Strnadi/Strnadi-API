@@ -285,6 +285,36 @@
   <data name="NewProject" xml:space="preserve">
     <value>New project</value>
   </data>
+  <data name="ApiDomain" xml:space="preserve">
+    <value>API domain</value>
+  </data>
+  <data name="Rejected" xml:space="preserve">
+    <value>Rejected</value>
+  </data>
+  <data name="Logo" xml:space="preserve">
+    <value>Logo</value>
+  </data>
+  <data name="CreatedBy" xml:space="preserve">
+    <value>Created by</value>
+  </data>
+  <data name="RequestSubmitted" xml:space="preserve">
+    <value>Request submitted</value>
+  </data>
+  <data name="RequestSubmittedHint" xml:space="preserve">
+    <value>Thanks for requesting a new project. An administrator will review it soon.</value>
+  </data>
+  <data name="RequestNewProject" xml:space="preserve">
+    <value>Request a new project</value>
+  </data>
+  <data name="RequestNewProjectHint" xml:space="preserve">
+    <value>Fill in your project's details. After you submit, an administrator will review the request and decide whether to approve it.</value>
+  </data>
+  <data name="RejectionReason" xml:space="preserve">
+    <value>Rejection reason</value>
+  </data>
+  <data name="RejectionReasonHint" xml:space="preserve">
+    <value>Fill in when rejecting a request - the requester will see this reason.</value>
+  </data>
   <data name="NoRoles" xml:space="preserve">
     <value>There are no roles yet.</value>
   </data>

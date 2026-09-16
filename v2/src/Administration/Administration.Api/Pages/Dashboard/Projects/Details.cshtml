@@ -33,8 +33,32 @@
     </div>
 
     <div class="ss-card">
+        @if (Model.Project.PhotoPath is not null)
+        {
+            <img src="/dashboard/projects/@Model.Project.Id?handler=Logo" alt="@Model.Project.Name" style="max-width:120px;max-height:120px;border-radius:var(--radius-md);margin-bottom:var(--space-4);" />
+        }
+
+        @if (!string.IsNullOrEmpty(Model.Project.Description))
+        {
+            <p>@Model.Project.Description</p>
+        }
+
         <p>@L["Domain"]: @Model.Project.Domain</p>
+        @if (!string.IsNullOrEmpty(Model.Project.ApiDomain))
+        {
+            <p>@L["ApiDomain"]: @Model.Project.ApiDomain</p>
+        }
         <p>@L["Status"]: <span class="ss-badge @status.Modifier">@L[status.LabelKey]</span></p>
+
+        @if (Model.CreatedByName is not null)
+        {
+            <p>@L["CreatedBy"]: @Model.CreatedByName (@Model.Project.CreatedAt.ToString("d"))</p>
+        }
+
+        @if (Model.Project.State == ProjectState.Rejected && !string.IsNullOrEmpty(Model.Project.RejectionReason))
+        {
+            <div class="ss-alert ss-alert--danger">@Model.Project.RejectionReason</div>
+        }
     </div>
 </div>
 
@@ -46,6 +70,7 @@
         ProjectState.Archived => ("ss-badge--warning", "Archived"),
         ProjectState.Deactivated => ("ss-badge--warning", "Deactivated"),
         ProjectState.Deleted => ("ss-badge--danger", "Deleted"),
+        ProjectState.Rejected => ("ss-badge--danger", "Rejected"),
         _ => ("", state.ToString())
     };
 }

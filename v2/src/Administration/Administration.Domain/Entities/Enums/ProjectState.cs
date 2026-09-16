@@ -6,5 +6,6 @@ public enum ProjectState
     Archived,
     Deactivated,
     Deleted,
-    Draft
+    Draft,
+    Rejected
 }

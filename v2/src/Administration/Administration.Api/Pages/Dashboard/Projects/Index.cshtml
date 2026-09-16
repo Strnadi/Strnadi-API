@@ -19,9 +19,9 @@
               search-field-name="SearchField" search-field-value="@Model.SearchField" search-fields="@searchFields">
         <thead>
             <tr>
-                <th>@L["Projects"]</th>
-                <th>@L["Domain"]</th>
-                <th>@L["Status"]</th>
+                <ss-th sort="name">@L["Projects"]</ss-th>
+                <ss-th sort="domain">@L["Domain"]</ss-th>
+                <ss-th sort="status">@L["Status"]</ss-th>
             </tr>
         </thead>
         <tbody>
@@ -53,6 +53,7 @@
         ProjectState.Archived => ("ss-badge--warning", "Archived"),
         ProjectState.Deactivated => ("ss-badge--warning", "Deactivated"),
         ProjectState.Deleted => ("ss-badge--danger", "Deleted"),
+        ProjectState.Rejected => ("ss-badge--danger", "Rejected"),
         _ => ("", state.ToString())
     };
 }

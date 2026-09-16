@@ -4,6 +4,7 @@ using System.Text;
 using Administration.Api.Resources;
 using Administration.Domain.Configuration;
 using Administration.Domain.Entities;
+using Administration.Domain.Entities.Enums;
 using Administration.Domain.Persistence.Repositories;
 using Administration.Domain.Services;
 using Administration.Infrastructure.Configuration;
@@ -223,8 +224,13 @@ using (var scope = app.Services.CreateScope())
     if (app.Environment.IsDevelopment())
         await scope.ServiceProvider.GetRequiredService<AdminDbContext>().Database.MigrateAsync();
 
+    // Draft/Rejected projects are unreviewed, publicly-submitted requests (see
+    // Pages/Dashboard/Projects/Create.cshtml.cs) - their domain must never become a trusted
+    // OAuth redirect target or CORS origin just because the app happened to restart before an
+    // admin reviewed them.
     var projectDomains = await scope.ServiceProvider.GetRequiredService<AdminDbContext>().Projects
-        .Where(p => p.Domain != null && p.Domain != "")
+        .Where(p => p.Domain != null && p.Domain != ""
+            && p.State != ProjectState.Draft && p.State != ProjectState.Rejected)
         .Select(p => p.Domain)
         .ToListAsync();
 

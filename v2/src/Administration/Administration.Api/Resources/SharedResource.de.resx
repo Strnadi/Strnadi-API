@@ -285,6 +285,36 @@
   <data name="NewProject" xml:space="preserve">
     <value>Neues Projekt</value>
   </data>
+  <data name="ApiDomain" xml:space="preserve">
+    <value>API-Domäne</value>
+  </data>
+  <data name="Rejected" xml:space="preserve">
+    <value>Abgelehnt</value>
+  </data>
+  <data name="Logo" xml:space="preserve">
+    <value>Logo</value>
+  </data>
+  <data name="CreatedBy" xml:space="preserve">
+    <value>Erstellt von</value>
+  </data>
+  <data name="RequestSubmitted" xml:space="preserve">
+    <value>Antrag gesendet</value>
+  </data>
+  <data name="RequestSubmittedHint" xml:space="preserve">
+    <value>Danke für Ihren Antrag auf ein neues Projekt. Ein Administrator wird ihn bald prüfen.</value>
+  </data>
+  <data name="RequestNewProject" xml:space="preserve">
+    <value>Neues Projekt beantragen</value>
+  </data>
+  <data name="RequestNewProjectHint" xml:space="preserve">
+    <value>Geben Sie die Daten Ihres Projekts ein. Nach dem Absenden prüft ein Administrator den Antrag und entscheidet über die Genehmigung.</value>
+  </data>
+  <data name="RejectionReason" xml:space="preserve">
+    <value>Ablehnungsgrund</value>
+  </data>
+  <data name="RejectionReasonHint" xml:space="preserve">
+    <value>Beim Ablehnen eines Antrags ausfüllen - der Antragsteller sieht diesen Grund.</value>
+  </data>
   <data name="NoRoles" xml:space="preserve">
     <value>Es gibt noch keine Rollen.</value>
   </data>

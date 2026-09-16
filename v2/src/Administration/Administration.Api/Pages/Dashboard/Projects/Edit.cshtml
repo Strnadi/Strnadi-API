@@ -14,7 +14,7 @@
 <h1>@Model.TargetProject.Name</h1>
 
 <div class="ss-card">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
 
         <div class="ss-field">
@@ -24,15 +24,45 @@
         </div>
 
         <div class="ss-field">
-            <label asp-for="Input.Domain" class="ss-field__label">@L["Domain"]</label>
-            <input asp-for="Input.Domain" class="ss-field__input" />
-            <span asp-validation-for="Input.Domain" class="ss-field__error"></span>
+            <label asp-for="Input.Description" class="ss-field__label">@L["Description"]</label>
+            <textarea asp-for="Input.Description" class="ss-field__input" rows="4"></textarea>
+            <span asp-validation-for="Input.Description" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field-row">
+            <div class="ss-field">
+                <label asp-for="Input.Domain" class="ss-field__label">@L["Domain"]</label>
+                <input asp-for="Input.Domain" class="ss-field__input" />
+                <span asp-validation-for="Input.Domain" class="ss-field__error"></span>
+            </div>
+            <div class="ss-field">
+                <label asp-for="Input.ApiDomain" class="ss-field__label">@L["ApiDomain"]</label>
+                <input asp-for="Input.ApiDomain" class="ss-field__input" />
+                <span asp-validation-for="Input.ApiDomain" class="ss-field__error"></span>
+            </div>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Logo" class="ss-field__label">@L["Logo"]</label>
+            @if (Model.TargetProject.PhotoPath is not null)
+            {
+                <img src="/dashboard/projects/@Model.TargetProject.Id?handler=Logo" alt="" style="max-width:64px;max-height:64px;border-radius:var(--radius-sm);display:block;margin-bottom:var(--space-2);" />
+            }
+            <input asp-for="Input.Logo" type="file" accept="image/*" class="ss-field__input" />
+            <span asp-validation-for="Input.Logo" class="ss-field__error"></span>
         </div>
 
         <div class="ss-field">
             <label asp-for="Input.State" class="ss-field__label">@L["Status"]</label>
             <select asp-for="Input.State" asp-items="stateOptions" class="ss-field__input"></select>
             <span asp-validation-for="Input.State" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.RejectionReason" class="ss-field__label">@L["RejectionReason"]</label>
+            <textarea asp-for="Input.RejectionReason" class="ss-field__input" rows="2"></textarea>
+            <span class="ss-field__hint">@L["RejectionReasonHint"]</span>
+            <span asp-validation-for="Input.RejectionReason" class="ss-field__error"></span>
         </div>
 
         <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>
