@@ -450,6 +450,61 @@ a {
   gap: var(--space-5);
 }
 
+/* ---------- Dashboard grid ---------- */
+
+/* Splits the account/overview page into a wider main column and a narrower side column instead
+   of one long stack of same-width cards. Collapses to a single column at the same breakpoint the
+   admin shell itself collapses at, since the side column needs real width to read as a column at
+   all. */
+.ss-dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .ss-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Profile header ---------- */
+
+/* Identity banner above the account page's cards - avatar initials + name + at-a-glance badges,
+   so the page opens with something other than a form. */
+.ss-profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.ss-profile-header__avatar {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+.ss-profile-header__meta h1 {
+  margin-bottom: var(--space-1);
+}
+.ss-profile-header__sub {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+.ss-profile-header__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
 /* ---------- Admin panel shell ---------- */
 
 .ss-sidebar {

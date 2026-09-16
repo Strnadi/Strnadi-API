@@ -227,10 +227,11 @@ password/Documents cards.
 
 ### Consent list — `.ss-consent-list` / `.ss-consent-item`
 
-A vertical list of status rows inside a card (currently: document acceptance status on the
-account page). Not a `.ss-table` - too few columns and too much per-row content (title, multiple
-badges, an action button) for a table to read well; not a plain `.ss-stack` either, since rows
-need a hairline separator and first/last-child padding trimmed flush with the card edge.
+A vertical list of status rows inside a card (document acceptance status and the projects quick
+list, both on the account page). Not a `.ss-table` - too few columns and too much per-row content
+(title, multiple badges, sometimes an action button) for a table to read well; not a plain
+`.ss-stack` either, since rows need a hairline separator and first/last-child padding trimmed
+flush with the card edge. The action button is optional per row — the projects list omits it.
 
 ```
 .ss-consent-list
@@ -247,6 +248,30 @@ padding and its border, so the list sits flush with the card's own padding.
 
 `display: flex; flex-direction: column; gap: var(--space-5)`. Use this to space out multiple
 `.ss-card`s (or any other blocks) vertically instead of ad-hoc margin on one of them.
+
+### Dashboard grid — `.ss-dashboard-grid`
+
+Two-column layout (`2fr 1fr`, `--space-5` gap) for a page that has one primary block (a form) and
+one or more secondary blocks (quick lists, status summaries) that don't need full width — used on
+`/dashboard` to avoid stacking every card at the same width down a single column. Collapses to one
+column under 768px (same breakpoint the admin shell itself collapses at). Put a `.ss-stack` of
+cards in each grid cell rather than a single card per cell, so either column can hold more than
+one block.
+
+### Profile header — `.ss-profile-header`
+
+Identity banner shown above the grid on `/dashboard`: an initials avatar plus name/email and a row
+of at-a-glance badges (member since, project count, document acceptance status), so the account
+page opens with a glanceable summary instead of going straight into a form.
+
+```
+.ss-profile-header                 -- flex row, gap --space-4, wraps on narrow widths
+  .ss-profile-header__avatar       -- 64px circle, --color-primary bg, initials
+  .ss-profile-header__meta
+    h1                             -- name
+    .ss-profile-header__sub        -- muted, --font-size-sm (email)
+    .ss-profile-header__badges     -- flex row of .ss-badge, wraps, margin-top --space-2
+```
 
 ### Badges — `.ss-badge`
 
