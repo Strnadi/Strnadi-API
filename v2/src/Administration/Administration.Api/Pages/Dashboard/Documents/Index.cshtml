@@ -7,7 +7,8 @@
 <h1>@L["Documents"]</h1>
 
 <div class="ss-card">
-    <ss-table create-href="/dashboard/documents/create" create-text="@L["NewDocument"].Value">
+    <ss-table create-href="/dashboard/documents/create" create-text="@L["NewDocument"].Value"
+              search-name="Search" search-value="@Model.Search" search-placeholder="@L["Search"].Value">
         <thead>
             <tr>
                 <th>@L["Title"]</th>

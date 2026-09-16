@@ -309,8 +309,9 @@ copy-pasted per page.
   on that inlining the whole table clutters it. That's a per-page organizational choice on top of
   `<ss-table>`, not a substitute for it.
 - `create-href`/`create-text` attributes render a `.ss-btn--primary.ss-btn--sm` link top-right,
-  above the table (`Pages/Dashboard/Documents/Index.cshtml`, `Pages/Dashboard/Projects/Roles/Index.cshtml`).
-  Use these instead of a page hand-building its own title-row button — the default `.ss-btn` is
+  above the table (`Pages/Dashboard/Documents/Index.cshtml`, `Pages/Dashboard/Projects/Index.cshtml`,
+  `Pages/Dashboard/Projects/Roles/Index.cshtml`). Use these instead of a page hand-building its own
+  title-row button — the default `.ss-btn` is
   `width: 100%` (sized for auth-form submit buttons), and a page-built button that forgets
   `.ss-btn--sm` renders full-width instead of as a normal button; routing every "New X" action
   through `<ss-table>` fixes that in one place. Because the button is part of `<ss-table>`, always
@@ -323,18 +324,20 @@ copy-pasted per page.
 #### Table toolbar / search — `.ss-table-toolbar`
 
 `<ss-table>` also renders the search box, not just the create button — like `create-href`, this is
-an attribute on `<ss-table>` (`Pages/Dashboard/_UsersTable.cshtml` is the current example), not
-markup a page writes by hand:
+an attribute on `<ss-table>` (`Pages/Dashboard/_UsersTable.cshtml`, `Pages/Dashboard/Projects/Index.cshtml`,
+`Pages/Dashboard/Documents/Index.cshtml`), not markup a page writes by hand:
 
-- `search-name` / `search-value` / `search-placeholder` / `search-button-text` — a plain search
-  input + submit button. Omitting `search-name` renders no search UI at all (Projects/Documents/
-  Roles don't have one).
+- `search-name` / `search-value` / `search-placeholder` — a plain search input, no submit button.
+  Pressing Enter in the input submits the form on its own; a visible button next to a single search
+  box was redundant chrome. Omitting `search-name` renders no search UI at all (Roles doesn't have
+  one).
 - `search-field-name` / `search-field-value` / `search-fields` — an optional `<select>` next to
   the input, letting the caller pick which column to search (`/dashboard/users` offers "Name" and,
-  only for `CanViewUsersConfidential`, "Email"). `search-fields` takes a
-  `IReadOnlyList<SsTableSearchField>` (a `(Value, Text)` record from
+  only for `CanViewUsersConfidential`, "Email"; `/dashboard/projects` offers "Name"/"Domain").
+  `search-fields` takes a `IReadOnlyList<SsTableSearchField>` (a `(Value, Text)` record from
   `Administration.Api.TagHelpers`) built by the page/partial; omit `search-field-name` for a plain
-  single-box search with no column picker. The page's `OnGetAsync` is what actually branches on
+  single-box search with no column picker (`/dashboard/documents` only has one meaningful text
+  column - Title - so it skips the picker). The page's `OnGetAsync` is what actually branches on
   the selected field when building its EF query — the tag helper only renders the picker and
   round-trips the bound values.
 
@@ -421,7 +424,11 @@ and are fully localized (cs default, en, de) — see the `strnadi-ui` skill for 
 The admin panel shell (`Pages/Dashboard/_DashboardLayout.cshtml`) is built on the same CSS and
 nests inside `_Layout.cshtml`, with its own inline language switch in the topbar (see § Language
 switch); `/dashboard` (own profile) and `/dashboard/projects[/{id}]` exist as role-gated Razor
-Pages, with Projects management still placeholder content pending its own build-out.
+Pages. `/dashboard/projects` (gated on `ManageProjects`) and `/dashboard/projects/create` are built
+out: the list has a Name/Domain search (via `<ss-table>`'s `search-fields`) and a create button;
+create only takes Name/Domain (State defaults to `Draft`) and checks Domain uniqueness the same way
+`/dashboard/projects/{id}/edit` does. Per-project settings beyond Name/Domain/State (photo, etc.)
+are still not exposed here.
 `/dashboard/users` and `/dashboard/users/{id}/edit` are built out: the list is gated on
 `ViewUsersBasic`/`ManageUsers` (basic columns: name, registration date, status) with
 `ViewUsersConfidential`/`ManageUsers` additionally showing email/city/postal code, and the edit
@@ -438,10 +445,8 @@ Project-scoped document management is still API-only.
 
 Not done yet:
 
-1. Projects management screen is still a placeholder (`.ss-card` with a "coming soon" message) —
-   the shell/nav/access-control around it is real, the CRUD UI inside isn't.
-2. No `CLAUDE.md` entry points at this file yet; for now UI work in this repo is covered by the
+1. No `CLAUDE.md` entry points at this file yet; for now UI work in this repo is covered by the
    `strnadi-ui` Claude Code skill (`.claude/skills/strnadi-ui/SKILL.md`) instead.
-3. A Blazor Server rewrite of the admin panel remains optional future work, not a requirement —
+2. A Blazor Server rewrite of the admin panel remains optional future work, not a requirement —
    if it happens, it needs to load the same `design-system.css`, one `<link>`, not a per-surface
    copy.

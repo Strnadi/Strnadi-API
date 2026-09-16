@@ -37,9 +37,6 @@ public class SsTableTagHelper : TagHelper
     [HtmlAttributeName("search-placeholder")]
     public string? SearchPlaceholder { get; set; }
 
-    [HtmlAttributeName("search-button-text")]
-    public string? SearchButtonText { get; set; }
-
     // Optional column picker sitting next to the search input - omit search-field-name to get a
     // plain single-box search with no column choice.
     [HtmlAttributeName("search-field-name")]
@@ -99,6 +96,8 @@ public class SsTableTagHelper : TagHelper
         return link;
     }
 
+    // No submit button - a search/text input submits its enclosing form on Enter on its own, and
+    // a visible button next to it was redundant chrome.
     private TagBuilder BuildSearchForm()
     {
         var form = new TagBuilder("form");
@@ -134,14 +133,6 @@ public class SsTableTagHelper : TagHelper
         input.AddCssClass("ss-field__input");
         input.AddCssClass("ss-table-toolbar__search");
         form.InnerHtml.AppendHtml(input);
-
-        var button = new TagBuilder("button");
-        button.Attributes["type"] = "submit";
-        button.AddCssClass("ss-btn");
-        button.AddCssClass("ss-btn--secondary");
-        button.AddCssClass("ss-btn--sm");
-        button.InnerHtml.Append(SearchButtonText ?? string.Empty);
-        form.InnerHtml.AppendHtml(button);
 
         return form;
     }

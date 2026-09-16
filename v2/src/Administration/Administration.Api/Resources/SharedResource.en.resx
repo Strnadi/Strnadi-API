@@ -282,6 +282,9 @@
   <data name="NewRole" xml:space="preserve">
     <value>New role</value>
   </data>
+  <data name="NewProject" xml:space="preserve">
+    <value>New project</value>
+  </data>
   <data name="NoRoles" xml:space="preserve">
     <value>There are no roles yet.</value>
   </data>

@@ -8,7 +8,7 @@
     var columnCount = 5 + (Model.CanViewUsersConfidential ? 3 : 0) + (Model.CanManageUsers ? 1 : 0);
 }
 
-<ss-table search-name="Search" search-value="@Model.Search" search-placeholder="@L["Search"].Value" search-button-text="@L["Search"].Value"
+<ss-table search-name="Search" search-value="@Model.Search" search-placeholder="@L["Search"].Value"
           search-field-name="SearchField" search-field-value="@Model.SearchField" search-fields="@searchFields">
     <thead>
         <tr>

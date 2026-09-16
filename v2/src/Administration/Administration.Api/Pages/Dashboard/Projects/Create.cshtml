@@ -1,0 +1,29 @@
+@page "/dashboard/projects/create"
+@model Administration.Api.Pages.Dashboard.Projects.CreateModel
+@{
+    ViewData["Title"] = L["NewProject"].Value;
+}
+
+<a href="/dashboard/projects">&larr; @L["Projects"]</a>
+
+<h1>@L["NewProject"]</h1>
+
+<div class="ss-card">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert--danger"></div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Name" class="ss-field__label">@L["Name"]</label>
+            <input asp-for="Input.Name" class="ss-field__input" />
+            <span asp-validation-for="Input.Name" class="ss-field__error"></span>
+        </div>
+
+        <div class="ss-field">
+            <label asp-for="Input.Domain" class="ss-field__label">@L["Domain"]</label>
+            <input asp-for="Input.Domain" class="ss-field__input" />
+            <span asp-validation-for="Input.Domain" class="ss-field__error"></span>
+        </div>
+
+        <button type="submit" class="ss-btn ss-btn--primary">@L["Save"]</button>
+    </form>
+</div>

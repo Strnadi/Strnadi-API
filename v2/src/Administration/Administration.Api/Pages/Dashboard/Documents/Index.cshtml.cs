@@ -15,6 +15,9 @@ public record DocumentListItem(
 public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions, ILogger<DashboardPageModel> logger)
     : DashboardPageModel(users, db, permissions, logger)
 {
+    [BindProperty(SupportsGet = true)]
+    public string? Search { get; set; }
+
     public IReadOnlyList<DocumentListItem> DocumentList { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync()
@@ -22,8 +25,13 @@ public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermiss
         if (!CanManageDocuments)
             return RequirePermission(false, Permissions.ManageDocuments);
 
-        DocumentList = await Db.Documents
-            .Where(d => d.IsActive)
+        var query = Db.Documents.Where(d => d.IsActive);
+
+        var term = Search?.Trim();
+        if (!string.IsNullOrEmpty(term))
+            query = query.Where(d => EF.Functions.ILike(d.Title, $"%{term}%"));
+
+        DocumentList = await query
             .OrderByDescending(d => d.IsRequired)
             .ThenBy(d => d.Type)
             .Select(d => new DocumentListItem(

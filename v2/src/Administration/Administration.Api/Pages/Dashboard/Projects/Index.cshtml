@@ -1,29 +1,37 @@
 @page "/dashboard/projects"
+@using Administration.Api.TagHelpers
 @using Administration.Domain.Entities.Enums
 @model Administration.Api.Pages.Dashboard.Projects.IndexModel
 @{
     ViewData["Title"] = L["Projects"].Value;
+    var searchFields = new List<SsTableSearchField>
+    {
+        new("name", L["Name"].Value),
+        new("domain", L["Domain"].Value)
+    };
 }
 
 <h1>@L["Projects"]</h1>
 
 <div class="ss-card">
-    @if (Model.Projects.Count == 0)
-    {
-        <p>@L["NoProjects"]</p>
-    }
-    else
-    {
-        <ss-table>
-            <thead>
-                <tr>
-                    <th>@L["Projects"]</th>
-                    <th>@L["Domain"]</th>
-                    <th>@L["Status"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var project in Model.Projects)
+    <ss-table create-href="/dashboard/projects/create" create-text="@L["NewProject"].Value"
+              search-name="Search" search-value="@Model.Search" search-placeholder="@L["Search"].Value"
+              search-field-name="SearchField" search-field-value="@Model.SearchField" search-fields="@searchFields">
+        <thead>
+            <tr>
+                <th>@L["Projects"]</th>
+                <th>@L["Domain"]</th>
+                <th>@L["Status"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.ProjectList.Count == 0)
+            {
+                <tr><td colspan="3" style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NoProjects"]</td></tr>
+            }
+            else
+            {
+                @foreach (var project in Model.ProjectList)
                 {
                     var status = StatusBadge(project.State);
                     <tr>
@@ -32,9 +40,9 @@
                         <td><span class="ss-badge @status.Modifier">@L[status.LabelKey]</span></td>
                     </tr>
                 }
-            </tbody>
-        </ss-table>
-    }
+            }
+        </tbody>
+    </ss-table>
 </div>
 
 @functions {
