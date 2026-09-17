@@ -297,6 +297,33 @@
   <data name="CreatedBy" xml:space="preserve">
     <value>Vytvořil</value>
   </data>
+  <data name="ApiCompatibility" xml:space="preserve">
+    <value>Kompatibilita API</value>
+  </data>
+  <data name="Capabilities" xml:space="preserve">
+    <value>Podporované funkce</value>
+  </data>
+  <data name="NotCheckedYet" xml:space="preserve">
+    <value>Zatím nezkontrolováno</value>
+  </data>
+  <data name="RefreshCapabilities" xml:space="preserve">
+    <value>Načíst funkce znovu</value>
+  </data>
+  <data name="ApiConformance" xml:space="preserve">
+    <value>Shoda s naší API</value>
+  </data>
+  <data name="FullyCompatible" xml:space="preserve">
+    <value>Plně kompatibilní</value>
+  </data>
+  <data name="CheckApiCompatibility" xml:space="preserve">
+    <value>Zkontrolovat kompatibilitu API</value>
+  </data>
+  <data name="CheckedAt" xml:space="preserve">
+    <value>Zkontrolováno</value>
+  </data>
+  <data name="MissingFeatureHint" xml:space="preserve">
+    <value>Tuto funkci projekt nedeklaroval jako podporovanou</value>
+  </data>
   <data name="RequestSubmitted" xml:space="preserve">
     <value>Žádost odeslána</value>
   </data>

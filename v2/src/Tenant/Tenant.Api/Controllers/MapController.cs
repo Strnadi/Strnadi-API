@@ -1,10 +1,12 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Tenant.Domain.Services;
 
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("map")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/map")]
 public class MapController(IMapyCzProxyService mapsProxy) : ControllerBase
 {
     /// <summary>Proxies a request to Mapy.cz, attaching our API key. Non-2xx upstream responses are passed through as-is, so the status code isn't fixed.</summary>

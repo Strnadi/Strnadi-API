@@ -34,5 +34,18 @@ public class Project
     public DateTime? ApprovedAt { get; set; }
 
     public string? RejectionReason { get; set; }
+
+    // Raw response from {ApiDomain}/v1/.well-known/capabilities - declared feature list, not
+    // verified. See Pages/Dashboard/Projects/Details.cshtml.cs.
+    public string? CapabilitiesJson { get; set; }
+
+    public DateTime? CapabilitiesCheckedAt { get; set; }
+
+    // Newline-joined list of "METHOD /path" entries present in our reference Tenant.Api's
+    // /v1/swagger.json but missing from {ApiDomain}'s own spec. Null/empty = fully compatible
+    // (or never checked - CheckedAt distinguishes the two).
+    public string? ApiConformanceReport { get; set; }
+
+    public DateTime? ApiConformanceCheckedAt { get; set; }
 }
 

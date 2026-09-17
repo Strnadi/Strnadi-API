@@ -60,6 +60,64 @@
             <div class="ss-alert ss-alert--danger">@Model.Project.RejectionReason</div>
         }
     </div>
+
+    @if (Model.CanManageProjects && !string.IsNullOrEmpty(Model.Project.ApiDomain))
+    {
+        <div class="ss-card">
+            <h2 class="ss-section-heading">@L["ApiCompatibility"]</h2>
+
+            <h3>@L["Capabilities"]</h3>
+            @if (Model.Project.CapabilitiesCheckedAt is null)
+            {
+                <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NotCheckedYet"]</p>
+            }
+            else
+            {
+                <div class="ss-consent-item__badges" style="margin-bottom:var(--space-2);">
+                    @foreach (var feature in Model.DeclaredFeatures)
+                    {
+                        <span class="ss-badge ss-badge--success">@feature</span>
+                    }
+                    @foreach (var feature in Model.MissingFeatures)
+                    {
+                        <span class="ss-badge ss-badge--warning" title="@L["MissingFeatureHint"]">@feature</span>
+                    }
+                </div>
+                <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["CheckedAt"]: @Model.Project.CapabilitiesCheckedAt.Value.ToString("d")</p>
+            }
+            <form method="post" asp-page-handler="RefreshCapabilities">
+                <button type="submit" class="ss-btn ss-btn--secondary ss-btn--sm">@L["RefreshCapabilities"]</button>
+            </form>
+
+            <h3 style="margin-top:var(--space-5);">@L["ApiConformance"]</h3>
+            @if (Model.Project.ApiConformanceCheckedAt is null)
+            {
+                <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NotCheckedYet"]</p>
+            }
+            else if (string.IsNullOrEmpty(Model.Project.ApiConformanceReport))
+            {
+                <p><span class="ss-badge ss-badge--success">@L["FullyCompatible"]</span></p>
+            }
+            else
+            {
+                <div class="ss-alert ss-alert--warning">
+                    <ul style="margin:0;padding-left:1.2em;">
+                        @foreach (var line in Model.Project.ApiConformanceReport.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            <li>@line</li>
+                        }
+                    </ul>
+                </div>
+            }
+            @if (Model.Project.ApiConformanceCheckedAt is not null)
+            {
+                <p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["CheckedAt"]: @Model.Project.ApiConformanceCheckedAt.Value.ToString("d")</p>
+            }
+            <form method="post" asp-page-handler="CheckApiConformance">
+                <button type="submit" class="ss-btn ss-btn--secondary ss-btn--sm">@L["CheckApiCompatibility"]</button>
+            </form>
+        </div>
+    }
 </div>
 
 @functions {

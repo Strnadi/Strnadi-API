@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Shared.Infrastructure.Authorization;
@@ -7,7 +8,8 @@ using Tenant.Application.Recordings;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("recordings/filtered")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/recordings/filtered")]
 public class FilteredRecordingsController(FilteredRecordingPartsService filteredRecordingPartsService) : ControllerBase
 {
     /// <summary>Filtered recording parts, optionally scoped to a recording or only the verified ones.</summary>

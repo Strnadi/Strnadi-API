@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,8 @@ using Tenant.Application.Achievements;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("achievements")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/achievements")]
 public class AchievementsController(AchievementsService achievementsService) : ControllerBase
 {
     /// <summary>All achievements, or just the ones this user earned (awards any newly qualified ones first).</summary>

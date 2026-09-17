@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Shared.Infrastructure.Authorization;
@@ -9,7 +10,8 @@ using Tenant.Domain.Entities;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("recordings")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/recordings")]
 public class RecordingsController(RecordingsService recordingsService) : ControllerBase
 {
     /// <summary>Recordings, optionally with their parts and/or audio.</summary>

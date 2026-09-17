@@ -1,10 +1,12 @@
 using Administration.Api.Pages.Dashboard;
+using Administration.Api.Services;
 using Administration.Domain.Entities;
 using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Platform.Shared.Kernel.Authorization;
 using Platform.Shared.Kernel.Services;
 
 namespace Administration.Api.Pages.Dashboard.Projects;
@@ -14,12 +16,15 @@ public class DetailsModel(
     AdminDbContext db,
     IUserPermissionsRepository permissions,
     ILogger<DashboardPageModel> logger,
-    IFileStorage fileStorage)
+    IFileStorage fileStorage,
+    ITenantConformanceChecker conformanceChecker)
     : DashboardPageModel(users, db, permissions, logger)
 {
     public Project Project { get; private set; } = null!;
     public IReadOnlyList<string> RoleNames { get; private set; } = [];
     public string? CreatedByName { get; private set; }
+    public IReadOnlyList<string> DeclaredFeatures { get; private set; } = [];
+    public IReadOnlyList<string> MissingFeatures { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
@@ -36,7 +41,51 @@ public class DetailsModel(
             CreatedByName = creator is null ? null : $"{creator.FirstName} {creator.LastName}";
         }
 
+        DeclaredFeatures = conformanceChecker.ParseFeatures(project.CapabilitiesJson);
+
+        // Fetching our own reference deployment (not the untrusted ApiDomain) so this comparison
+        // can run on every page view, unlike the two on-demand checks below.
+        if (CanManageProjects && DeclaredFeatures.Count > 0)
+        {
+            var ownFeatures = await conformanceChecker.FetchOwnFeaturesAsync();
+            if (ownFeatures is not null)
+                MissingFeatures = ownFeatures.Except(DeclaredFeatures).ToList();
+        }
+
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostRefreshCapabilitiesAsync(Guid id)
+    {
+        if (!CanManageProjects)
+            return RequirePermission(false, Permissions.ManageProjects);
+
+        var project = await Db.Projects.FirstOrDefaultAsync(p => p.Id == id);
+        if (project?.ApiDomain is null)
+            return NotFound();
+
+        project.CapabilitiesJson = await conformanceChecker.FetchCapabilitiesAsync(project.ApiDomain);
+        project.CapabilitiesCheckedAt = DateTime.UtcNow;
+        await Db.SaveChangesAsync();
+
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostCheckApiConformanceAsync(Guid id)
+    {
+        if (!CanManageProjects)
+            return RequirePermission(false, Permissions.ManageProjects);
+
+        var project = await Db.Projects.FirstOrDefaultAsync(p => p.Id == id);
+        if (project?.ApiDomain is null)
+            return NotFound();
+
+        var missing = await conformanceChecker.CheckApiConformanceAsync(project.ApiDomain);
+        project.ApiConformanceReport = string.Join('\n', missing);
+        project.ApiConformanceCheckedAt = DateTime.UtcNow;
+        await Db.SaveChangesAsync();
+
+        return RedirectToPage(new { id });
     }
 
     public async Task<IActionResult> OnGetLogoAsync(Guid id)

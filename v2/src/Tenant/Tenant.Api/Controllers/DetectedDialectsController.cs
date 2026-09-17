@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Shared.Infrastructure.Authorization;
@@ -8,7 +9,8 @@ using Tenant.Domain.Entities;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("recordings/filtered/detected")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/recordings/filtered/detected")]
 public class DetectedDialectsController(DetectedDialectsService detectedDialectsService) : ControllerBase
 {
     /// <summary>All detected dialects.</summary>

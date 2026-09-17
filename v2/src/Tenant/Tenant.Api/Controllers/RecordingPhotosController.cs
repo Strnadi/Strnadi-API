@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Shared.Kernel.Authorization;
@@ -7,7 +8,8 @@ using Tenant.Application.Photos;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("recordings/{recordingId:int}/photos")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/recordings/{recordingId:int}/photos")]
 public class RecordingPhotosController(RecordingPhotosService photos) : ControllerBase
 {
     /// <summary>All photos attached to a recording.</summary>

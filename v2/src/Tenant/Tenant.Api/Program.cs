@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using Platform.Shared.Infrastructure.Authorization;
 using Platform.Shared.Infrastructure.ExceptionHandling;
 using Platform.Shared.Infrastructure.Logging;
 using ServiceDefaults;
+using Tenant.Api.Configuration;
 using Tenant.Application.Extensions;
 using Tenant.Domain.Configuration;
 using Tenant.Infrastructure.Configuration;
@@ -23,6 +25,18 @@ builder.AddTrustedReverseProxy();
 
 builder.Services.AddControllers();
 
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+}).AddMvc()
+  .AddApiExplorer(options =>
+  {
+      options.GroupNameFormat = "'v'VVV";
+      options.SubstituteApiVersionInUrl = true;
+  });
+
 builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 
@@ -33,14 +47,9 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<TenantDbContext>();
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Strnadi API",
-        Version = "v1"
-    });
-
     options.AddSecurityDefinition("bearerAuth", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.Http,
@@ -113,6 +122,22 @@ app.UseForwardedHeaders();
 app.MapDefaultEndpoints();
 app.UseHttpsRedirection();
 
+// TEMPORARY: old mobile app builds call unprefixed routes (e.g. /recordings). Rewrite anything
+// that isn't already /v1/..., /utils/health, /swagger, or /list-supported-versions to /v1/... so
+// both continue to work during the migration window. Delete this once request logs show ~0
+// traffic on the unprefixed paths and the mobile app has shipped its /v1/ update.
+app.Use(async (context, next) =>
+{
+    if (!context.Request.Path.StartsWithSegments("/v1", StringComparison.OrdinalIgnoreCase)
+        && !context.Request.Path.StartsWithSegments("/utils/health", StringComparison.OrdinalIgnoreCase)
+        && !context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase)
+        && !context.Request.Path.StartsWithSegments("/list-supported-versions", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Request.Path = "/v1" + context.Request.Path;
+    }
+    await next();
+});
+
 app.UseCors(app.Services.GetRequiredService<ICorsSettings>().Default);
 
 app.UseExceptionHandler();
@@ -132,6 +157,27 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/utils/health");
+
+// Public capability-discovery manifest (.well-known convention, same idea as an OIDC discovery
+// document) - lets a consumer (Administration.Api today, the mobile app later) ask "what do you
+// support" instead of assuming full parity with our current HEAD. Our own reference deployment
+// always supports everything it has; a third-party Tenant.Api implementation is expected to
+// return only the subset it actually implements.
+app.MapGet("/v1/.well-known/capabilities", () => Results.Ok(new
+{
+    apiVersion = "1.0",
+    features = new[]
+    {
+        "recordings", "recording-parts", "recording-photos", "filtered-recordings",
+        "detected-dialects", "achievements", "articles", "article-categories", "devices",
+        "map", "map-clusters", "notifications"
+    }
+})).AllowAnonymous();
+
+// Hardcoded for now - lets a consumer (Administration.Api, the mobile app) check which of its
+// own versions this deployment still supports without hitting a specific feature endpoint.
+// Update the list by hand as versions are released/retired.
+app.MapGet("/list-supported-versions", () => Results.Ok(new[] { "2.1.12" })).AllowAnonymous();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>

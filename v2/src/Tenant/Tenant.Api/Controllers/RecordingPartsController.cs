@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,8 @@ using Tenant.Application.Recordings;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("recordings")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/recordings")]
 public class RecordingPartsController(RecordingPartsService recordingPartsService) : ControllerBase
 {
     /// <summary>Kept for old clients still hitting the three-segment route; same as <see cref="GetSoundAsync"/>.</summary>

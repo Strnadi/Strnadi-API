@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Shared.Infrastructure.Authorization;
@@ -7,7 +8,8 @@ using Tenant.Application.Notifications;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("utils")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/utils")]
 public class NotificationsController(NotificationsService notificationsService) : ControllerBase
 {
     /// <summary>Pushes a custom notification to all of a user's devices. Admin only.</summary>

@@ -297,6 +297,33 @@
   <data name="CreatedBy" xml:space="preserve">
     <value>Erstellt von</value>
   </data>
+  <data name="ApiCompatibility" xml:space="preserve">
+    <value>API-Kompatibilität</value>
+  </data>
+  <data name="Capabilities" xml:space="preserve">
+    <value>Deklarierte Funktionen</value>
+  </data>
+  <data name="NotCheckedYet" xml:space="preserve">
+    <value>Noch nicht überprüft</value>
+  </data>
+  <data name="RefreshCapabilities" xml:space="preserve">
+    <value>Funktionen neu laden</value>
+  </data>
+  <data name="ApiConformance" xml:space="preserve">
+    <value>Konformität mit unserer API</value>
+  </data>
+  <data name="FullyCompatible" xml:space="preserve">
+    <value>Vollständig kompatibel</value>
+  </data>
+  <data name="CheckApiCompatibility" xml:space="preserve">
+    <value>API-Kompatibilität prüfen</value>
+  </data>
+  <data name="CheckedAt" xml:space="preserve">
+    <value>Geprüft</value>
+  </data>
+  <data name="MissingFeatureHint" xml:space="preserve">
+    <value>Dieses Projekt hat diese Funktion nicht als unterstützt deklariert</value>
+  </data>
   <data name="RequestSubmitted" xml:space="preserve">
     <value>Antrag gesendet</value>
   </data>

@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Tenant.Application.Maps;
 using Tenant.Domain.Persistence.Repositories;
@@ -5,7 +6,8 @@ using Tenant.Domain.Persistence.Repositories;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("recordings/map-clusters")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/recordings/map-clusters")]
 public class MapClustersController(MapClustersService mapClusters, ILogger<MapClustersController> logger) : ControllerBase
 {
     private const double MaxLatitude = 85.05112878;

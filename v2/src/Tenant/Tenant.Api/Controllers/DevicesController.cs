@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Shared.Kernel.Authorization;
@@ -7,7 +8,8 @@ using Tenant.Application.Devices;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("devices")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/devices")]
 public class DevicesController(DevicesService devicesService) : ControllerBase
 {
     /// <summary>Registers a device for push notifications.</summary>

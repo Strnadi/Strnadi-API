@@ -1,4 +1,5 @@
 using System.Security;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Platform.Shared.Infrastructure.Authorization;
@@ -9,7 +10,8 @@ using Tenant.Domain.Entities;
 namespace Tenant.Api.Controllers;
 
 [ApiController]
-[Route("articles/categories")]
+[ApiVersion("1.0")]
+[Route("v{version:apiVersion}/articles/categories")]
 public class ArticleCategoriesController(ArticleCategoriesService categoriesService) : ControllerBase
 {
     /// <summary>All article categories, optionally with their articles.</summary>

@@ -59,6 +59,12 @@ builder.Services.AddSingleton<IAppleAuthSettings, AppleAuthSettings>();
 builder.Services.AddSingleton<IAuthSettings, AuthSettings>();
 
 builder.Services.AddSingleton<IOpenIddictSettings, OpenIddictSettings>();
+builder.Services.AddSingleton<ITenantApiSettings, TenantApiSettings>();
+
+// Used to fetch a project's declared capability manifest / OpenAPI spec, and our own reference
+// Tenant.Api's - a project's ApiDomain is untrusted third-party input, hence the short timeout.
+builder.Services.AddHttpClient("TenantApiClient", c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddScoped<ITenantConformanceChecker, TenantConformanceChecker>();
 
 builder.Services.AddSingleton<ISmtpSettings, SmtpSettings>();
 builder.Services.AddScoped<IEmailSender<User>, SmtpEmailSender>();
@@ -257,6 +263,11 @@ app.MapControllers();
 app.MapRazorPages();
 app.MapDefaultEndpoints();
 app.MapHealthChecks("/utils/health");
+
+// Hardcoded for now - the mobile app (and eventually Tenant.Api deployments) can check this to
+// know which of their own versions this backend still supports, without hitting a specific
+// feature endpoint. Update the list by hand as versions are released/retired.
+app.MapGet("/list-supported-versions", () => Results.Ok(new[] { "2.1.12" })).AllowAnonymous();
 
 app.MapGet("/", (HttpContext context) => Results.LocalRedirect(
     context.User.Identity?.IsAuthenticated == true ? "/dashboard" : "/Account/Login?returnUrl=/dashboard"));
