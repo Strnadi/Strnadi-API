@@ -52,9 +52,12 @@ public class TenantConformanceChecker(IHttpClientFactory httpClientFactory, ITen
 
     public async Task<IReadOnlyList<string>> CheckApiConformanceAsync(string apiDomain, CancellationToken cancellationToken = default)
     {
+        if (tenantApiSettings.BaseUrl is not { } baseUrl)
+            return ["The TenantApi:BaseUrl setting is not configured - cannot fetch our own reference specification to compare against."];
+
         var client = httpClientFactory.CreateClient(HttpClientName);
 
-        var reference = await FetchSpecAsync(client, $"{tenantApiSettings.BaseUrl}/swagger/v1/swagger.json", cancellationToken);
+        var reference = await FetchSpecAsync(client, $"{baseUrl}/swagger/v1/swagger.json", cancellationToken);
         if (reference is null)
             return ["Could not fetch our own reference specification - check the TenantApi:BaseUrl setting."];
 
@@ -78,7 +81,10 @@ public class TenantConformanceChecker(IHttpClientFactory httpClientFactory, ITen
 
     public async Task<IReadOnlyList<string>?> FetchOwnFeaturesAsync(CancellationToken cancellationToken = default)
     {
-        var json = await FetchCapabilitiesAsync(tenantApiSettings.BaseUrl, cancellationToken);
+        if (tenantApiSettings.BaseUrl is not { } baseUrl)
+            return null;
+
+        var json = await FetchCapabilitiesAsync(baseUrl, cancellationToken);
         return json is null ? null : ParseFeatures(json);
     }
 
