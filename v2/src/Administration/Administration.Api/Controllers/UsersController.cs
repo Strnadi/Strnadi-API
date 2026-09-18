@@ -72,7 +72,7 @@ public class UsersController(AdminDbContext db, IUserPermissionsRepository permi
         }
     }
 
-    /// <summary>Projects the given user has a role in. Anyone can look up their own; looking up
+    /// <summary>Projects the given user is a member of. Anyone can look up their own; looking up
     /// someone else's requires the same visibility as <see cref="GetUserAsync"/>.</summary>
     [HttpGet("{id:guid}/projects")]
     public async Task<IActionResult> GetUserProjectsAsync(Guid id)
@@ -84,11 +84,13 @@ public class UsersController(AdminDbContext db, IUserPermissionsRepository permi
                 return Forbid();
         }
 
-        var projects = await db.UserRoles
-            .Where(ur => ur.UserId == id)
-            .Join(db.Roles, ur => ur.RoleId, r => r.Id, (_, r) => r.ProjectId)
-            .Distinct()
-            .Join(db.Projects, projectId => projectId, p => p.Id,
+        // Membership, not role, is the actual "is this user in this project" source of truth -
+        // ProjectMembersController.JoinAsync always writes a ProjectMembership row on join, but
+        // only adds a UserRoles row when a RoleId was given. Querying UserRoles here would miss
+        // anyone who joined without being assigned a role yet.
+        var projects = await db.ProjectMemberships
+            .Where(pm => pm.UserId == id)
+            .Join(db.Projects, pm => pm.ProjectId, p => p.Id,
                 (_, p) => new ProjectResponse(p.Id, p.Name, p.Description, p.Domain, p.ApiDomain))
             .ToListAsync();
 
