@@ -129,7 +129,10 @@ public class DocumentsController(
         logger.LogInformation("Created document {DocumentId} of type {Type} for project {ProjectId}, effective {EffectiveAt}",
             document.Id, document.Type, document.ProjectId, document.EffectiveAt);
 
-        return CreatedAtAction(nameof(GetDocumentAsync), new { id = document.Id }, new DocumentResponse(
+        // MvcOptions.SuppressAsyncSuffixInActionNames defaults to true, so the action is routable
+        // as "GetDocument", not "GetDocumentAsync" - see ProjectMembersController.JoinAsync for
+        // the full explanation of why nameof() alone breaks this.
+        return CreatedAtAction(nameof(GetDocumentAsync)[..^"Async".Length], new { id = document.Id }, new DocumentResponse(
             document.Id, document.Type, document.Title, document.Version, document.Content, document.PublishedAt, document.EffectiveAt, document.IsActive, document.IsRequired, document.ProjectId));
     }
 
@@ -174,7 +177,7 @@ public class DocumentsController(
 
         await NotifyAffectedUsersAsync(current, next);
 
-        return CreatedAtAction(nameof(GetDocumentAsync), new { id = next.Id }, new DocumentResponse(
+        return CreatedAtAction(nameof(GetDocumentAsync)[..^"Async".Length], new { id = next.Id }, new DocumentResponse(
             next.Id, next.Type, next.Title, next.Version, next.Content, next.PublishedAt, next.EffectiveAt, next.IsActive, next.IsRequired, next.ProjectId));
     }
 

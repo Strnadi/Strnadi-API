@@ -94,7 +94,10 @@ public class ProjectMembersController(AdminDbContext db, UserManager<User> users
         var roleNames = role is null ? [] : new List<string> { role.Name! };
         var response = new ProjectMemberResponse(targetUser.Id, targetUser.Email!, targetUser.FirstName, targetUser.LastName, roleNames);
 
-        return CreatedAtAction(nameof(GetMembersAsync), new { projectId }, response);
+        // MvcOptions.SuppressAsyncSuffixInActionNames defaults to true, so the action is routable
+        // as "GetMembers", not "GetMembersAsync" - nameof() gives the C# method name, which no
+        // longer matches, and CreatedAtAction throws "No route matches the supplied values."
+        return CreatedAtAction(nameof(GetMembersAsync)[..^"Async".Length], new { projectId }, response);
     }
 
     /// <summary>Removes a user from the project entirely - the membership row and every role

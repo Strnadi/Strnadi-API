@@ -72,7 +72,10 @@ public class DocumentAcceptancesController(AdminDbContext db, ILogger<DocumentAc
 
         logger.LogInformation("User {UserId} accepted document {DocumentId}", userId, request.DocumentId);
 
-        return CreatedAtAction(nameof(GetAcceptanceAsync), new { id = acceptance.Id }, new DocumentAcceptanceResponse(
+        // MvcOptions.SuppressAsyncSuffixInActionNames defaults to true, so the action is routable
+        // as "GetAcceptance", not "GetAcceptanceAsync" - see ProjectMembersController.JoinAsync
+        // for the full explanation of why nameof() alone breaks this.
+        return CreatedAtAction(nameof(GetAcceptanceAsync)[..^"Async".Length], new { id = acceptance.Id }, new DocumentAcceptanceResponse(
             acceptance.Id, acceptance.UserId, acceptance.DocumentId, acceptance.AcceptedAt, acceptance.RevokedAt));
     }
 
