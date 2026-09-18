@@ -167,6 +167,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/utils/health");
+// Same health checks, reachable under the versioned prefix too - mapping the same checks at two
+// paths is fine, ASP.NET Core doesn't restrict a health check registration to a single route.
+app.MapHealthChecks("/v1/utils/health");
 
 // Public capability-discovery manifest (.well-known convention, same idea as an OIDC discovery
 // document) - lets a consumer (Administration.Api today, the mobile app later) ask "what do you

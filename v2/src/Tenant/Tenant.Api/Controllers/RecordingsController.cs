@@ -67,7 +67,6 @@ public class RecordingsController(RecordingsService recordingsService) : Control
     }
 
     /// <summary>The caller's recordings that are still missing parts.</summary>
-    [Authorize]
     [HttpGet("incomplete")]
     [ProducesResponseType(typeof(Recording[]), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
