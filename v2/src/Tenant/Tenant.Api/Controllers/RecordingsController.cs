@@ -14,12 +14,13 @@ namespace Tenant.Api.Controllers;
 [Route("v{version:apiVersion}/recordings")]
 public class RecordingsController(RecordingsService recordingsService) : ControllerBase
 {
-    /// <summary>Recordings, optionally with their parts and/or audio.</summary>
+    /// <summary>Recordings, optionally with their parts. Audio itself is fetched separately, per
+    /// part, via GET part/{partId}/sound.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(RecordingResponse[]), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllAsync([FromQuery] Guid? userId, [FromQuery] bool parts, [FromQuery] bool sound, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllAsync([FromQuery] Guid? userId, [FromQuery] bool parts, CancellationToken cancellationToken)
     {
-        return Ok(await recordingsService.GetAllAsync(userId, parts, sound, cancellationToken));
+        return Ok(await recordingsService.GetAllAsync(userId, parts, cancellationToken));
     }
 
     /// <summary>Soft-deleted recordings. </summary>
@@ -34,13 +35,14 @@ public class RecordingsController(RecordingsService recordingsService) : Control
         return Ok(await recordingsService.GetDeletedAsync(cancellationToken));
     }
 
-    /// <summary>A recording by id, optionally with its parts and/or audio.</summary>
+    /// <summary>A recording by id, optionally with its parts. Audio itself is fetched separately,
+    /// per part, via GET part/{partId}/sound.</summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(RecordingResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByIdAsync([FromRoute] int id, [FromQuery] bool parts, [FromQuery] bool sound, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByIdAsync([FromRoute] int id, [FromQuery] bool parts, CancellationToken cancellationToken)
     {
-        return Ok(await recordingsService.GetByIdAsync(id, parts, sound, cancellationToken));
+        return Ok(await recordingsService.GetByIdAsync(id, parts, cancellationToken));
     }
 
     /// <summary>Deletes a recording; soft by default, permanently when <paramref name="final"/> is set.</summary>

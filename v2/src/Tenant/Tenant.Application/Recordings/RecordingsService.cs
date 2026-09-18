@@ -17,52 +17,34 @@ public class RecordingsService(
     IUnitOfWork unitOfWork,
     ILogger<RecordingsService> logger)
 {
-    public async Task<RecordingResponse[]> GetAllAsync(Guid? userId, bool includeParts, bool includeSound, CancellationToken cancellationToken = default)
+    public async Task<RecordingResponse[]> GetAllAsync(Guid? userId, bool includeParts, CancellationToken cancellationToken = default)
     {
         var results = await recordings.GetAllAsync(userId, includeParts, cancellationToken);
-
-        var responses = new List<RecordingResponse>(results.Length);
-        foreach (var recording in results)
-            responses.Add(await BuildResponseAsync(recording, includeParts, includeSound, cancellationToken));
-
-        return responses.ToArray();
+        return results.Select(recording => BuildResponse(recording, includeParts)).ToArray();
     }
 
-    public async Task<RecordingResponse> GetByIdAsync(int id, bool includeParts, bool includeSound, CancellationToken cancellationToken = default)
+    public async Task<RecordingResponse> GetByIdAsync(int id, bool includeParts, CancellationToken cancellationToken = default)
     {
         var recording = await recordings.GetByIdAsync(id, includeParts, cancellationToken);
         if (recording is null || recording.Deleted == true)
             throw new NotFoundException(nameof(Recording), id);
 
-        return await BuildResponseAsync(recording, includeParts, includeSound, cancellationToken);
+        return BuildResponse(recording, includeParts);
     }
 
-    private async Task<RecordingResponse> BuildResponseAsync(Recording recording, bool includeParts, bool includeSound, CancellationToken cancellationToken)
+    // Audio itself is never embedded here - the only way to get a part's audio is the dedicated
+    // GET /recordings/part/{partId}/sound endpoint (RecordingPartsService.GetSoundAsync), which
+    // owns the ownership/DownloadRecordings check. This used to also support ?sound=true, base64-
+    // embedding the audio inline - removed as obsolete.
+    private static RecordingResponse BuildResponse(Recording recording, bool includeParts)
     {
-        RecordingPartResponse[]? parts = null;
-
-        if (includeParts)
-        {
-            var partResponses = new List<RecordingPartResponse>(recording.RecordingParts.Count);
-
-            foreach (var part in recording.RecordingParts)
-            {
-                string? audioBase64 = null;
-                if (includeSound && part.FilePath is not null)
-                {
-                    var bytes = await fileStorage.ReadAsync(part.FilePath, cancellationToken);
-                    audioBase64 = bytes is not null ? Convert.ToBase64String(bytes) : null;
-                }
-
-                partResponses.Add(new RecordingPartResponse(
-                    part.Id, part.StartDate, part.EndDate,
-                    part.GpsLatitudeStart, part.GpsLongitudeStart,
-                    part.GpsLatitudeEnd, part.GpsLongitudeEnd,
-                    part.Length, audioBase64));
-            }
-
-            parts = partResponses.ToArray();
-        }
+        var parts = includeParts
+            ? recording.RecordingParts.Select(part => new RecordingPartResponse(
+                part.Id, part.StartDate, part.EndDate,
+                part.GpsLatitudeStart, part.GpsLongitudeStart,
+                part.GpsLatitudeEnd, part.GpsLongitudeEnd,
+                part.Length)).ToArray()
+            : null;
 
         return new RecordingResponse(
             recording.Id, recording.CreatedAt, recording.EstimatedBirdsCount, recording.ByApp,

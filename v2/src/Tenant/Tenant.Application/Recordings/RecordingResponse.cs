@@ -22,5 +22,4 @@ public record RecordingPartResponse(
     decimal? GpsLongitudeStart,
     decimal? GpsLatitudeEnd,
     decimal? GpsLongitudeEnd,
-    int? Length,
-    string? AudioBase64);
+    int? Length);
