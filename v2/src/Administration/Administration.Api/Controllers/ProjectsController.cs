@@ -13,7 +13,7 @@ public class ProjectsController(AdminDbContext db) : ControllerBase
     public async Task<IActionResult> GetProjects()
     {
         var projects = await db.Projects
-            .Select(p => new ProjectResponse(p.Id, p.Name, p.Description, p.Domain))
+            .Select(p => new ProjectResponse(p.Id, p.Name, p.Description, p.Domain, p.ApiDomain))
             .ToListAsync();
 
         return Ok(projects);

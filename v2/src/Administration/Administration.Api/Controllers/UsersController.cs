@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Administration.Application.Projects;
 using Administration.Application.Users;
 using Administration.Domain.Persistence.Repositories;
 using Administration.Infrastructure.Persistence;
@@ -69,6 +70,29 @@ public class UsersController(AdminDbContext db, IUserPermissionsRepository permi
 
             return user is null ? NotFound() : Ok(user);
         }
+    }
+
+    /// <summary>Projects the given user has a role in. Anyone can look up their own; looking up
+    /// someone else's requires the same visibility as <see cref="GetUserAsync"/>.</summary>
+    [HttpGet("{id:guid}/projects")]
+    public async Task<IActionResult> GetUserProjectsAsync(Guid id)
+    {
+        if (id != GetCurrentUserId())
+        {
+            var visibility = await GetVisibilityAsync();
+            if (visibility == UserVisibility.None)
+                return Forbid();
+        }
+
+        var projects = await db.UserRoles
+            .Where(ur => ur.UserId == id)
+            .Join(db.Roles, ur => ur.RoleId, r => r.Id, (_, r) => r.ProjectId)
+            .Distinct()
+            .Join(db.Projects, projectId => projectId, p => p.Id,
+                (_, p) => new ProjectResponse(p.Id, p.Name, p.Description, p.Domain, p.ApiDomain))
+            .ToListAsync();
+
+        return Ok(projects);
     }
 
     private enum UserVisibility { None, Basic, Confidential }
