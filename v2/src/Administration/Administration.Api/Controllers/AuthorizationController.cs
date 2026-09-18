@@ -194,7 +194,14 @@ public class AuthorizationController(
             .SetClaim("project_id", projectId.ToString());
         identity.SetClaims(Claims.Role, roles.Select(r => r.Name!).ToImmutableArray());
         identity.SetClaims("permission", permissionClaims.ToImmutableArray());
-        identity.SetAudiences($"project:{projectId}");
+        // "tenant-api" (the shared OpenIddict client every Tenant.Api deployment introspects as)
+        // must itself be one of the audiences, or OpenIddict's introspection endpoint rejects the
+        // request with "issued to a different client or for another resource server" - it only
+        // lets a client introspect a token if that client is either the original token recipient
+        // (here: "strnadi-app") or listed among the token's audiences. The project-scoped
+        // "project:{projectId}" audience is still what Tenant.Api's own AddValidation() checks
+        // locally to reject tokens for the wrong project - this doesn't weaken that.
+        identity.SetAudiences("tenant-api", $"project:{projectId}");
         identity.SetDestinations(GetDestinations);
 
         logger.LogInformation("Issued project-scoped token for user {UserId}, project {ProjectId}", userId, projectId);
