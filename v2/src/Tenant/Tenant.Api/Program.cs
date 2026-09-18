@@ -123,20 +123,30 @@ app.MapDefaultEndpoints();
 app.UseHttpsRedirection();
 
 // TEMPORARY: old mobile app builds call unprefixed routes (e.g. /recordings). Rewrite anything
-// that isn't already /v1/..., /utils/health, /swagger, or /list-supported-versions to /v1/... so
-// both continue to work during the migration window. Delete this once request logs show ~0
+// that isn't already /v1/..., /utils/health, /swagger, /list-supported-versions, or the Aspire
+// dev-only /health and /alive (ServiceDefaults.MapDefaultEndpoints, Development only) to /v1/...
+// so both continue to work during the migration window. Delete this once request logs show ~0
 // traffic on the unprefixed paths and the mobile app has shipped its /v1/ update.
 app.Use(async (context, next) =>
 {
     if (!context.Request.Path.StartsWithSegments("/v1", StringComparison.OrdinalIgnoreCase)
         && !context.Request.Path.StartsWithSegments("/utils/health", StringComparison.OrdinalIgnoreCase)
         && !context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase)
-        && !context.Request.Path.StartsWithSegments("/list-supported-versions", StringComparison.OrdinalIgnoreCase))
+        && !context.Request.Path.StartsWithSegments("/list-supported-versions", StringComparison.OrdinalIgnoreCase)
+        && !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+        && !context.Request.Path.StartsWithSegments("/alive", StringComparison.OrdinalIgnoreCase))
     {
         context.Request.Path = "/v1" + context.Request.Path;
     }
     await next();
 });
+
+// Explicit on purpose: MapDefaultEndpoints() above is itself a Map* call, so without UseRouting()
+// called somewhere, ASP.NET Core implicitly inserts endpoint matching right there - before the
+// rewrite middleware above ever runs. That silently matched (or 404'd) requests against the
+// original unprefixed path and made the rewrite a no-op for routing purposes. Calling UseRouting()
+// here pins matching to happen after the rewrite instead.
+app.UseRouting();
 
 app.UseCors(app.Services.GetRequiredService<ICorsSettings>().Default);
 
