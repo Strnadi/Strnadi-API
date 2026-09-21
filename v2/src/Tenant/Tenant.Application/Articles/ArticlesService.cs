@@ -128,7 +128,7 @@ public class ArticlesService(
         var attachment = await articles.GetAttachmentAsync(id, fileName, cancellationToken)
             ?? throw new NotFoundException(nameof(ArticleAttachment), fileName);
 
-        fileStorage.Delete(AttachmentPath(id, fileName), cancellationToken);
+        fileStorage.DeleteAsync(AttachmentPath(id, fileName), cancellationToken);
         articles.RemoveAttachment(attachment);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }

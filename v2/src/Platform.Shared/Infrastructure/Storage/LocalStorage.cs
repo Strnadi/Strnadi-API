@@ -22,16 +22,17 @@ public class LocalStorage(IFileStorageSettings settings) : IFileStorage
         return File.Exists(fullPath) ? await File.ReadAllBytesAsync(fullPath, cancellationToken) : null;
     }
 
-    public void Delete(string relativePath, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(string relativePath, CancellationToken cancellationToken = default)
     {
         var fullPath = Resolve(relativePath);
         if (File.Exists(fullPath))
             File.Delete(fullPath);
+        return Task.CompletedTask;
     }
 
-    public bool Exists(string relativePath)
+    public Task<bool> ExistsAsync(string relativePath)
     {
-        return File.Exists(Resolve(relativePath));
+        return Task.FromResult(File.Exists(Resolve(relativePath)));
     }
 
     private string Resolve(string relativePath) => Path.Combine(settings.RootPath, relativePath);

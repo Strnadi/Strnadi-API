@@ -20,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Console;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
+using Platform.Shared.Common.Extensions;
 using Platform.Shared.Infrastructure.Configuration;
 using Platform.Shared.Infrastructure.ExceptionHandling;
 using Platform.Shared.Infrastructure.Logging;
@@ -70,8 +71,7 @@ builder.Services.AddSingleton<ISmtpSettings, SmtpSettings>();
 builder.Services.AddScoped<IEmailSender<User>, SmtpEmailSender>();
 builder.Services.AddScoped<IDocumentEmailSender, SmtpEmailSender>();
 
-builder.Services.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
-builder.Services.AddSingleton<IFileStorage, LocalStorage>();
+builder.Services.AddFileStorage();
 
 builder.Services.AddSingleton<IScalarSettings, ScalarSettings>();
 

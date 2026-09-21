@@ -64,7 +64,7 @@ public class RecordingPhotosService(
             throw new NotFoundException(nameof(RecordingPhoto), photoId);
 
         if (photo.FilePath is not null)
-            fileStorage.Delete(photo.FilePath, cancellationToken);
+            fileStorage.DeleteAsync(photo.FilePath, cancellationToken);
 
         photos.Remove(photo);
         await unitOfWork.SaveChangesAsync(cancellationToken);

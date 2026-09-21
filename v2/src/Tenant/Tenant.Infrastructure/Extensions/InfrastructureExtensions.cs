@@ -31,7 +31,7 @@ public static class InfrastructureExtensions
             serviceCollection.AddSingleton<ICorsSettings, CorsSettings>();
             serviceCollection.AddSingleton<IFirebaseSettings, FirebaseSettings>();
             serviceCollection.AddSingleton<IMapyCzSettings, MapyCzSettings>();
-            serviceCollection.AddSingleton<IFileStorageSettings, LocalStorageSettings>();
+            serviceCollection.AddSingleton<IFileStorageSettings, FileStorageSettings>();
             serviceCollection.AddSingleton<IEncryptionSettings, EncryptionSettings>();
             serviceCollection.AddSingleton<IOpenIddictSettings, OpenIddictSettings>();
 
