@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
+using OpenIddict.Validation;
 using Platform.Shared.Kernel.Services;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -222,13 +222,18 @@ public class AccountController(
     /// <summary>Gets the caller's own profile, including their role(s) in the current project if the token is project-scoped.</summary>
     [Authorize(Policy = "AccountMutation")]
     [HttpGet("profile")]
-    public async Task<IActionResult> GetProfileAsync()
+    public async Task<IActionResult> GetProfileAsync([FromQuery] Guid? projectId)
     {
         var user = await GetCurrentUserAsync();
         if (user is null)
             return Unauthorized();
 
-        var roles = await GetCurrentProjectRolesAsync(user.Id);
+        string[] roles;
+        if (projectId.HasValue)
+            roles = await GetRolesByProjectAsync(user.Id, projectId.Value);
+        else
+            roles = await GetCurrentProjectRolesAsync(user.Id);    
+        
         return Ok(new UserProfileResponse(user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.City, user.PostCode, roles));
     }
 
@@ -319,6 +324,14 @@ public class AccountController(
     {
         var userId = User.FindFirstValue(Claims.Subject) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
         return userId is null ? Task.FromResult<User?>(null) : users.FindByIdAsync(userId);
+    }
+
+    private async Task<string[]> GetRolesByProjectAsync(Guid userId, Guid projectId)
+    {
+        return await db.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .Join(db.Roles.Where(r => r.ProjectId == projectId), ur => ur.RoleId, r => r.Id, (_, r) => r.Name!)
+            .ToArrayAsync();
     }
 
     private async Task<string[]> GetCurrentProjectRolesAsync(Guid userId)
