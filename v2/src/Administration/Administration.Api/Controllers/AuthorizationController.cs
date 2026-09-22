@@ -161,10 +161,26 @@ public class AuthorizationController(
         var userId = Guid.Parse(result.Principal!.GetClaim(Claims.Subject)!);
         var projectId = Guid.Parse(request.GetParameter("project_id")!.ToString()!);
 
-        if (!await db.ProjectMemberships.AnyAsync(m => m.UserId == userId && m.ProjectId == projectId))
+        var hasMembership = await db.ProjectMemberships.AnyAsync(m => m.UserId == userId && m.ProjectId == projectId);
+        if (!hasMembership)
         {
-            logger.LogWarning("Project token exchange denied: user {UserId} is not a member of project {ProjectId}", userId, projectId);
-            return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            // A global role (Role.ProjectId == null) grants access to every project without an
+            // explicit join - auto-provision the membership row so "holds a project token implies
+            // ProjectMembership" stays true for anything downstream that relies on it.
+            var isGlobalRoleHolder = await db.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .Join(db.Roles.Where(r => r.ProjectId == null), ur => ur.RoleId, r => r.Id, (_, _) => 1)
+                .AnyAsync();
+
+            if (!isGlobalRoleHolder)
+            {
+                logger.LogWarning("Project token exchange denied: user {UserId} is not a member of project {ProjectId}", userId, projectId);
+                return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            db.ProjectMemberships.Add(new ProjectMembership { Id = Guid.CreateVersion7(), UserId = userId, ProjectId = projectId });
+            await db.SaveChangesAsync();
+            logger.LogInformation("Auto-provisioned project membership for global-role holder {UserId} in project {ProjectId}", userId, projectId);
         }
 
         var hasOutstandingConsent = await permissions.HasOutstandingConsentAsync(userId, projectId);
@@ -173,11 +189,12 @@ public class AuthorizationController(
                 "User {UserId} has outstanding consent for project {ProjectId}; issuing token without roles/permissions",
                 userId, projectId);
 
+        // A global role (ProjectId == null) is a wildcard - its claims flow into every project's token.
         var roles = hasOutstandingConsent
             ? []
             : await db.UserRoles
                 .Where(ur => ur.UserId == userId)
-                .Join(db.Roles.Where(r => r.ProjectId == projectId), ur => ur.RoleId, r => r.Id, (_, r) => r)
+                .Join(db.Roles.Where(r => r.ProjectId == projectId || r.ProjectId == null), ur => ur.RoleId, r => r.Id, (_, r) => r)
                 .ToListAsync();
 
         var roleIds = roles.Select(r => r.Id).ToList();

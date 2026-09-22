@@ -40,12 +40,12 @@ public class EditModel(
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        if (!CanManageDocuments)
-            return RequirePermission(false, Permissions.ManageDocuments);
-
         var document = await Db.Documents.FindAsync(id);
         if (document is null || !document.IsActive)
             return NotFound();
+
+        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageDocuments, document.ProjectId))
+            return RequirePermission(false, Permissions.ManageDocuments);
 
         CurrentDocument = document;
         Input = new InputModel
@@ -61,12 +61,12 @@ public class EditModel(
 
     public async Task<IActionResult> OnPostAsync(Guid id)
     {
-        if (!CanManageDocuments)
-            return RequirePermission(false, Permissions.ManageDocuments);
-
         var current = await Db.Documents.FindAsync(id);
         if (current is null || !current.IsActive)
             return NotFound();
+
+        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageDocuments, current.ProjectId))
+            return RequirePermission(false, Permissions.ManageDocuments);
 
         CurrentDocument = current;
 

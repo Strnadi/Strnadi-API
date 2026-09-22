@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Administration.Api.Pages.Dashboard.Projects.Roles;
 using Administration.Api.Resources;
 using Administration.Domain.Entities;
 using Administration.Domain.Persistence.Repositories;
@@ -9,10 +10,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Platform.Shared.Kernel.Authorization;
 
-namespace Administration.Api.Pages.Dashboard.Projects.Roles;
+namespace Administration.Api.Pages.Dashboard.Roles;
 
 public record RoleMember(Guid UserId, string Email, string FirstName, string LastName);
 
+/// <summary>Edits a global role (Role.ProjectId == null). Compare
+/// Pages/Dashboard/Projects/Roles/Edit.cshtml.cs for the project-scoped equivalent - the one
+/// difference that matters is assignment: a global role has no project to join, so
+/// OnPostAssignUserAsync never touches ProjectMembership.</summary>
 public class EditModel(
     UserManager<User> users,
     AdminDbContext db,
@@ -21,7 +26,6 @@ public class EditModel(
     ILogger<DashboardPageModel> logger)
     : DashboardPageModel(users, db, permissions, logger)
 {
-    public Project Project { get; private set; } = null!;
     public Role Role { get; private set; } = null!;
     public IReadOnlyList<string> AllPermissions { get; } = PermissionCatalog.All;
     public List<RoleMember> RoleMembers { get; set; } = [];
@@ -45,12 +49,12 @@ public class EditModel(
         public string? Email { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid projectId, Guid roleId)
+    public async Task<IActionResult> OnGetAsync(Guid roleId)
     {
-        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageRoles, projectId))
+        if (!CanManageRoles)
             return RequirePermission(false, Permissions.ManageRoles);
 
-        if (!await LoadContextAsync(projectId, roleId))
+        if (!await LoadContextAsync(roleId))
             return NotFound();
 
         Input = new InputModel
@@ -67,12 +71,12 @@ public class EditModel(
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid projectId, Guid roleId)
+    public async Task<IActionResult> OnPostAsync(Guid roleId)
     {
-        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageRoles, projectId))
+        if (!CanManageRoles)
             return RequirePermission(false, Permissions.ManageRoles);
 
-        if (!await LoadContextAsync(projectId, roleId))
+        if (!await LoadContextAsync(roleId))
             return NotFound();
 
         ModelState.Clear();
@@ -98,17 +102,17 @@ public class EditModel(
         }
 
         await Db.SaveChangesAsync();
-        Logger.LogInformation("Admin {AdminId} updated permissions for role {RoleId}", CurrentUser.Id, roleId);
+        Logger.LogInformation("Admin {AdminId} updated permissions for global role {RoleId}", CurrentUser.Id, roleId);
 
-        return RedirectToPage("/Dashboard/Projects/Roles/Edit", new { projectId, roleId });
+        return RedirectToPage("/Dashboard/Roles/Edit", new { roleId });
     }
 
-    public async Task<IActionResult> OnPostAssignUserAsync(Guid projectId, Guid roleId)
+    public async Task<IActionResult> OnPostAssignUserAsync(Guid roleId)
     {
-        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageRoles, projectId))
+        if (!CanManageRoles)
             return RequirePermission(false, Permissions.ManageRoles);
 
-        if (!await LoadContextAsync(projectId, roleId))
+        if (!await LoadContextAsync(roleId))
             return NotFound();
 
         ModelState.Clear();
@@ -129,34 +133,23 @@ public class EditModel(
             return await ReloadFormAsync(roleId);
         }
 
-        // A role only takes effect if the user also has a ProjectMembership row - the token
-        // exchange flow (AuthorizationController) checks membership before it even looks at roles.
-        var hasMembership = await Db.ProjectMemberships.AnyAsync(pm => pm.UserId == targetUser.Id && pm.ProjectId == projectId);
-        if (!hasMembership)
-        {
-            Db.ProjectMemberships.Add(new ProjectMembership
-            {
-                Id = Guid.CreateVersion7(),
-                UserId = targetUser.Id,
-                ProjectId = projectId
-            });
-        }
-
+        // Unlike a project-scoped role, a global role has nothing to "join" - no ProjectMembership
+        // row is created here.
         Db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = targetUser.Id, RoleId = roleId });
         await Db.SaveChangesAsync();
 
-        Logger.LogInformation("Admin {AdminId} assigned role {RoleId} to user {UserId} in project {ProjectId}",
-            CurrentUser.Id, roleId, targetUser.Id, projectId);
+        Logger.LogInformation("Admin {AdminId} assigned global role {RoleId} to user {UserId}",
+            CurrentUser.Id, roleId, targetUser.Id);
 
-        return RedirectToPage("/Dashboard/Projects/Roles/Edit", new { projectId, roleId });
+        return RedirectToPage("/Dashboard/Roles/Edit", new { roleId });
     }
 
-    public async Task<IActionResult> OnPostRemoveMemberAsync(Guid projectId, Guid roleId, Guid userId)
+    public async Task<IActionResult> OnPostRemoveMemberAsync(Guid roleId, Guid userId)
     {
-        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageRoles, projectId))
+        if (!CanManageRoles)
             return RequirePermission(false, Permissions.ManageRoles);
 
-        if (!await LoadContextAsync(projectId, roleId))
+        if (!await LoadContextAsync(roleId))
             return NotFound();
 
         var userRole = await Db.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
@@ -164,23 +157,18 @@ public class EditModel(
         {
             Db.UserRoles.Remove(userRole);
             await Db.SaveChangesAsync();
-            Logger.LogInformation("Admin {AdminId} removed role {RoleId} from user {UserId}", CurrentUser.Id, roleId, userId);
+            Logger.LogInformation("Admin {AdminId} removed global role {RoleId} from user {UserId}", CurrentUser.Id, roleId, userId);
         }
 
-        return RedirectToPage("/Dashboard/Projects/Roles/Edit", new { projectId, roleId });
+        return RedirectToPage("/Dashboard/Roles/Edit", new { roleId });
     }
 
-    private async Task<bool> LoadContextAsync(Guid projectId, Guid roleId)
+    private async Task<bool> LoadContextAsync(Guid roleId)
     {
-        var project = await Db.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-        if (project is null)
-            return false;
-
-        var role = await Db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.ProjectId == projectId);
+        var role = await Db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.ProjectId == null);
         if (role is null)
             return false;
 
-        Project = project;
         Role = role;
         return true;
     }

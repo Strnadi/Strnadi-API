@@ -6,29 +6,24 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Platform.Shared.Kernel.Authorization;
 
-namespace Administration.Api.Pages.Dashboard.Projects.Roles;
+namespace Administration.Api.Pages.Dashboard.Roles;
 
 public record RoleListItem(Guid Id, string Name, string? Description, int PermissionCount, int MemberCount);
 
+/// <summary>Lists global roles (Role.ProjectId == null) - roles that act everywhere, not just in
+/// one project. Compare Pages/Dashboard/Projects/Roles/Index.cshtml.cs for the project-scoped equivalent.</summary>
 public class IndexModel(UserManager<User> users, AdminDbContext db, IUserPermissionsRepository permissions, ILogger<DashboardPageModel> logger)
     : DashboardPageModel(users, db, permissions, logger)
 {
-    public Project Project { get; private set; } = null!;
     public IReadOnlyList<RoleListItem> RoleList { get; private set; } = [];
 
-    public async Task<IActionResult> OnGetAsync(Guid projectId)
+    public async Task<IActionResult> OnGetAsync()
     {
-        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageRoles, projectId))
+        if (!CanManageRoles)
             return RequirePermission(false, Permissions.ManageRoles);
 
-        var project = await Db.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-        if (project is null)
-            return NotFound();
-
-        Project = project;
-
         RoleList = await Db.Roles
-            .Where(r => r.ProjectId == projectId)
+            .Where(r => r.ProjectId == null)
             .OrderBy(r => r.Name)
             .Select(r => new RoleListItem(
                 r.Id,

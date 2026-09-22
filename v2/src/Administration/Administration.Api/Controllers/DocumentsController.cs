@@ -98,7 +98,7 @@ public class DocumentsController(
     [HttpPost]
     public async Task<IActionResult> CreateDocumentAsync([FromBody] CreateDocumentRequest request)
     {
-        if (!await permissions.HasPermissionAsync(GetCurrentUserId(), Permissions.ManageDocuments))
+        if (!await permissions.HasPermissionAsync(GetCurrentUserId(), Permissions.ManageDocuments, request.ProjectId))
             return Forbid();
 
         var exists = await db.Documents.AnyAsync(d =>
@@ -141,12 +141,12 @@ public class DocumentsController(
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateDocumentAsync(Guid id, [FromBody] UpdateDocumentRequest request)
     {
-        if (!await permissions.HasPermissionAsync(GetCurrentUserId(), Permissions.ManageDocuments))
-            return Forbid();
-
         var current = await db.Documents.FindAsync(id);
         if (current is null)
             return NotFound();
+
+        if (!await permissions.HasPermissionAsync(GetCurrentUserId(), Permissions.ManageDocuments, current.ProjectId))
+            return Forbid();
 
         if (!current.IsActive)
             return Conflict("Only the active version of a document can be superseded.");

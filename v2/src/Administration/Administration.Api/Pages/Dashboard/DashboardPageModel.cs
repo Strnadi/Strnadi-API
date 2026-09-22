@@ -34,6 +34,10 @@ public abstract class DashboardPageModel(
     protected AdminDbContext Db => db;
     protected UserManager<User> Users => users;
     protected ILogger<DashboardPageModel> Logger => logger;
+    // Named PermissionsRepository, not Permissions - a member with that name here would shadow the
+    // static Platform.Shared.Kernel.Authorization.Permissions class every derived page already
+    // references as Permissions.ManageRoles etc.
+    protected IUserPermissionsRepository PermissionsRepository => permissions;
 
     protected IActionResult RequirePermission(bool granted, string permission)
     {
@@ -63,9 +67,13 @@ public abstract class DashboardPageModel(
         CanViewUsersBasic = CanManageUsers || await permissions.HasPermissionAsync(user.Id, Permissions.ViewUsersBasic);
         CanViewUsersConfidential = CanManageUsers || await permissions.HasPermissionAsync(user.Id, Permissions.ViewUsersConfidential);
 
+        // A global role's ProjectId is null - it has no project to contribute to this list (that's
+        // what /dashboard/roles is for), so it's filtered out before joining to Projects.
         Projects = await db.UserRoles
             .Where(ur => ur.UserId == user.Id)
             .Join(db.Roles, ur => ur.RoleId, r => r.Id, (_, r) => r.ProjectId)
+            .Where(projectId => projectId != null)
+            .Select(projectId => projectId!.Value)
             .Distinct()
             .Join(db.Projects, projectId => projectId, p => p.Id, (_, p) => new ProjectSummary(p.Id, p.Name, p.Domain, p.State))
             .ToListAsync();

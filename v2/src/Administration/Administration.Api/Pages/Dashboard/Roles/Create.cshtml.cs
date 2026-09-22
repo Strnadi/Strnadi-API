@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Administration.Api.Pages.Dashboard.Projects.Roles;
 using Administration.Api.Resources;
 using Administration.Domain.Entities;
 using Administration.Domain.Persistence.Repositories;
@@ -9,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Platform.Shared.Kernel.Authorization;
 
-namespace Administration.Api.Pages.Dashboard.Projects.Roles;
+namespace Administration.Api.Pages.Dashboard.Roles;
 
 public class CreateModel(
     UserManager<User> users,
@@ -19,7 +20,6 @@ public class CreateModel(
     ILogger<DashboardPageModel> logger)
     : DashboardPageModel(users, db, permissions, logger)
 {
-    public Project Project { get; private set; } = null!;
     public IReadOnlyList<string> AllPermissions { get; } = PermissionCatalog.All;
 
     [BindProperty]
@@ -35,35 +35,24 @@ public class CreateModel(
         public List<string> Permissions { get; set; } = [];
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid projectId)
+    public IActionResult OnGet()
     {
-        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageRoles, projectId))
+        if (!CanManageRoles)
             return RequirePermission(false, Permissions.ManageRoles);
 
-        var project = await Db.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-        if (project is null)
-            return NotFound();
-
-        Project = project;
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid projectId)
+    public async Task<IActionResult> OnPostAsync()
     {
-        if (!await PermissionsRepository.HasPermissionAsync(CurrentUser.Id, Permissions.ManageRoles, projectId))
+        if (!CanManageRoles)
             return RequirePermission(false, Permissions.ManageRoles);
-
-        var project = await Db.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-        if (project is null)
-            return NotFound();
-
-        Project = project;
 
         if (!ModelState.IsValid)
             return Page();
 
         var normalizedName = Input.Name.ToUpperInvariant();
-        var nameTaken = await Db.Roles.AnyAsync(r => r.ProjectId == projectId && r.NormalizedName == normalizedName);
+        var nameTaken = await Db.Roles.AnyAsync(r => r.ProjectId == null && r.NormalizedName == normalizedName);
         if (nameTaken)
         {
             ModelState.AddModelError(string.Empty, localizer["RoleNameTaken"]);
@@ -75,7 +64,7 @@ public class CreateModel(
             Id = Guid.CreateVersion7(),
             Name = Input.Name,
             NormalizedName = normalizedName,
-            ProjectId = projectId,
+            ProjectId = null,
             Description = Input.Description
         };
 
@@ -93,9 +82,8 @@ public class CreateModel(
 
         await Db.SaveChangesAsync();
 
-        Logger.LogInformation("Admin {AdminId} created role {RoleId} ({RoleName}) in project {ProjectId}",
-            CurrentUser.Id, role.Id, role.Name, projectId);
+        Logger.LogInformation("Admin {AdminId} created global role {RoleId} ({RoleName})", CurrentUser.Id, role.Id, role.Name);
 
-        return RedirectToPage("/Dashboard/Projects/Roles/Index", new { projectId });
+        return RedirectToPage("/Dashboard/Roles/Index");
     }
 }

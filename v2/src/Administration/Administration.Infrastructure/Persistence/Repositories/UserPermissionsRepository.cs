@@ -5,8 +5,10 @@ namespace Administration.Infrastructure.Persistence.Repositories;
 
 public class UserPermissionsRepository(AdminDbContext db) : IUserPermissionsRepository
 {
-    public async Task<bool> HasPermissionAsync(Guid userId, string permission)
+    public async Task<bool> HasPermissionAsync(Guid userId, string permission, Guid? projectId = null)
     {
+        // A global required document blocks the user everywhere, regardless of which project (if
+        // any) this particular check is scoped to - that's orthogonal to projectId below.
         if (await HasOutstandingConsentAsync(userId, projectId: null))
             return false;
 
@@ -20,9 +22,19 @@ public class UserPermissionsRepository(AdminDbContext db) : IUserPermissionsRepo
             .Select(d => d.ProjectId!.Value)
             .ToListAsync();
 
+        // projectId == null: platform-wide check - only a global role (ProjectId == null) counts.
+        // projectId given: project-scoped check - that project's own role, or a global role, counts.
+        var rolesQuery = projectId is null
+            ? db.Roles.Where(r => r.ProjectId == null)
+            : db.Roles.Where(r => r.ProjectId == null || r.ProjectId == projectId);
+
+        // A global role has no single project to be blocked by; only a project-scoped role whose
+        // own project has an outstanding required document is excluded here.
+        rolesQuery = rolesQuery.Where(r => r.ProjectId == null || !blockedProjectIds.Contains(r.ProjectId.Value));
+
         return await db.UserRoles
             .Where(ur => ur.UserId == userId)
-            .Join(db.Roles.Where(r => !blockedProjectIds.Contains(r.ProjectId)), ur => ur.RoleId, r => r.Id, (_, r) => r.Id)
+            .Join(rolesQuery, ur => ur.RoleId, r => r.Id, (_, r) => r.Id)
             .Join(db.RoleClaims.Where(rc => rc.ClaimType == "permission" && rc.ClaimValue == permission),
                 roleId => roleId, rc => rc.RoleId, (_, _) => 1)
             .AnyAsync();

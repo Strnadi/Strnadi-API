@@ -51,6 +51,15 @@ public class AdminDbContext(DbContextOptions<AdminDbContext> options, IEncryptio
             entity.ToTable("roles");
             entity.HasIndex(r => r.NormalizedName).IsUnique(false);
             entity.HasIndex(r => new { r.NormalizedName, r.ProjectId }).IsUnique();
+
+            // The composite index above doesn't stop duplicate global-role names - Postgres treats
+            // each NULL project_id as distinct from every other NULL in a unique index, so two
+            // global roles named e.g. "SUPERADMIN" wouldn't collide there. This partial index closes
+            // that gap for the ProjectId == null (global) case specifically.
+            entity.HasIndex(r => r.NormalizedName)
+                .IsUnique()
+                .HasDatabaseName("ix_roles_normalized_name_global")
+                .HasFilter("project_id IS NULL");
         });
 
         modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("user_roles");

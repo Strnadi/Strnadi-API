@@ -1,0 +1,46 @@
+@page "/dashboard/roles"
+@model Administration.Api.Pages.Dashboard.Roles.IndexModel
+@{
+    ViewData["Title"] = L["Roles"].Value;
+}
+
+<h1>@L["Roles"]</h1>
+
+<div class="ss-card">
+    <ss-table create-href="/dashboard/roles/create" create-text="@L["NewRole"].Value">
+        <thead>
+            <tr>
+                <th>@L["Name"]</th>
+                <th>@L["Permissions"]</th>
+                <th>@L["Members"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.RoleList.Count == 0)
+            {
+                <tr><td colspan="4" style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@L["NoRoles"]</td></tr>
+            }
+            else
+            {
+                @foreach (var role in Model.RoleList)
+                {
+                    <tr>
+                        <td>
+                            @role.Name
+                            @if (!string.IsNullOrEmpty(role.Description))
+                            {
+                                <div style="color:var(--color-text-muted);font-size:var(--font-size-sm);">@role.Description</div>
+                            }
+                        </td>
+                        <td>@role.PermissionCount</td>
+                        <td>@role.MemberCount</td>
+                        <td>
+                            <a class="ss-btn ss-btn--ghost ss-btn--sm" href="/dashboard/roles/@role.Id/edit">@L["Edit"]</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </ss-table>
+</div>

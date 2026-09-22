@@ -22,7 +22,7 @@ public class ProjectMembersController(AdminDbContext db, UserManager<User> users
     [HttpGet]
     public async Task<IActionResult> GetMembersAsync(Guid projectId)
     {
-        if (!await permissions.HasPermissionAsync(GetCurrentUserId(), Permissions.ManageRoles))
+        if (!await permissions.HasPermissionAsync(GetCurrentUserId(), Permissions.ManageRoles, projectId))
             return Forbid();
 
         if (!await db.Projects.AnyAsync(p => p.Id == projectId))
@@ -49,7 +49,7 @@ public class ProjectMembersController(AdminDbContext db, UserManager<User> users
     public async Task<IActionResult> JoinAsync(Guid projectId, [FromBody] JoinProjectRequest request)
     {
         var callerId = GetCurrentUserId();
-        var hasPermission = await permissions.HasPermissionAsync(callerId, Permissions.ManageRoles);
+        var hasPermission = await permissions.HasPermissionAsync(callerId, Permissions.ManageRoles, projectId);
 
         if (!await db.Projects.AnyAsync(p => p.Id == projectId))
             return NotFound("Project not found.");
@@ -105,7 +105,7 @@ public class ProjectMembersController(AdminDbContext db, UserManager<User> users
     [HttpDelete("{userId:guid}")]
     public async Task<IActionResult> RemoveAsync(Guid projectId, Guid userId)
     {
-        if (!await permissions.HasPermissionAsync(GetCurrentUserId(), Permissions.ManageRoles))
+        if (!await permissions.HasPermissionAsync(GetCurrentUserId(), Permissions.ManageRoles, projectId))
             return Forbid();
 
         var membership = await db.ProjectMemberships.FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId);
